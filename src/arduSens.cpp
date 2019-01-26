@@ -18,7 +18,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define DO_ALIVE_RATE 0xf
+#define DO_ALIVE_RATE 0x1f
 #define DO_TEMP_RATE 0x80
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
@@ -29,7 +29,7 @@
  
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE 9600
+#define RATE 38400
 #define MAX_DS1820_COUNT 5
 #define PRIORITY_485 5
 
