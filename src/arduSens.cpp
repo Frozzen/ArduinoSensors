@@ -18,8 +18,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define DO_ALIVE_RATE 0x1f
-#define DO_TEMP_RATE 0x80
+#define DO_MSG_RATE 600
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 // чило сканируемых pin начиная с PIN3-PIN6
@@ -228,16 +227,14 @@ void setup(void)
   // locate devices on the bus
   doConfig();
 }
-uint8_t state = 0;
+uint16_t state = 0;
 /*
    Main function, calls the temperatures in a loop.
 */
 void loop(void)
 {
-  if((state & DO_ALIVE_RATE) == 0) {
+  if((state % DO_MSG_RATE) == 0) {
     doAlive();
-  }
-  if((state & DO_TEMP_RATE) == 0) {
     doSendTemp();
   }
   doSendContacts();
