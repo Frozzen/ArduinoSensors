@@ -41,14 +41,12 @@ def main(argv):
     #     bytesize=serial.EIGHTBITS,\
     #         timeout=0)
     config = configparser.ConfigParser()
-    print "--%s--" % os.getcwd()
-
     config.read('mqtt-frwd.ini')
     
     client = mqtt.Client(config['MQTT']['client']) # , clean_session=True, userdata=None, protocol=MQTTv311, transport=”tcp”)
     client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
     client.on_connect= on_connect
-    client.connect(config['MQTT']['server'])
+    client.connect(config['MQTT']['server'], int(config['MQTT']['port']))
     client.loop_start()        #start the loop
  
     while Connected != True:    #Wait for connection
@@ -59,7 +57,7 @@ def main(argv):
         while True:
             line, result = read_line_serial(ser)
             if result != True:
-                print "-drop:%s" % line
+                print("-drop:%s" % line)
                 continue
             topic, val = line.split('=')
             client.publish(TOPIC_START+topic,val)
