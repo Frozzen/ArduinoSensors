@@ -21,7 +21,8 @@
 #define DO_MSG_RATE 600
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
-// чило сканируемых pin начиная с PIN3-PIN6
+// чило сканируемых pin начиная с PIN4-PIN8
+#define IN_PIN_START 4
 #define IN_PIN_COUNT 4
 // pin для управления передачей по rs485
 #define SerialTxControl 10 
@@ -163,8 +164,8 @@ void doConfig()
     }
   }
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
-      pinMode(PIN3+ix, INPUT); 
-      digitalWrite(PIN3+ix, HIGH);
+      pinMode(IN_PIN_START+ix, INPUT); 
+      digitalWrite(IN_PIN_START+ix, HIGH);
   }
   // report parasite power requirements
   doPowerf();
@@ -193,7 +194,7 @@ void doContact(uint8_t pin, bool val)
 /// послать в шину изменения в контакотах
 void   doSendContacts(){
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
-      uint8_t val = digitalRead(PIN3+ix); 
+      uint8_t val = digitalRead(IN_PIN_START+ix); 
       if(val == s_last_input_pin[ix]) continue;
       doContact(ix, val);
       s_last_input_pin[ix] = val;
