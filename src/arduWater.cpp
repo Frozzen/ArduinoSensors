@@ -52,12 +52,13 @@
 #define MAX_DS1820_COUNT 2
 #define PRIORITY_485 4
 
+// Setup  instancees to communicate with devices
 RtcDS1307<TwoWire> Rtc(Wire);
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
+
 TM1637Display display(CLK, DIO);
 
 // arrays to hold device addresses
