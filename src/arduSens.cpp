@@ -17,6 +17,7 @@
 // Include the libraries we need
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <Bounce2.h>
 
 #define DO_MSG_RATE 600
 // Data wire is plugged into port 2 on the Arduino
@@ -33,6 +34,9 @@
 #define MAX_DS1820_COUNT 5
 #define PRIORITY_485 5
 
+#define ADDR_TO ":01"
+#define SENSOR_NAME ADDR_TO "ArduStat"
+
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -46,7 +50,7 @@ uint8_t s_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 float s_last_temp[MAX_DS1820_COUNT];
 
-uint8_t s_last_input_pin[IN_PIN_COUNT];
+Bounce s_input_pin[IN_PIN_COUNT];
 
 //////////////////////////////////////////////////
 // оборачиваем работы в RS485 только на передачу
@@ -76,7 +80,7 @@ void Serial485::println(String &str)
    int from = (PRIORITY_485 * 50 * char_time) / 1000+1, to = (PRIORITY_485 * char_time * 80) /1000+1;
    uint8_t n = Serial.available();
    while(n > 0) {
-      Serial.read();
+      Serial.flush();
       delay(random(from, to));
       n = Serial.available();
    }
@@ -103,7 +107,7 @@ String getAddrString(DeviceAddress &dev)
 /**
  * подсчет контрольной суммы
  */
-void doCS(String &r)
+void sendToServer(String &r)
 {
   uint8_t sum = 0;
   for(int8_t i = 0; i < r.length(); ++i)
@@ -119,27 +123,27 @@ void doCS(String &r)
 // получаем разрешение устройства по Т
 void doResolution(DeviceAddress &dev)
 {
-  String r("ArduStat" DEVICE_NO "/DS1820-");
+  String r(SENSOR_NAME DEVICE_NO "/DS1820-");
   r += getAddrString(dev);
   r += "/INFO/resolution=" +String(sensors.getResolution(dev), DEC);
-  doCS(r);
+  sendToServer(r);
 }
 
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = ("ArduStat" DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
-  doCS(r);
+  String r = (SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
+  sendToServer(r);
 }
 
 /// отразить ParasitePower
 void doPowerf()
 {
-  String r("ArduStat" DEVICE_NO "/INFO/ParasitePower=");
+  String r(SENSOR_NAME DEVICE_NO "/INFO/ParasitePower=");
   if (sensors.isParasitePowerMode()) 
     r += String("ON");
     else r += String("OFF");
-  doCS(r);
+  sendToServer(r);
 }
 
 /// послать конфигурацию на хоста
@@ -148,9 +152,9 @@ void doConfig()
   // Start up the library
   sensors.begin();
   s_therm_count = sensors.getDeviceCount();
-  String r("ArduStat" DEVICE_NO "/INFO/count=");
+  String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
   r = r + String(s_therm_count, DEC);
-  doCS(r);
+  sendToServer(r);
 
   // method 1: by index ***
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
@@ -175,30 +179,34 @@ void doConfig()
 /// формируем строку с температурой
 void doThermData(DeviceAddress &dev, float tempC)
 {
-  String r("ArduStat" DEVICE_NO "/DS1820-");
+  String r(SENSOR_NAME DEVICE_NO "/DS1820-");
   r += getAddrString(dev);
-  r += "/value="+String(tempC, 2);
-  doCS(r);
+  r += "/temp="+String(tempC, 2);
+  sendToServer(r);
 }
 
 /// формируем строку с состоянием контакта
 void doContact(uint8_t pin, bool val)
 {
-  String r("ArduStat" DEVICE_NO "/latch-");
+  String r(SENSOR_NAME DEVICE_NO "/latch-");
   r += String(pin, DEC);
-  r += "/value=" +String(val, DEC);
-  doCS(r);
+  r += "=" +String(val, DEC);
+  sendToServer(r);
 }
 
 //------------------------------------------------------
 /// послать в шину изменения в контакотах
 void   doSendContacts(){
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
-      uint8_t val = digitalRead(IN_PIN_START+ix); 
-      if(val == s_last_input_pin[ix]) continue;
-      doContact(ix, val);
-      s_last_input_pin[ix] = val;
-  }
+    boolean changed = s_input_pin[IN_PIN_START+ix].update(); 
+    if ( changed ) {
+        uint8_t value = s_input_pin[IN_PIN_START+ix].read();
+        String r(SENSOR_NAME DEVICE_NO "/latch-");
+        r += String(ix, DEC);
+        r += "=" +String(value, DEC);
+        sendToServer(r);
+      }  
+    }
 }
 
 /// послать в шину изменение в температуре
