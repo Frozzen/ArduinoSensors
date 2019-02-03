@@ -21,10 +21,11 @@
 * HHHH - номер платы 
 * XXXXXXXXXXXXXXX адрес датчика 
 * N номер контакта
-* ArduWaterHHHH/water/value=val - сколько насчитано литров/10
+* ArduWaterHHHH/water=val - сколько насчитано литров/10
 * ArduWaterHHHH/INFO/count=val - число термометров один раз при старте 
-* ArduWaterHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте * ArduWaterHHHH/DS1820-XXXXXXXXXXXXXXX/value=val - температура. раз в 60 сек при изменении 
-* ArduWaterHHHH/latch-N/value=val - состояние контакта раз в 0.1 сек 
+* ArduWaterHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте 
+* ArduWaterHHHH/DS1820-XXXXXXXXXXXXXXX/temp=val - температура. раз в 60 сек при изменении 
+* ArduWaterHHHH/latch-N=val - состояние контакта раз в 0.1 сек 
 * ArduWaterHHHH/INFO/alive=cnt раз в 60 сек счетчик на каждое сообщение +1(%256) 
 * - все сточки закрываются контрольной суммой через :
  */
@@ -33,16 +34,23 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <TM1637Display.h>
+#include <Bounce2.h>
+
 
 #define DO_MSG_RATE 600
+
+// выход со счетчика
+#define WATER_COUNTER_PIN 2
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 3
 // Module connection pins (Digital Pins)
-#define CLK 4
-#define DIO 5
-// чило сканируемых pin начиная с PIN4-PIN8
-#define IN_PIN_START 6
-#define IN_PIN_COUNT 3
+#define DISPLAY_CLK 4
+#define DISPLAY_DIO 5
+// чило сканируемых pin 
+// показать/убрать показания на дисплее
+#define DISPLAY_BUTTON_PIN 6
+#define IN_PIN_START 7
+#define IN_PIN_COUNT 2
 // pin для управления передачей по rs485
 #define SerialTxControl 10 
  
@@ -52,6 +60,12 @@
 #define MAX_DS1820_COUNT 2
 #define PRIORITY_485 4
 
+// адрес куда отправляется сообщение :01 хост
+#define ADDR_TO ":01"
+#define SENSOR_NAME ADDR_TO "ArduWater"
+
+// адреса в eeprom
+#define EERPOM_ADDR_COUNT 0
 // Setup  instancees to communicate with devices
 RtcDS1307<TwoWire> Rtc(Wire);
 OneWire oneWire(ONE_WIRE_BUS);
@@ -59,7 +73,11 @@ OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
-TM1637Display display(CLK, DIO);
+TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
+
+Bounce waterClick,                // счетчик воды
+       displayClick,           // кнопка показать значения
+       freeClick[IN_PIN_COUNT];  // неприсвоенные ножки на потом
 
 // arrays to hold device addresses
 uint8_t s_therm_count = 0;
@@ -67,8 +85,11 @@ uint8_t s_therm_count = 0;
 uint8_t s_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 float s_last_temp[MAX_DS1820_COUNT];
-
-uint8_t s_last_input_pin[IN_PIN_COUNT];
+// значение счетчика воды в 10 литрах
+struct sWaterCount {
+uint32_t count = 0, 
+         count_up = 0; // старшие десятичные разряды > 999999
+} s_water_count;
 
 //////////////////////////////////////////////////
 // оборачиваем работы в RS485 только на передачу
@@ -123,9 +144,9 @@ String getAddrString(DeviceAddress &dev)
 }
 
 /**
- * подсчет контрольной суммы
+ * подсчет контрольной суммы и послать на сервер
  */
-void doCS(String &r)
+void sendToServer(String &r)
 {
   uint8_t sum = 0;
   for(uint8_t i = 0; i < (uint8_t)r.length(); ++i)
@@ -138,41 +159,50 @@ void doCS(String &r)
 }
 
 ////////////////////////////////////////////////////////
-// получаем разрешение устройства по Т
+/// получаем разрешение устройства по Т
 void doResolution(DeviceAddress &dev)
 {
-  String r("ArduWater" DEVICE_NO "/DS1820-");
+  String r(SENSOR_NAME DEVICE_NO "/DS1820-");
   r += getAddrString(dev);
   r += "/INFO/resolution=" +String(sensors.getResolution(dev), DEC);
-  doCS(r);
+  sendToServer(r);
 }
 
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = ("ArduWater" DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
-  doCS(r);
+  String r = (SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
+  sendToServer(r);
 }
 
 /// отразить ParasitePower
 void doPowerf()
 {
-  String r("ArduWater" DEVICE_NO "/INFO/ParasitePower=");
+  String r(SENSOR_NAME DEVICE_NO "/INFO/ParasitePower=");
   if (sensors.isParasitePowerMode()) 
     r += String("ON");
     else r += String("OFF");
-  doCS(r);
+  sendToServer(r);
 }
 
+/// настроили кнопки которые нажимают
+void iniInputPin(Bounce &bounce, uint8_t pin)
+{
+  pinMode(pin, INPUT); 
+  digitalWrite(pin, HIGH);
+  bounce.attach(pin); // Настраиваем Bouncer
+  bounce.interval(10); // и прописываем ему интервал дребезга
+
+}
 /// послать конфигурацию на хоста
 void doConfig()
 {
   // Start up the library
   sensors.begin();
   s_therm_count = sensors.getDeviceCount();
-  String r("ArduWater" DEVICE_NO "/INFO/count=");
+  String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
   r = r + String(s_therm_count, DEC);
-  doCS(r);
+  sendToServer(r);
 
   // method 1: by index ***
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
@@ -185,42 +215,66 @@ void doConfig()
       s_last_temp[ix] = -200;
     }
   }
-  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
-      pinMode(IN_PIN_START+ix, INPUT); 
-      digitalWrite(IN_PIN_START+ix, HIGH);
-  }
   // report parasite power requirements
   doPowerf();
+
+  // конфигурирую входные датчики
+  iniInputPin(waterClick, WATER_COUNTER_PIN); 
+  iniInputPin(displayClick, DISPLAY_BUTTON_PIN); 
+  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
+    iniInputPin(freeClick[ix], IN_PIN_START+ix); 
+  }
+  // TODO read eeprom - last value of s_water_count
 }
 
-//--------------------------------------------------------------
-/// формируем строку с температурой
-void doThermData(DeviceAddress &dev, float tempC)
+
+/// проверили что кнопку отпустили
+bool checkButtonChanged(Bounce &bounce)
 {
-  String r("ArduWater" DEVICE_NO "/DS1820-");
-  r += getAddrString(dev);
-  r += "/value="+String(tempC, 2);
-  doCS(r);
+  boolean changed = bounce.update(); 
+  int value = HIGH;
+  if ( changed ) {
+      value = bounce.read();
+      // Если значение датчика стало ЗАМКНУТО
+      if ( value == LOW) {
+        return true;
+      }
+    }  
+  return false;
 }
 
-/// формируем строку с состоянием контакта
-void doContact(uint8_t pin, bool val)
-{
-  String r("ArduWater" DEVICE_NO "/latch-");
-  r += String(pin, DEC);
-  r += "/value=" +String(val, DEC);
-  doCS(r);
-}
-
+bool s_displayMode = false;
 //------------------------------------------------------
 /// послать в шину изменения в контакотах
-void   doSendContacts(){
-  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
-      uint8_t val = digitalRead(IN_PIN_START+ix); 
-      if(val == s_last_input_pin[ix]) continue;
-      doContact(ix, val);
-      s_last_input_pin[ix] = val;
+void   doTestContacts(){
+  if(checkButtonChanged(waterClick)) {
+    ++s_water_count.count;
+    if(s_water_count.count > 999999l) {
+      s_water_count.count = 0;
+      s_water_count.count_up++;
+    }
+    String r(SENSOR_NAME DEVICE_NO "/water=");
+    char buf[12];
+    snprintf_P(buf, 12, "%02li%06li", s_water_count.count_up, s_water_count.count);
+    r += String(buf);    
+    sendToServer(r);
+    // write in eeprom
+    Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count));
   }
+  if(checkButtonChanged(displayClick)) {
+      s_displayMode ^= true;
+  }
+
+  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
+    boolean changed = freeClick[IN_PIN_START+ix].update(); 
+    if ( changed ) {
+        uint8_t value = freeClick[IN_PIN_START+ix].read();
+        String r(SENSOR_NAME DEVICE_NO "/latch-");
+        r += String(ix, DEC);
+        r += "=" +String(value, DEC);
+        sendToServer(r);
+      }  
+    }
 }
 
 /// послать в шину изменение в температуре
@@ -233,20 +287,53 @@ void doSendTemp()
   // print the device information
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
-    if(tempC == s_last_temp[ix]) continue;
-    doThermData(s_thermometer[ix], tempC); 
+    if(tempC == s_last_temp[ix]) 
+      continue;
+    // формируем строку с температурой
+    String r(SENSOR_NAME DEVICE_NO "/DS1820-");
+    r += getAddrString(s_thermometer[ix]);
+    r += "/temp="+String(tempC, 2);
+    sendToServer(r);
     s_last_temp[ix] = tempC;
   }
 
 }
 
+/// показать текущее значение на дисплее. показываем ddd.ddd. 
+/// если захотите учидеть старшие цифры - на mqtt или в подвал
+void doDisplayValue()
+{
+  if(s_displayMode) {
+    int16_t val = (s_water_count.count / 100) & 0x3fff;
+    display.showNumberDec(val, true); 
+  } else 
+    display.clear();
+
+}
 //------------------------------------
 void setup(void)
 {
+  display.clear();
   randomSeed(analogRead(0));
   // start serial485 port
-  serial485.begin(9600);
+  serial485.begin(RATE);
 
+  Rtc.Begin();
+  if (!Rtc.IsDateTimeValid()) {
+      RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+      String r(SENSOR_NAME DEVICE_NO "/rtc=RTC lost confidence in the DateTime!");
+      sendToServer(r);
+      Rtc.SetDateTime(compiled);
+  }
+
+  if (!Rtc.GetIsRunning())   {
+      String r(SENSOR_NAME DEVICE_NO "/rtc=RTC was not actively running, starting now!");
+      sendToServer(r);
+  }
+  // never assume the Rtc was last configured by you, so
+  // just clear them to your needed state
+  Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
+  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count));
   // locate devices on the bus
   doConfig();
 }
@@ -259,9 +346,10 @@ void loop(void)
   if((state % DO_MSG_RATE) == 0) {
     doAlive();
     doSendTemp();
+    // TODO раз в 1 числа в 2:00 полднимать лапу, в 2:02 опускать
   }
-  doSendContacts();
+  doTestContacts();
   state++;
-
+  doDisplayValue();
   delay(100);
 }
