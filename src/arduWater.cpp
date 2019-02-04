@@ -8,14 +8,6 @@
 *  нужен RTC, там же и память. записывать значение в eeprom. RTC_DS1307
 * сделать кнопку показать на дисплее значение 
 
-* = используемые pin =
-  PIN2 - waterClick
-  ONE_WIRE_BUS 3
-  TM1637 4,5 - display
-  SerialTxControl? 10
-  PIN6 - показать данные на дисплее
-  PIN7-PIN9 для датчиков состояния
-  A4(SDA),A5(SCL) - I2C
 
 * = MQTT topic =
 * стандартные от ArduSens. меняется название датчика и добавляется сообщение
@@ -40,21 +32,23 @@
 
 #define DO_MSG_RATE 600
 
-// выход со счетчика
-#define WATER_COUNTER_PIN 2
 // Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 3
+#define ONE_WIRE_BUS 2
 // Module connection pins (Digital Pins)
-#define DISPLAY_CLK 4
-#define DISPLAY_DIO 5
-// чило сканируемых pin 
+#define DISPLAY_CLK 3
+#define DISPLAY_DIO 4
+
+// выход со счетчика
+#define WATER_COUNTER_PIN 5
 // показать/убрать показания на дисплее
 #define DISPLAY_BUTTON_PIN 6
 #define IN_PIN_START 7
-#define IN_PIN_COUNT 2
+// чило сканируемых pin 
+#define IN_PIN_COUNT 3
 // pin для управления передачей по rs485
-#define SerialTxControl 10 
- 
+#define SerialTxControl 10
+// PIN  A4(SDA),A5(SCL) - I2C
+
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
 #define RATE 38400
