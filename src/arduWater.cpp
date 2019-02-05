@@ -51,7 +51,7 @@
 
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE 9600 // 38400
+#define RATE  38400
 #define MAX_DS1820_COUNT 2
 #define PRIORITY_485 4
 
