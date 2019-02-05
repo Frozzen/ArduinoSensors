@@ -35,8 +35,8 @@
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 // Module connection pins (Digital Pins)
-#define DISPLAY_CLK 3
-#define DISPLAY_DIO 4
+#define DISPLAY_CLK 4
+#define DISPLAY_DIO 3
 
 // выход со счетчика
 #define WATER_COUNTER_PIN 5
@@ -51,7 +51,7 @@
 
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE 38400
+#define RATE 9600 // 38400
 #define MAX_DS1820_COUNT 2
 #define PRIORITY_485 4
 
@@ -59,6 +59,8 @@
 #define ADDR_TO ":01"
 #define SENSOR_NAME ADDR_TO "ArduWater"
 
+// время на дребезг контактов
+#define TIME_TO_RELAX 5
 // адреса в eeprom
 #define EERPOM_ADDR_COUNT 0
 // Setup  instancees to communicate with devices
@@ -81,7 +83,11 @@ uint8_t s_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 float s_last_temp[MAX_DS1820_COUNT];
 // значение счетчика воды в 10 литрах
-uint32_t s_water_count = 0;
+uint32_t s_water_count = 0, s_water_count_rtc;
+// показывать на дисплее счетчик
+bool s_displayMode = true;
+// счетчик времени - для задержанных операций
+uint16_t s_time_cnt = 0;
 
 //////////////////////////////////////////////////
 // оборачиваем работы в RS485 только на передачу
@@ -183,7 +189,7 @@ void iniInputPin(Bounce &bounce, uint8_t pin)
   pinMode(pin, INPUT); 
   digitalWrite(pin, HIGH);
   bounce.attach(pin); // Настраиваем Bouncer
-  bounce.interval(10); // и прописываем ему интервал дребезга
+  bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
 
 }
 
@@ -196,6 +202,8 @@ void doConfig()
   String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
   r = r + String(s_therm_count, DEC);
   sendToServer(r);
+  if(s_therm_count == 0)
+    return;
 
   // method 1: by index ***
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
@@ -228,7 +236,6 @@ bool checkButtonChanged(Bounce &bounce)
   return false;
 }
 
-bool s_displayMode = false;
 //------------------------------------------------------
 /// послать в шину изменения в контакотах
 void   doTestContacts(){
@@ -237,13 +244,11 @@ void   doTestContacts(){
     String r(SENSOR_NAME DEVICE_NO "/water=");
     r += String(s_water_count, DEC);    
     sendToServer(r);
-    // write in eeprom
-    Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count));
   }
   if(checkButtonChanged(displayClick)) {
       s_displayMode ^= true;
   }
-
+return;
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
     boolean changed = freeClick[IN_PIN_START+ix].update(); 
     if ( changed ) {
@@ -261,6 +266,8 @@ bool doSendTemp()
 {
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
+  if(s_therm_count)
+    return false;
   sensors.requestTemperatures();
 
   // print the device information
@@ -285,7 +292,8 @@ bool doSendTemp()
 void doDisplayValue()
 {
   if(s_displayMode) {
-    int16_t val = (s_water_count / 100) & 0x3fff;
+    int16_t val = (s_water_count) & 0x3fff;
+    //int16_t val = (s_water_count / 100) & 0x3fff;
     display.showNumberDec(val, true); 
   } else 
     display.clear();
@@ -295,42 +303,52 @@ void doDisplayValue()
 void setup(void)
 {
   display.clear();
+  display.setBrightness(0x0f);
   randomSeed(analogRead(0));
   // start serial485 port
   serial485.begin(RATE);
 
   Rtc.Begin();
   // never assume the Rtc was last configured by you, so
-  // just clear them to your needed state
+  // just clear them to your needed s_time_cnt
   Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
-  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count));
-
+  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count_rtc, (uint8_t)sizeof(s_water_count_rtc));
+  s_water_count = s_water_count_rtc;
   // конфигурирую входные pin для кнопок
   iniInputPin(waterClick, WATER_COUNTER_PIN); 
   iniInputPin(displayClick, DISPLAY_BUTTON_PIN); 
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
     iniInputPin(freeClick[ix], IN_PIN_START+ix); 
   }
+return; 
   // locate devices on the bus
   doConfig();
 }
 
-uint16_t state = 0;
 /*
    Main function, calls the temperatures in a loop.
 */
 void loop(void)
 {
-  // раз в 1 минуту послать alive или температуру
-  if((state % DO_MSG_RATE) == 0) {
-    if(!doSendTemp())
-      doAlive();    
-  }
   // контакты посылаем 10 раз в сек
   doTestContacts();
   // обновляем дисплей 10 раз в сек
   doDisplayValue();
+  delay(100);
+  s_time_cnt++;
+  Serial.print("*");
+  return;
+  // раз в 1 минуту послать alive или температуру
+  if((s_time_cnt % DO_MSG_RATE) == 0) {
+    if(!doSendTemp())
+      doAlive();    
+    // write in eeprom
+    if(s_water_count_rtc != s_water_count) {
+      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count_rtc, (uint8_t)sizeof(s_water_count_rtc));
+      s_water_count_rtc = s_water_count;
+    }
+  }
+  doDisplayValue();
 
-  state++;
   delay(100);
 }
