@@ -193,33 +193,6 @@ void iniInputPin(Bounce &bounce, uint8_t pin)
 
 }
 
-/// послать конфигурацию на хоста
-void doConfig()
-{
-  // Start up the library
-  sensors.begin();
-  s_therm_count = sensors.getDeviceCount();
-  String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
-  r = r + String(s_therm_count, DEC);
-  sendToServer(r);
-  if(s_therm_count == 0)
-    return;
-
-  // method 1: by index ***
-  for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
-    if (!sensors.getAddress(s_thermometer[ix], ix)) 
-      memset(&s_thermometer[ix], 0, sizeof(DeviceAddress));
-    else {
-      // set the resolution to 9 bit per device
-      sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);
-      doResolution(s_thermometer[ix]);
-      s_last_temp[ix] = -200;
-    }
-  }
-  // report parasite power requirements
-  doPowerf();
-}
-
 
 /// проверили что кнопку отпустили
 bool checkButtonChanged(Bounce &bounce)
@@ -292,8 +265,7 @@ bool doSendTemp()
 void doDisplayValue()
 {
   if(s_displayMode) {
-    int16_t val = (s_water_count) & 0x3fff;
-    //int16_t val = (s_water_count / 100) & 0x3fff;
+    int16_t val = (s_water_count / 10) & 0x3fff;
     display.showNumberDec(val, true); 
   } else 
     display.clear();
@@ -320,9 +292,30 @@ void setup(void)
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
     iniInputPin(freeClick[ix], IN_PIN_START+ix); 
   }
-return; 
+
   // locate devices on the bus
-  doConfig();
+  // Start up the library
+  sensors.begin();
+  // s_therm_count = sensors.getDeviceCount();
+  String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
+  r = r + String(s_therm_count, DEC);
+  sendToServer(r);
+  if(s_therm_count == 0)
+    return;
+
+  // method 1: by index ***
+  for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
+    if (!sensors.getAddress(s_thermometer[ix], ix)) 
+      memset(&s_thermometer[ix], 0, sizeof(DeviceAddress));
+    else {
+      // set the resolution to 9 bit per device
+      sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);
+      doResolution(s_thermometer[ix]);
+      s_last_temp[ix] = -200;
+    }
+  }
+  // report parasite power requirements
+  doPowerf();
 }
 
 /*
@@ -334,21 +327,18 @@ void loop(void)
   doTestContacts();
   // обновляем дисплей 10 раз в сек
   doDisplayValue();
-  delay(100);
-  s_time_cnt++;
-  Serial.print("*");
-  return;
+
   // раз в 1 минуту послать alive или температуру
   if((s_time_cnt % DO_MSG_RATE) == 0) {
     if(!doSendTemp())
       doAlive();    
     // write in eeprom
     if(s_water_count_rtc != s_water_count) {
-      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count_rtc, (uint8_t)sizeof(s_water_count_rtc));
+      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count_rtc));
       s_water_count_rtc = s_water_count;
     }
   }
-  doDisplayValue();
 
   delay(100);
+  s_time_cnt++;
 }

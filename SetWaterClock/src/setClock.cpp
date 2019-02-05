@@ -22,7 +22,7 @@ RtcDS1307<TwoWire> Rtc(Wire);
 
 extern void printDateTime(const RtcDateTime& dt);
 
-const char data[] = "what time is it";
+uint32_t s_water_count = 0;
 
 void setup () 
 {
@@ -66,12 +66,10 @@ void setup ()
     // just clear them to your needed state
     Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
 
-/* comment out on a second run to see that the info is stored long term */
+    /* comment out on a second run to see that the info is stored long term */
     // Store something in memory on the RTC
-    Rtc.SetMemory(0, 13);
-    uint8_t written = Rtc.SetMemory(13, (const uint8_t*)data, sizeof(data) - 1); // remove the null terminator strings add
-    Rtc.SetMemory(1, written);
-/* end of comment out section */
+    Rtc.SetMemory(0, (const uint8_t*)&s_water_count, sizeof(s_water_count)); 
+    /* end of comment out section */
 }
 
 void loop () 
@@ -91,42 +89,11 @@ void loop ()
     delay(5000);
 
     // read data
-
-    // get the offset we stored our data from address zero
-    uint8_t address = Rtc.GetMemory(0);
-    if (address != 13)
-    {
-        Serial.println("address didn't match");
-    }
-    else
-    {
-        // get the size of the data from address 1
-        uint8_t count = Rtc.GetMemory(1);
-        uint8_t buff[20];
-
-        // get our data from the address with the given size
-        uint8_t gotten = Rtc.GetMemory(address, buff, count);
-
-        if (gotten != count ||
-            count != sizeof(data) - 1) // remove the extra null terminator strings add
-        {
-            Serial.print("something didn't match, count = ");
-            Serial.print(count, DEC);
-            Serial.print(", gotten = ");
-            Serial.print(gotten, DEC);
-            Serial.println();
-        }
-        Serial.print("data read (");
-        Serial.print(gotten);
-        Serial.print(") = \"");
-        for (uint8_t ch = 0; ch < gotten; ch++)
-        {
-            Serial.print((char)buff[ch]);
-        }
-        Serial.println("\"");
-    }
-
-    
+    // get our data from the address with the given size
+    uint8_t gotten = Rtc.GetMemory(0, (uint8_t*)&s_water_count, sizeof(s_water_count));
+    Serial.print("data read (");
+    Serial.print(s_water_count, DEC);
+    Serial.println("\"");
     delay(5000);
 }
 
