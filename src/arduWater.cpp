@@ -57,12 +57,16 @@
 
 // адрес куда отправляется сообщение :01 хост
 #define ADDR_TO ":01"
-#define SENSOR_NAME ADDR_TO "ArduWater"
+#define SENSOR_NAME "ArduWater"
 
 // время на дребезг контактов
 #define TIME_TO_RELAX 5
 // адреса в eeprom
 #define EERPOM_ADDR_COUNT 0
+
+#define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
+#define LOG_MESSAGE_END "\"}"
+
 // Setup  instancees to communicate with devices
 RtcDS1307<TwoWire> Rtc(Wire);
 OneWire oneWire(ONE_WIRE_BUS);
@@ -71,7 +75,7 @@ OneWire oneWire(ONE_WIRE_BUS);
 DallasTemperature sensors(&oneWire);
 
 TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
-
+ 
 Bounce waterClick,                // счетчик воды
        displayClick,           // кнопка показать значения
        freeClick[IN_PIN_COUNT];  // неприсвоенные ножки на потом
@@ -157,29 +161,11 @@ void sendToServer(String &r)
 }
 
 ////////////////////////////////////////////////////////
-/// получаем разрешение устройства по Т
-void doResolution(DeviceAddress &dev)
-{
-  String r(SENSOR_NAME DEVICE_NO "/DS1820-");
-  r += getAddrString(dev);
-  r += "/INFO/resolution=" +String(sensors.getResolution(dev), DEC);
-  sendToServer(r);
-}
 
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = (SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
-  sendToServer(r);
-}
-
-/// отразить ParasitePower
-void doPowerf()
-{
-  String r(SENSOR_NAME DEVICE_NO "/INFO/ParasitePower=");
-  if (sensors.isParasitePowerMode()) 
-    r += String("ON");
-    else r += String("OFF");
+  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
   sendToServer(r);
 }
 
@@ -214,19 +200,18 @@ bool checkButtonChanged(Bounce &bounce)
 void   doTestContacts(){
   if(checkButtonChanged(waterClick)) {
     ++s_water_count;
-    String r(SENSOR_NAME DEVICE_NO "/water=");
+    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/water=");
     r += String(s_water_count, DEC);    
     sendToServer(r);
   }
   if(checkButtonChanged(displayClick)) {
       s_displayMode ^= true;
   }
-return;
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
-    boolean changed = freeClick[IN_PIN_START+ix].update(); 
+    boolean changed = freeClick[ix].update(); 
     if ( changed ) {
-        uint8_t value = freeClick[IN_PIN_START+ix].read();
-        String r(SENSOR_NAME DEVICE_NO "/latch-");
+        uint8_t value = freeClick[ix].read();
+        String r(ADDR_TO SENSOR_NAME DEVICE_NO "/latch-");
         r += String(ix, DEC);
         r += "=" +String(value, DEC);
         sendToServer(r);
@@ -239,7 +224,7 @@ bool doSendTemp()
 {
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
-  if(s_therm_count)
+  if(s_therm_count == 0)
     return false;
   sensors.requestTemperatures();
 
@@ -250,7 +235,7 @@ bool doSendTemp()
     if(tempC == s_last_temp[ix]) 
       continue;
     // формируем строку с температурой
-    String r(SENSOR_NAME DEVICE_NO "/DS1820-");
+    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
     r += getAddrString(s_thermometer[ix]);
     r += "/temp="+String(tempC, 2);
     sendToServer(r);
@@ -289,20 +274,26 @@ void setup(void)
   // конфигурирую входные pin для кнопок
   iniInputPin(waterClick, WATER_COUNTER_PIN); 
   iniInputPin(displayClick, DISPLAY_BUTTON_PIN); 
+  {
+    String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/water");
+    r += LOG_MESSAGE_END;
+    sendToServer(r);
+  }
+  
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
     iniInputPin(freeClick[ix], IN_PIN_START+ix); 
+    String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-");
+    r += String(ix, DEC);
+    r += LOG_MESSAGE_END;
+    sendToServer(r);
   }
 
   // locate devices on the bus
   // Start up the library
   sensors.begin();
-  // s_therm_count = sensors.getDeviceCount();
-  String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
-  r = r + String(s_therm_count, DEC);
-  sendToServer(r);
+  s_therm_count = sensors.getDeviceCount();
   if(s_therm_count == 0)
     return;
-
   // method 1: by index ***
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     if (!sensors.getAddress(s_thermometer[ix], ix)) 
@@ -310,12 +301,13 @@ void setup(void)
     else {
       // set the resolution to 9 bit per device
       sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);
-      doResolution(s_thermometer[ix]);
+      String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/DS1820-");
+      r += getAddrString(s_thermometer[ix]);
+      r += LOG_MESSAGE_END;
+      sendToServer(r);
       s_last_temp[ix] = -200;
     }
   }
-  // report parasite power requirements
-  doPowerf();
 }
 
 /*
