@@ -5,9 +5,10 @@
  *  шлет только изменение опрос 30сек
  *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте
  *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/value=val раз в 30 сек при изменении
+ *   ArduStatHHHH/light=val раз в 0.1 сек освещенность
  * - контакты опрашивает раз 100мсек
- *   ArduStatHHHH/latch-1/value=val раз в 0.1 сек при изменении
- *   ArduStatHHHH/latch-4/value=val раз в 0.1 сек при изменении
+ *   ArduStatHHHH/latch-1=val раз в 0.1 сек при изменении
+ *   ArduStatHHHH/latch-4=val раз в 0.1 сек при изменении
  *  шлет только изменения
  * - раз в 5 секунд шлет keeralive
  *    ArduStatHHHH/INFO/alive=cnt раз в 5
@@ -22,6 +23,7 @@
 #define DO_MSG_RATE 600
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
+#define FOTO_SENSOR A1
 // чило сканируемых pin начиная с PIN4-PIN8
 #define IN_PIN_START 6
 #define IN_PIN_COUNT 4
@@ -52,7 +54,7 @@ Bounce s_input_pin[IN_PIN_COUNT];
 DallasTemperature sensors(&oneWire);
 
 // arrays to hold device addresses
-uint8_t s_therm_count = 0;
+uint8_t s_therm_count = 0, s_last_light = 0;
 // счетчик keepalive
 uint8_t s_time_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
@@ -178,6 +180,21 @@ void   doTestContacts(){
 /// послать в шину изменение в температуре
 bool doSendTemp()
 {
+  uint16_t adc_value = analogRead(FOTO_SENSOR);
+  /*if(adc_value != s_last_light)*/ {
+    // формируем строку с температурой
+    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/light=");
+ 		// Расчет напряжения во входе ADC
+		double voltage = 5.0 - 5.0 * ((double)adc_value / 1024.0);
+ 		// Измерение сопротивления фоторезистора в делителе напряжения
+		double resistance = (10.0 * 5.0) / voltage - 10.0;
+ 		// Вычисление освещенности в люксах		
+		double illuminance = 255.84 * pow(resistance, -10/9);
+    r += String(illuminance);
+    s_last_light = adc_value;
+    sendToServer(r);
+  }
+   
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
   if(s_therm_count == 0)
@@ -207,7 +224,10 @@ void setup(void)
   randomSeed(analogRead(0));
   // start serial485 port
   serial485.begin(RATE);
-
+  {
+    String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
+    sendToServer(r);
+  }
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
     iniInputPin(s_input_pin[ix], IN_PIN_START+ix); 
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-");
