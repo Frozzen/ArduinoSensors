@@ -1,7 +1,6 @@
 В git разнес по веткам - их не нужно сливать - там разные проекты, хотя по именам не 
 пересекаются. кроме readme
 
-<<<<<<< HEAD
 датчики для ардуино
 
 # температуры и концевики
@@ -21,7 +20,6 @@
     * PIN4-PIN8 для датчиков состояния 
 
 ## mqtt topic топики ArduSens
-=======
 # железо
     * нужен RTC, там же и память. записывать значение в eeprom. ​exmpl1 ​exmpl2
     показывает расход на 7 сегментнике - ddd.d куб.м ​Часы на Arduino используя DS3231
@@ -59,7 +57,6 @@
     XXXXXXXXXXXXXXX адрес датчика
     N номер контакта 
 
-<<<<<<< HEAD
     ArduStatHHHH/INFO/count=val - число термометров один раз при старте
     ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте
     ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/value=val - температура. раз в 60 сек при изменении
@@ -82,7 +79,7 @@ client.publish("stat/sensor_1/input2", "1")
 
   *  ​http://roboshop.spb.ru/USB-RS485-converter
   *  ​http://roboshop.spb.ru/TTL-to-RS485-MAX485-module 
-=======
+
     :01ArduWaterHHHH/water=val - сколько насчитано литров/10
     :01ArduWaterHHHH/INFO/count=val - число термометров один раз при старте
     :01ArduWaterHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте 
@@ -90,4 +87,3 @@ client.publish("stat/sensor_1/input2", "1")
     :01ArduWaterHHHH/latch-N=val - состояние контакта раз в 0.1 сек
     :01ArduWaterHHHH/INFO/alive=cnt раз в 60 сек счетчик на каждое сообщение +1(%256) 
 
->>>>>>> origin/ArduWater

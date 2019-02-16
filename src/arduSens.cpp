@@ -23,7 +23,7 @@
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 // чило сканируемых pin начиная с PIN4-PIN8
-#define IN_PIN_START 4
+#define IN_PIN_START 6
 #define IN_PIN_COUNT 4
 // pin для управления передачей по rs485
 #define SerialTxControl 10 
@@ -31,14 +31,22 @@
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
 #define RATE 38400
-#define MAX_DS1820_COUNT 5
+#define MAX_DS1820_COUNT 3
 #define PRIORITY_485 5
 
 #define ADDR_TO ":01"
 #define SENSOR_NAME ADDR_TO "ArduStat"
 
+// время на дребезг контактов
+#define TIME_TO_RELAX 5
+
+#define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
+#define LOG_MESSAGE_END "\"}"
+
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
+
+Bounce s_input_pin[IN_PIN_COUNT];
 
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
@@ -46,11 +54,9 @@ DallasTemperature sensors(&oneWire);
 // arrays to hold device addresses
 uint8_t s_therm_count = 0;
 // счетчик keepalive
-uint8_t s_cnt = 0;
+uint8_t s_time_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 float s_last_temp[MAX_DS1820_COUNT];
-
-Bounce s_input_pin[IN_PIN_COUNT];
 
 //////////////////////////////////////////////////
 // оборачиваем работы в RS485 только на передачу
@@ -110,7 +116,7 @@ String getAddrString(DeviceAddress &dev)
 void sendToServer(String &r)
 {
   uint8_t sum = 0;
-  for(int8_t i = 0; i < r.length(); ++i)
+  for(int8_t i = 0; i < (uint8_t)r.length(); ++i)
     sum += r[i];
   sum = 0xff - sum;
   r += ":";
@@ -120,88 +126,48 @@ void sendToServer(String &r)
 }
 
 ////////////////////////////////////////////////////////
-// получаем разрешение устройства по Т
-void doResolution(DeviceAddress &dev)
-{
-  String r(SENSOR_NAME DEVICE_NO "/DS1820-");
-  r += getAddrString(dev);
-  r += "/INFO/resolution=" +String(sensors.getResolution(dev), DEC);
-  sendToServer(r);
-}
 
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = (SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
+  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_time_cnt++, DEC);
   sendToServer(r);
 }
 
-/// отразить ParasitePower
-void doPowerf()
+/// настроили кнопки которые нажимают
+void iniInputPin(Bounce &bounce, uint8_t pin)
 {
-  String r(SENSOR_NAME DEVICE_NO "/INFO/ParasitePower=");
-  if (sensors.isParasitePowerMode()) 
-    r += String("ON");
-    else r += String("OFF");
-  sendToServer(r);
+  pinMode(pin, INPUT); 
+  digitalWrite(pin, HIGH);
+  bounce.attach(pin); // Настраиваем Bouncer
+  bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
+
 }
 
-/// послать конфигурацию на хоста
-void doConfig()
-{
-  // Start up the library
-  sensors.begin();
-  s_therm_count = sensors.getDeviceCount();
-  String r(SENSOR_NAME DEVICE_NO "/INFO/count=");
-  r = r + String(s_therm_count, DEC);
-  sendToServer(r);
 
-  // method 1: by index ***
-  for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
-    if (!sensors.getAddress(s_thermometer[ix], ix)) 
-      memset(&s_thermometer[ix], 0, sizeof(DeviceAddress));
-    else {
-      // set the resolution to 9 bit per device
-      sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);
-      doResolution(s_thermometer[ix]);
-      s_last_temp[ix] = -200;
-    }
-  }
-  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
-      pinMode(IN_PIN_START+ix, INPUT); 
-      digitalWrite(IN_PIN_START+ix, HIGH);
-  }
-  // report parasite power requirements
-  doPowerf();
-}
-
-//--------------------------------------------------------------
-/// формируем строку с температурой
-void doThermData(DeviceAddress &dev, float tempC)
+/// проверили что кнопку отпустили
+bool checkButtonChanged(Bounce &bounce)
 {
-  String r(SENSOR_NAME DEVICE_NO "/DS1820-");
-  r += getAddrString(dev);
-  r += "/temp="+String(tempC, 2);
-  sendToServer(r);
-}
-
-/// формируем строку с состоянием контакта
-void doContact(uint8_t pin, bool val)
-{
-  String r(SENSOR_NAME DEVICE_NO "/latch-");
-  r += String(pin, DEC);
-  r += "=" +String(val, DEC);
-  sendToServer(r);
+  boolean changed = bounce.update(); 
+  int value = HIGH;
+  if ( changed ) {
+      value = bounce.read();
+      // Если значение датчика стало ЗАМКНУТО
+      if ( value == LOW) {
+        return true;
+      }
+    }  
+  return false;
 }
 
 //------------------------------------------------------
 /// послать в шину изменения в контакотах
-void   doSendContacts(){
+void   doTestContacts(){
   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {
-    boolean changed = s_input_pin[IN_PIN_START+ix].update(); 
+    boolean changed = s_input_pin[ix].update(); 
     if ( changed ) {
-        uint8_t value = s_input_pin[IN_PIN_START+ix].read();
-        String r(SENSOR_NAME DEVICE_NO "/latch-");
+        uint8_t value = s_input_pin[ix].read();
+        String r(ADDR_TO SENSOR_NAME DEVICE_NO "/latch-");
         r += String(ix, DEC);
         r += "=" +String(value, DEC);
         sendToServer(r);
@@ -210,20 +176,29 @@ void   doSendContacts(){
 }
 
 /// послать в шину изменение в температуре
-void doSendTemp()
+bool doSendTemp()
 {
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
+  if(s_therm_count == 0)
+    return false;
   sensors.requestTemperatures();
 
   // print the device information
+  bool updated = false;
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
-    if(tempC == s_last_temp[ix]) continue;
-    doThermData(s_thermometer[ix], tempC); 
+    if(tempC == s_last_temp[ix]) 
+      continue;
+    // формируем строку с температурой
+    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
+    r += getAddrString(s_thermometer[ix]);
+    r += "/temp="+String(tempC, 2);
+    sendToServer(r);
     s_last_temp[ix] = tempC;
+    updated = true;
   }
-
+  return updated;
 }
 
 //------------------------------------
@@ -231,23 +206,47 @@ void setup(void)
 {
   randomSeed(analogRead(0));
   // start serial485 port
-  serial485.begin(9600);
+  serial485.begin(RATE);
 
-  // locate devices on the bus
-  doConfig();
+  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
+    iniInputPin(s_input_pin[ix], IN_PIN_START+ix); 
+    String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-");
+    r += String(ix, DEC);
+    r += LOG_MESSAGE_END;
+    sendToServer(r);
+  }
+// locate devices on the bus
+  // Start up the library
+  sensors.begin();
+  s_therm_count = sensors.getDeviceCount();
+  if(s_therm_count == 0)
+    return;
+  // method 1: by index ***
+  for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
+    if (!sensors.getAddress(s_thermometer[ix], ix)) 
+      memset(&s_thermometer[ix], 0, sizeof(DeviceAddress));
+    else {
+      // set the resolution to 9 bit per device
+      sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);
+      String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/DS1820-");
+      r += getAddrString(s_thermometer[ix]);
+      r += LOG_MESSAGE_END;
+      sendToServer(r);
+      s_last_temp[ix] = -200;
+    }
+  }
 }
-uint16_t state = 0;
 /*
    Main function, calls the temperatures in a loop.
 */
 void loop(void)
 {
-  if((state % DO_MSG_RATE) == 0) {
-    doAlive();
-    doSendTemp();
+  doTestContacts();
+  if((s_time_cnt % DO_MSG_RATE) == 0) {
+    if(!doSendTemp())
+      doAlive();    
   }
-  doSendContacts();
-  state++;
 
   delay(100);
+  s_time_cnt++;
 }
