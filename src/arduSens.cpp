@@ -180,8 +180,9 @@ void   doTestContacts(){
 /// послать в шину изменение в температуре
 bool doSendTemp()
 {
+  bool updated = false;
   uint16_t adc_value = analogRead(FOTO_SENSOR);
-  /*if(adc_value != s_last_light)*/ {
+  if(adc_value != s_last_light) {
     // формируем строку с температурой
     String r(ADDR_TO SENSOR_NAME DEVICE_NO "/light=");
  		// Расчет напряжения во входе ADC
@@ -193,16 +194,16 @@ bool doSendTemp()
     r += String(illuminance);
     s_last_light = adc_value;
     sendToServer(r);
+    updated = true;
   }
    
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
   if(s_therm_count == 0)
-    return false;
+    return updated;
   sensors.requestTemperatures();
 
   // print the device information
-  bool updated = false;
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
     if(tempC == s_last_temp[ix]) 
