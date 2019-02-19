@@ -1,0 +1,25 @@
+{
+	"folders": [
+		{
+			"path": "ArduSens"
+		},
+		{
+			"path": "ArduWater",
+			"name": "ArduWater"
+		},
+		{
+			"path": "SetWaterClock",
+			"name": "SetWaterClock"
+		},
+		{
+			"path": "/home/vovva/Documents/PlatformIO/Projects/190219-195138-nanoatmega328",
+			"name": "190219-195138-nanoatmega328"
+		}
+	],
+	"settings": {
+		"terminal.integrated.env.linux": {
+			"PATH": "/home/vovva/.platformio/penv/bin:/home/vovva/.platformio/penv:/home/vovva/.local/bin:/home/vovva/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin:/usr/share/fslint/fslint:/home/vovva/.local/bin",
+			"PLATFORMIO_CALLER": "vscode"
+		}
+	}
+}
