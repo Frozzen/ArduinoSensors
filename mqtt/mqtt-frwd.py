@@ -16,13 +16,13 @@ def read_line_serial(ser):
         if l != '\r':
             line += l
     if line[:3] != ':01':
-	print line, " is not for me"
-    print "---", str(line[3:].split(':'))
-    str, cs = line[3:].split(':')
+	    print line, " is not for me"
+    str = line[:-3]
+    cs = line[-2:]
     cs0 = 0
     for ch in str:
         cs0 += ord(ch)
-    return (str, ((cs0 & 0xff)) + int(cs, 16) == 255)
+    return (str[3:], ((cs0 & 0xff)) + int(cs, 16) == 255)
 
 Connected = False
 def on_connect(client, userdata, flags, rc):
