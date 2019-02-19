@@ -1,5 +1,7 @@
 #include <Arduino.h>
 #define SerialTxControl 10 
+#define RATE 38400
+
 //////////////////////////////////////////////////
 // оборачиваем работы в RS485 только на передачу
 #define RS485Transmit    HIGH
@@ -11,12 +13,12 @@ class Serial485
     Serial485() {  
     }
   void println(String &str);
-  void begin(uint16_t rate) {
-      Serial.begin(rate);
-      char_time = 10000000 / rate;
-      randomSeed(analogRead(0));
+  void begin() {
       pinMode(SerialTxControl, OUTPUT);
       digitalWrite(SerialTxControl, RS485Receive); 
+      Serial.begin(RATE);
+      char_time = 10000000 / RATE;
+      randomSeed(analogRead(0));
   }
 } serial485;
 
@@ -36,9 +38,9 @@ void Serial485::println(String &str)
    }
   digitalWrite(SerialTxControl, RS485Transmit);
   Serial.println(str);
-  while(Serial.availableForWrite() < SERIAL_TX_BUFFER_SIZE){
-    delayMicroseconds(char_time);    /* code */
-  }  
+  //while(Serial.availableForWrite() < SERIAL_TX_BUFFER_SIZE){
+    delayMicroseconds(char_time*str.length());    /* code */
+  //}  
   digitalWrite(SerialTxControl, RS485Receive); 
 }
 
@@ -61,7 +63,7 @@ String getAddrString(DeviceAddress &dev)
  */
 void sendToServer(String &r)
 {
-  uint8_t sum = 0;
+   uint8_t sum = 0;
   for(int8_t i = 0; i < (uint8_t)r.length(); ++i)
     sum += r[i];
   sum = 0xff - sum;

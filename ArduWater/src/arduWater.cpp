@@ -51,7 +51,6 @@
 
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE  19200
 #define MAX_DS1820_COUNT 2
 #define PRIORITY_485 4
 
@@ -194,7 +193,7 @@ void setup(void)
   display.clear();
   display.setBrightness(0x0f);
   // start serial485 port
-  serial485.begin(RATE);
+  serial485.begin();
 
   Rtc.Begin();
   // never assume the Rtc was last configured by you, so

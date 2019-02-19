@@ -20,7 +20,7 @@
 #include <DallasTemperature.h>
 #include <Bounce2.h>
 
-#define DO_MSG_RATE 1800
+#define DO_MSG_RATE 100
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 #define FOTO_SENSOR A1
@@ -30,7 +30,6 @@
  
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE 19200
 #define MAX_DS1820_COUNT 3
 
 #define ADDR_TO ":01"
@@ -155,12 +154,13 @@ bool doSendTemp()
 void setup(void)
 {
   // start serial485 port
-  serial485.begin(RATE);
+  serial485.begin();
   {
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
     sendToServer(r);
   }
-  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
+ 
+   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
     iniInputPin(s_input_pin[ix], IN_PIN_START+ix); 
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-");
     r += String(ix, DEC);
