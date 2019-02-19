@@ -30,7 +30,7 @@
 #include <Bounce2.h>
 
 
-#define DO_MSG_RATE 600
+#define DO_MSG_RATE 1800
 
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
@@ -51,7 +51,7 @@
 
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE  38400
+#define RATE  19200
 #define MAX_DS1820_COUNT 2
 #define PRIORITY_485 4
 
@@ -66,6 +66,8 @@
 
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
+
+#include "../../rs485.cpp"
 
 // Setup  instancees to communicate with devices
 RtcDS1307<TwoWire> Rtc(Wire);
@@ -93,74 +95,6 @@ bool s_displayMode = true;
 // счетчик времени - для задержанных операций
 uint16_t s_time_cnt = 0;
 
-//////////////////////////////////////////////////
-// оборачиваем работы в RS485 только на передачу
-#define RS485Transmit    HIGH
-#define RS485Receive     LOW 
-class Serial485 
-{
-  uint16_t char_time; // время передачи символа в мксек
-  public:
-    Serial485() {  
-    }
-  void println(String &str);
-  void begin(uint16_t rate) {
-      Serial.begin(rate);
-      char_time = 1400000 / rate;
-      pinMode(SerialTxControl, OUTPUT);
-      digitalWrite(SerialTxControl, RS485Receive); 
-  }
-} serial485;
-
-/**
- * применяем метод приоритетного избегания коллизий на шине 
- *  - если есть жанные в буфере подохжать случайное время зависящее от приоритета
- *  - считаем контрольную сумму пакета - чтобы страховаться от коллизий - тогда на приемнике они отбрасываются
- */
-void Serial485::println(String &str)
-{
-   int from = (PRIORITY_485 * 50 * char_time) / 1000+1, to = (PRIORITY_485 * char_time * 80) /1000+1;
-   uint8_t n = Serial.available();
-   while(n > 0) {
-      Serial.flush();
-      delay(random(from, to));
-      n = Serial.available();
-   }
-  digitalWrite(SerialTxControl, RS485Transmit);
-  Serial.println(str);
-  delay(str.length() * char_time / 1000+1); 
-  digitalWrite(SerialTxControl, RS485Receive); 
-}
-
-// Assign address manually. The addresses below will beed to be changed
-// to valid device addresses on your bus. Device address can be retrieved
-// by using either oneWire.search(deviceAddress) or individually via
-String getAddrString(DeviceAddress &dev)
-{
-  String r;
-  for (uint8_t i = 0; i < 8; i++)   {
-    // zero pad the address if necessary
-    if (dev[i] < 16) r += "0";
-    r += String(dev[i], HEX);
-  }
-  return r;
-}
-
-/**
- * подсчет контрольной суммы и послать на сервер
- */
-void sendToServer(String &r)
-{
-  uint8_t sum = 0;
-  for(uint8_t i = 0; i < (uint8_t)r.length(); ++i)
-    sum += r[i];
-  sum = 0xff - sum;
-  r += ":";
-  if (sum < 16) r += "0";
-  r += String(sum, HEX);
-  serial485.println(r);
-}
-
 ////////////////////////////////////////////////////////
 
 /// сформировать пакет что устройство живо
@@ -179,7 +113,6 @@ void iniInputPin(Bounce &bounce, uint8_t pin)
   bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
 
 }
-
 
 /// проверили что кнопку отпустили
 bool checkButtonChanged(Bounce &bounce)
@@ -233,8 +166,6 @@ bool doSendTemp()
   bool updated = false;
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
-    if(tempC == s_last_temp[ix]) 
-      continue;
     // формируем строку с температурой
     String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
     r += getAddrString(s_thermometer[ix]);
@@ -262,7 +193,6 @@ void setup(void)
 {
   display.clear();
   display.setBrightness(0x0f);
-  randomSeed(analogRead(0));
   // start serial485 port
   serial485.begin(RATE);
 

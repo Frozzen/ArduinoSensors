@@ -1,4 +1,7 @@
-
+/**
+ * конвертер 485 на USB. замена сгоревшему. работает только на примем из rs485
+ */
+#include <Arduino.h>
 #include <AltSoftSerial.h>
 
 AltSoftSerial altSerial;
@@ -7,13 +10,15 @@ AltSoftSerial altSerial;
 #define AltRsDataRx 8
 #define AltRsDataTx 9
 #define USED 10
+#define USB_RS_SPEED 38400
+#define RS485_SPEED 19200
 
 void setup() {
   pinMode(SerialTxControl, OUTPUT);
   digitalWrite(SerialTxControl, RS485Receive);
-  Serial.begin(38400);
+  Serial.begin(USB_RS_SPEED);
   Serial.println("AltSoftSerial");
-  altSerial.begin(38400);
+  altSerial.begin(RS485_SPEED);
   altSerial.println("Hello World");
 }
 

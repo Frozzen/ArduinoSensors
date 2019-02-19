@@ -20,30 +20,31 @@
 #include <DallasTemperature.h>
 #include <Bounce2.h>
 
-#define DO_MSG_RATE 600
+#define DO_MSG_RATE 1800
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 #define FOTO_SENSOR A1
 // чило сканируемых pin начиная с PIN4-PIN8
 #define IN_PIN_START 6
 #define IN_PIN_COUNT 4
-// pin для управления передачей по rs485
-#define SerialTxControl 10 
  
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
-#define RATE 38400
+#define RATE 19200
 #define MAX_DS1820_COUNT 3
-#define PRIORITY_485 5
 
 #define ADDR_TO ":01"
-#define SENSOR_NAME ADDR_TO "ArduStat"
+#define SENSOR_NAME "ArduStat"
 
 // время на дребезг контактов
 #define TIME_TO_RELAX 5
 
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
+
+//  управления передачей по rs485
+#define PRIORITY_485 5
+#include "../../rs485.cpp"
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
@@ -59,73 +60,6 @@ uint8_t s_therm_count = 0, s_last_light = 0;
 uint8_t s_time_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 float s_last_temp[MAX_DS1820_COUNT];
-
-//////////////////////////////////////////////////
-// оборачиваем работы в RS485 только на передачу
-#define RS485Transmit    HIGH
-#define RS485Receive     LOW 
-class Serial485 
-{
-  uint16_t char_time; // время передачи символа в мксек
-  public:
-    Serial485() {  
-    }
-  void println(String &str);
-  void begin(uint16_t rate) {
-      Serial.begin(rate);
-      char_time = 1200000 / rate;
-      digitalWrite(SerialTxControl, RS485Receive); 
-  }
-} serial485;
-
-/**
- * применяем метод приоритетного избегания коллизий на шине 
- *  - если есть жанные в буфере подохжать случайное время зависящее от приоритета
- *  - считаем контрольную сумму пакета - чтобы страховаться от коллизий - тогда на приемнике они отбрасываются
- */
-void Serial485::println(String &str)
-{
-   int from = (PRIORITY_485 * 50 * char_time) / 1000+1, to = (PRIORITY_485 * char_time * 80) /1000+1;
-   uint8_t n = Serial.available();
-   while(n > 0) {
-      Serial.flush();
-      delay(random(from, to));
-      n = Serial.available();
-   }
-  digitalWrite(SerialTxControl, RS485Transmit);
-  Serial.println(str);
-  delay(str.length() * char_time / 1000+1); 
-  digitalWrite(SerialTxControl, RS485Receive); 
-}
-
-// Assign address manually. The addresses below will beed to be changed
-// to valid device addresses on your bus. Device address can be retrieved
-// by using either oneWire.search(deviceAddress) or individually via
-String getAddrString(DeviceAddress &dev)
-{
-  String r;
-  for (uint8_t i = 0; i < 8; i++)   {
-    // zero pad the address if necessary
-    if (dev[i] < 16) r += "0";
-    r += String(dev[i], HEX);
-  }
-  return r;
-}
-
-/**
- * подсчет контрольной суммы
- */
-void sendToServer(String &r)
-{
-  uint8_t sum = 0;
-  for(int8_t i = 0; i < (uint8_t)r.length(); ++i)
-    sum += r[i];
-  sum = 0xff - sum;
-  r += ":";
-  if (sum < 16) r += "0";
-  r += String(sum, HEX);
-  serial485.println(r);
-}
 
 ////////////////////////////////////////////////////////
 
@@ -182,7 +116,7 @@ bool doSendTemp()
 {
   bool updated = false;
   uint16_t adc_value = analogRead(FOTO_SENSOR);
-  if(adc_value != s_last_light) {
+  {
     // формируем строку с температурой
     String r(ADDR_TO SENSOR_NAME DEVICE_NO "/light=");
  		// Расчет напряжения во входе ADC
@@ -206,8 +140,6 @@ bool doSendTemp()
   // print the device information
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
-    if(tempC == s_last_temp[ix]) 
-      continue;
     // формируем строку с температурой
     String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
     r += getAddrString(s_thermometer[ix]);
@@ -222,7 +154,6 @@ bool doSendTemp()
 //------------------------------------
 void setup(void)
 {
-  randomSeed(analogRead(0));
   // start serial485 port
   serial485.begin(RATE);
   {
