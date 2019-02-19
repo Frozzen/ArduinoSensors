@@ -12,8 +12,8 @@
 			"name": "SetWaterClock"
 		},
 		{
-			"path": "/home/vovva/Documents/PlatformIO/Projects/190219-195138-nanoatmega328",
-			"name": "190219-195138-nanoatmega328"
+			"path": "sserial485-rcv",
+			"name": "sserial485-rcv"
 		}
 	],
 	"settings": {
