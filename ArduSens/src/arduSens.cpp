@@ -20,8 +20,7 @@
 #include <DallasTemperature.h>
 #include <Bounce2.h>
 
-#define DO_MSG_RATE 1\
- 00
+#define DO_MSG_RATE 100
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 #define FOTO_SENSOR A1
@@ -42,8 +41,7 @@
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
 
-//  управления передачей по rs485
-#define PRIORITY_485 5
+//  управления передачей по rs232
 #include "../../rs485.cpp"
 
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
@@ -155,7 +153,7 @@ bool doSendTemp()
 void setup(void)
 {
   // start serial485 port
-  serial485.begin();
+  Serial.begin(RATE);
   {
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
     sendToServer(r);

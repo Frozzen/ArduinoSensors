@@ -193,7 +193,7 @@ void setup(void)
   display.clear();
   display.setBrightness(0x0f);
   // start serial485 port
-  serial485.begin();
+  Serial.begin(RATE);
 
   Rtc.Begin();
   // never assume the Rtc was last configured by you, so
