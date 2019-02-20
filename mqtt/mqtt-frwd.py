@@ -82,25 +82,26 @@ def main_loop(TOPIC_START, client, ser):
     msg_cnt = bad_cs_cnt = not_for_me_cnt = bad_data_cnt = 0
     while True:
         line, result = read_line_serial(ser)
-        print line, result
+	print line,result
         if __dump_msg_cnt:
             __dump_msg_cnt = False
-            client.publish(TOPIC_START + "bus/msg_cnt", msg_cnt, retain=True)
+            client.publish(TOPIC_START + "bus/msg_cnt", str(msg_cnt), retain=True)
 
         if result == 'Ok':
             topic, val = line.split('=')
             client.publish(TOPIC_START + topic, val, retain=True)
             msg_cnt += 1
             continue
+	__dump_msg_cnt = True
         if result == 'BadCS':
             bad_cs_cnt += 1
-            client.publish(TOPIC_START + "bus/errors", bad_cs_cnt, retain=True)
+            client.publish(TOPIC_START + "bus/errors", str(bad_cs_cnt), retain=True)
         elif result == 'NotForMe':
             not_for_me_cnt += 1
-            client.publish(TOPIC_START + "bus/not4me", not_for_me_cnt, retain=True)
+            client.publish(TOPIC_START + "bus/not4me", str(not_for_me_cnt), retain=True)
         elif result == 'BadData':
             bad_data_cnt += 1
-            client.publish(TOPIC_START + "bus/bad_data", bad_data_cnt, retain=True)
+            client.publish(TOPIC_START + "bus/bad_data", str(bad_data_cnt), retain=True)
 
 def each_5_seconds():
   threading.Timer(5.0, each_5_seconds).start()
@@ -125,7 +126,7 @@ def main(argv):
     while __Connected != True:    #Wait for connection
         time.sleep(0.1)
 
-    # each_5_seconds()
+    #each_5_seconds()
     main_loop(TOPIC_START, client, ser)
     client.disconnect()
     client.loop_stop()

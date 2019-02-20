@@ -1,6 +1,6 @@
 #include <Arduino.h>
 #define SerialTxControl 10 
-#define RATE 38400
+#define RATE 9600
 
 //////////////////////////////////////////////////
 // оборачиваем работы в RS485 только на передачу

@@ -11,7 +11,7 @@ AltSoftSerial altSerial;
 #define AltRsDataTx 9
 #define USED 10
 #define USB_RS_SPEED 38400
-#define RS485_SPEED 38400
+#define RS485_SPEED 9600
 
 void setup() {
   pinMode(SerialTxControl, OUTPUT);
