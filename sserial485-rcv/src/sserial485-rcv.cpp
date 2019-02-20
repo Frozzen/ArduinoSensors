@@ -24,13 +24,20 @@ void setup() {
 
 void loop() {
   char c;
-
-/*  if (Serial.available()) {
+#ifdef TWO_SIDE_CONVERTER
+  if (Serial.available()) {
     c = Serial.read();
     altSerial.print(c);
-  }*/
+  }
   if (altSerial.available()) {
     c = altSerial.read();
     Serial.print(c);
   }
+#else
+  c = altSerial.read();
+  if(altSerial.overflow())
+    Serial.write('?');
+  else 
+    Serial.write(c);
+#endif
 }
