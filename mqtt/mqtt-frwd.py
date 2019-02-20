@@ -10,6 +10,11 @@ __Connected = False
 
 import threading
 import logging
+domotizc = {
+    "ArduStat0001/light": 42,
+    "ArduStat0001/DS1820-28812a480500004f/temp": 45
+}
+
 
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
@@ -90,9 +95,13 @@ def main_loop(TOPIC_START, client, ser):
         if result == 'Ok':
             topic, val = line.split('=')
             client.publish(TOPIC_START + topic, val, retain=True)
+            if topic in domotizc:
+                tval = '{ "idx" : %s, "nvalue" : 0, "svalue" : "%s" }' % (domotizc[topic], val)
+                client.publish("domoticz/in", tval)
+                __dump_msg_cnt = True
             msg_cnt += 1
             continue
-	__dump_msg_cnt = True
+	    __dump_msg_cnt = True
         if result == 'BadCS':
             bad_cs_cnt += 1
             client.publish(TOPIC_START + "bus/errors", str(bad_cs_cnt), retain=True)
