@@ -22,10 +22,7 @@ Alias=mqtt-forward.service
 
 pi@water:~ $ cat /etc/udev/rules.d/95-mqtt-frwd.rules
 ```
-KERNEL=="ttyUSB0", ENV{SYSTEMD_WANTS}="mqtt-forward@.service /dev/ttyUSB0"
-KERNEL=="ttyUSB1", ENV{SYSTEMD_WANTS}="mqtt-forward@.service /dev/ttyUSB1"
-KERNEL=="ttyUSB2", ENV{SYSTEMD_WANTS}="mqtt-forward@.service /dev/ttyUSB2"
-KERNEL=="ttyUSB3", ENV{SYSTEMD_WANTS}="mqtt-forward@.service /dev/ttyUSB3"
+KERNEL=="ttyUSB?", ENV{SYSTEMD_WANTS}="mqtt-forward@.service"
 ```
 
 
