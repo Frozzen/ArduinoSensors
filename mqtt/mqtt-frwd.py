@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+отправляем данные с com на mqtt
+    mqtt-frwd.py /dev/ttyUSB0
+"""
 import sys, os, time
 import serial
 import paho.mqtt.client as mqtt
@@ -8,13 +12,7 @@ import configparser
 MAX_LINE_LENGTH = 150
 __Connected = False
 
-import threading
-import logging
-domotizc = {
-    "ArduStat0001/light": 42,
-    "ArduStat0001/DS1820-28812a480500004f/temp": 45
-}
-
+import syslog
 
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
@@ -49,7 +47,7 @@ def read_line_serial(ser, my_addr=':01'):
         return (line, 'BadData')
 
     if line[:3] != ':01':
-	    return  (line[:-3], 'NotForMe')
+        return (line[:-3], 'NotForMe')
 
     str = line[:-3]
     cs = line[-2:]
@@ -58,26 +56,29 @@ def read_line_serial(ser, my_addr=':01'):
         cs0 += ord(ch)
     return (str[3:], 'Ok' if ((cs0 & 0xff)) + int(cs, 16) == 255 else 'BadCS')
 
+
 ###################################
 def on_connect(client, userdata, flags, rc):
- 
-    if rc == 0: 
-        print("Connected to broker") 
-        global __Connected                #Use global variable
-        __Connected = True                #Signal connection
+    if rc == 0:
+        print("Connected to broker")
+        global __Connected  # Use global variable
+        __Connected = True  # Signal connection
     else:
         print("Connection failed", rc, flags)
 
+
 __dump_msg_cnt = False
 
+
 ##########################################
-def main_loop(TOPIC_START, client, ser):
+def main_loop(TOPIC_START, client, ser, domotizc):
     """
     основной цикл приложения
 
     TODO устойчивость по отпаданию COM и MQTT
     TODO запустить по таймеру печать bus/msg_cnt
 
+    :param domotizc:
     :param TOPIC_START:
     :param client:
     :param ser:
@@ -87,7 +88,7 @@ def main_loop(TOPIC_START, client, ser):
     msg_cnt = bad_cs_cnt = not_for_me_cnt = bad_data_cnt = 0
     while True:
         line, result = read_line_serial(ser)
-	print line,result
+        # print line,result
         if __dump_msg_cnt:
             __dump_msg_cnt = False
             client.publish(TOPIC_START + "bus/msg_cnt", str(msg_cnt), retain=True)
@@ -95,13 +96,14 @@ def main_loop(TOPIC_START, client, ser):
         if result == 'Ok':
             topic, val = line.split('=')
             client.publish(TOPIC_START + topic, val, retain=True)
+            topic = topic.decode('utf-8').lower()
             if topic in domotizc:
-                tval = '{ "idx" : %s, "nvalue" : 0, "svalue" : "%s" }' % (domotizc[topic], val)
+                tval = '{ "idx" : %s, "svalue" : "%s" }' % (domotizc[topic], val)
                 client.publish("domoticz/in", tval)
                 __dump_msg_cnt = True
             msg_cnt += 1
             continue
-	    __dump_msg_cnt = True
+        __dump_msg_cnt = True
         if result == 'BadCS':
             bad_cs_cnt += 1
             client.publish(TOPIC_START + "bus/errors", str(bad_cs_cnt), retain=True)
@@ -112,46 +114,36 @@ def main_loop(TOPIC_START, client, ser):
             bad_data_cnt += 1
             client.publish(TOPIC_START + "bus/bad_data", str(bad_data_cnt), retain=True)
 
-def each_5_seconds():
-  threading.Timer(5.0, each_5_seconds).start()
-  global __dump_msg_cnt
-  __dump_msg_cnt = True
-
 
 def main(argv):
-    global __Connected                #Use global variable
+    global __Connected  # Use global variable
+    syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s started" % (argv[1]))
     config = configparser.ConfigParser()
     config.read('mqtt-frwd.ini')
-    
     TOPIC_START = config['MQTT']['topic_head']
-    ser = serial.Serial(port=config['COM']['port'], baudrate=config['COM']['baudrate'])
+    domotizc = dict(config.items('Domotizc'))
 
-    client = mqtt.Client(config['MQTT']['client']) # , clean_session=True, userdata=None, protocol=MQTTv311, transport=”tcp”)
+    ser = serial.Serial(port=argv[1], baudrate=config['COM']['baudrate'])
+    client = mqtt.Client(clean_session=True)  # , userdata=None, protocol=MQTTv311, transport=”tcp”)
     client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
-    client.on_connect= on_connect
+    client.on_connect = on_connect
     client.connect(config['MQTT']['server'], port=int(config['MQTT']['port']))
-    client.loop_start()        #start the loop
- 
-    while __Connected != True:    #Wait for connection
+    client.loop_start()  # start the loop
+
+    while __Connected != True:  # Wait for connection
         time.sleep(0.1)
 
-    #each_5_seconds()
-    main_loop(TOPIC_START, client, ser)
+    main_loop(TOPIC_START, client, ser, domotizc)
+
     client.disconnect()
     client.loop_stop()
+    syslog.syslog(syslog.LOG_ERR, "mqtt-frwd on %s stopped **" % (argv[1]))
     ser.close()
 
-if __name__ == '__main__':
-    # https://docs.python.org/3/howto/logging-cookbook.html
-    logger = logging.getLogger('com-mqtt')
-    logger.setLevel(logging.DEBUG)
-    # create file handler which logs even debug messages
-    fh = logging.FileHandler('mqtt-frwd.log')
-    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    fh.setFormatter(formatter)
-    logger.addHandler(fh)
 
+if __name__ == '__main__':
+    syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
     try:
         main(sys.argv)
     except Exception as e:
-        logger.fatal(e, exc_info=True)
+        syslog.syslog(syslog.LOG_ERR, "** exception %s" % (str(e)))
