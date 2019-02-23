@@ -11,10 +11,6 @@
 			"path": "SetWaterClock",
 			"name": "SetWaterClock"
 		},
-		{
-			"path": "sserial485-rcv",
-			"name": "sserial485-rcv"
-		}
 	],
 	"settings": {
 		"terminal.integrated.env.linux": {

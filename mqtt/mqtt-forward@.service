@@ -1,0 +1,16 @@
+[Unit]
+Description=Copying events from COM to mqtt
+Requires=syslog.socket
+
+[Service]
+Type=simple
+GuessMainPID=false
+User=pi
+Group=pi
+WorkingDirectory=/home/pi
+ExecStart=/usr/bin/python /home/pi/mqtt-frwd.py %I
+activating=udev
+
+[Install]
+WantedBy=multi-user.target
+Alias=mqtt-forward.service

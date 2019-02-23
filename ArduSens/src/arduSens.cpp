@@ -20,7 +20,7 @@
 #include <DallasTemperature.h>
 #include <Bounce2.h>
 
-#define DO_MSG_RATE 100
+#define DO_MSG_RATE 500
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 #define FOTO_SENSOR A1

@@ -2,11 +2,8 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/README.md" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/misc.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/misc.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/mqtt.iml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/mqtt.iml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mqtt-frwd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mqtt-frwd.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/mqtt-frwd.log" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -21,7 +18,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="3" />
+          <entry key="project.closed" value="4" />
           <entry key="project.open.time.11" value="1" />
           <entry key="project.open.time.26" value="1" />
           <entry key="project.open.time.27" value="1" />
@@ -46,16 +43,16 @@
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="ini" value="27" />
-          <entry key="md" value="25" />
+          <entry key="md" value="32" />
           <entry key="py" value="1738" />
-          <entry key="txt" value="63" />
+          <entry key="txt" value="105" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="Ini" value="27" />
-          <entry key="Markdown" value="25" />
-          <entry key="PLAIN_TEXT" value="63" />
+          <entry key="Markdown" value="32" />
+          <entry key="PLAIN_TEXT" value="105" />
           <entry key="Python" value="1738" />
         </counts>
       </usages-collector>
@@ -88,8 +85,8 @@
         <entry file="file://$PROJECT_DIR$/README.md">
           <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
             <state split_layout="SPLIT">
-              <first_editor>
-                <caret lean-forward="true" />
+              <first_editor relative-caret-position="360">
+                <caret line="24" selection-start-line="24" selection-end-line="24" />
               </first_editor>
               <second_editor />
             </state>
@@ -210,12 +207,25 @@
       <option name="project" value="LOCAL" />
       <updated>1550839731420</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="запустил из под systemd">
+      <created>1550843913866</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1550843913866</updated>
+    </task>
+    <task id="LOCAL-00004" summary="запустил из под systemd.">
+      <created>1550843968873</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1550843968873</updated>
+    </task>
+    <option name="localTasksCounter" value="5" />
     <servers />
   </component>
   <component name="ToolWindowManager">
     <frame x="550" y="24" width="1346" height="885" extended-state="0" />
-    <editor active="true" />
     <layout>
       <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.2616099" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
@@ -251,7 +261,9 @@
   <component name="VcsManagerConfiguration">
     <MESSAGE value="запустил работает. пока есть лишний лог" />
     <MESSAGE value="заработаало" />
-    <option name="LAST_COMMIT_MESSAGE" value="заработаало" />
+    <MESSAGE value="запустил из под systemd" />
+    <MESSAGE value="запустил из под systemd." />
+    <option name="LAST_COMMIT_MESSAGE" value="запустил из под systemd." />
   </component>
   <component name="editorHistoryManager">
     <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
@@ -274,8 +286,8 @@
     <entry file="file://$PROJECT_DIR$/README.md">
       <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
         <state split_layout="SPLIT">
-          <first_editor>
-            <caret lean-forward="true" />
+          <first_editor relative-caret-position="360">
+            <caret line="24" selection-start-line="24" selection-end-line="24" />
           </first_editor>
           <second_editor />
         </state>

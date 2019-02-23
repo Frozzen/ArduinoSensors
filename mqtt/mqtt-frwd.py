@@ -7,13 +7,12 @@ import sys, os, time
 import serial
 import paho.mqtt.client as mqtt
 
-import configparser, datetime
+import configparser
 
 MAX_LINE_LENGTH = 150
 __Connected = False
 
 import syslog
-
 
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
@@ -99,7 +98,7 @@ def main_loop(TOPIC_START, client, ser, domotizc):
             client.publish(TOPIC_START + topic, val, retain=True)
             topic = topic.decode('utf-8').lower()
             if topic in domotizc:
-                tval = '{ "idx" : %s, "svalue" : "%s" }' % (domotizc[topic], val)
+                tval = '{ "idx" : %s, "value" : "%s", "svalue": "%s" }' % (domotizc[topic], val, val)
                 client.publish("domoticz/in", tval)
                 __dump_msg_cnt = True
             msg_cnt += 1
@@ -117,14 +116,14 @@ def main_loop(TOPIC_START, client, ser, domotizc):
 
 
 def main(argv):
-    global __Connected
-    port = argv[1].split('/')[-1]
-    syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s started" % (port))
+    global __Connected  # Use global variable
+    syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s started" % (argv[1]))
     config = configparser.ConfigParser()
     config.read('mqtt-frwd.ini')
     TOPIC_START = config['MQTT']['topic_head']
     domotizc = dict(config.items('Domotizc'))
-    ser = serial.Serial(port='/dev/' + port, baudrate=config['COM']['baudrate'])
+    port = argv[1].split('/')[-1]
+    ser = serial.Serial(port='/dev/'+port, baudrate=config['COM']['baudrate'])
     client = mqtt.Client(clean_session=True)  # , userdata=None, protocol=MQTTv311, transport=”tcp”)
     client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
     client.on_connect = on_connect
@@ -134,22 +133,18 @@ def main(argv):
     while __Connected != True:  # Wait for connection
         time.sleep(0.1)
 
-    client.publish(TOPIC_START + "bus/" + port, "Started %s" % str(datetime.datetime.now()), retain=True)
-    try:
-        main_loop(TOPIC_START, client, ser, domotizc)
-    finally:
-        client.publish(TOPIC_START + "bus/" + port, "Stoped %s" % str(datetime.datetime.now()), retain=True)
+    main_loop(TOPIC_START, client, ser, domotizc)
 
     client.disconnect()
     client.loop_stop()
-    syslog.syslog(syslog.LOG_ERR, "mqtt-frwd on %s stopped **" % (port))
+    syslog.syslog(syslog.LOG_ERR, "mqtt-frwd on %s stopped **" % (argv[1]))
     ser.close()
 
 
 if __name__ == '__main__':
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
     try:
-        # udev send sys/devices/platform/soc/20980000.usb/usb1/1-1/1-1.2/1-1.2:1.0/ttyUSB0/tty/ttyUSB0
+	# udev send sys/devices/platform/soc/20980000.usb/usb1/1-1/1-1.2/1-1.2:1.0/ttyUSB0/tty/ttyUSB0
         main(sys.argv)
     except Exception as e:
         syslog.syslog(syslog.LOG_ERR, "** exception %s" % (str(e)))
