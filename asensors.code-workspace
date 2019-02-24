@@ -11,6 +11,10 @@
 			"path": "SetWaterClock",
 			"name": "SetWaterClock"
 		},
+		{
+			"path": "mqtt",
+			"name": "mqtt"
+		},
 	],
 	"settings": {
 		"terminal.integrated.env.linux": {
