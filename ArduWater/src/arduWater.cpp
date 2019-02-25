@@ -14,6 +14,10 @@
 * HHHH - номер платы 
 * XXXXXXXXXXXXXXX адрес датчика 
 * N номер контакта
+* ArduWaterHHHH/pressure=val - давление воды на входные
+* ArduWaterHHHH/burrel_full=true|false - бочка переполнена
+* ArduWaterHHHH/burrel_empty=true|false - бочка пустая
+* ArduWaterHHHH/water_tap=true|false|none - входной кран true открыт,none-неисвестно,false=закрыт
 * ArduWaterHHHH/water=val - сколько насчитано литров/10
 * ArduWaterHHHH/INFO/count=val - число термометров один раз при старте 
 * ArduWaterHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте 
@@ -33,21 +37,35 @@
 #define DO_MSG_RATE 1800
 
 // Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 2
+#define ONE_WIRE_BUS D2
 // Module connection pins (Digital Pins)
-#define DISPLAY_CLK 4
-#define DISPLAY_DIO 3
+#define DISPLAY_CLK D4
+#define DISPLAY_DIO D3
 
 // выход со счетчика
-#define WATER_COUNTER_PIN 5
+#define WATER_COUNTER_PIN D5
 // показать/убрать показания на дисплее
-#define DISPLAY_BUTTON_PIN 6
-#define IN_PIN_START 7
-// чило сканируемых pin 
-#define IN_PIN_COUNT 3
-// pin для управления передачей по rs485
-#define SerialTxControl 10
-// PIN  A4(SDA),A5(SCL) - I2C
+#define DISPLAY_BUTTON_PIN D6
+// кнопка открыть/закрыть воду
+#define OPEN_WATER_BUTTON_PIN D7 
+// кран открыт
+#define IS_TAP_OPEN D9
+// кран закрыт
+#define IS_TAP_CLOSE D10
+// закрыть кран
+#define OPEN_TAP_CMD D11
+// открыть кран
+#define CLOSE_TAP_CMD D12
+
+// бочка полная
+#define IS_BURREL_FULL A7
+// бочка пустая
+#define IS_BURREL_EMPTY A6
+// PIN  A4(SDA),A5(SCL) - I2C - display
+// вода на полу - LED протечка
+#define IS_FLOOR_WET A2
+// LED кран закрыт
+#define WATER_PRESSURE A1 //the YELLOW pin of the Sensor is connected with A2 of Arduino/Catduino
 
 #define TEMPERATURE_PRECISION 9
 #define DEVICE_NO "0001"
@@ -152,9 +170,28 @@ void   doTestContacts(){
     }
 }
 
+/*macro definition of sensor*/
+// Использовал программу, которую предоставил продавец. Заметил, что в покое он показывает отрицательное значение, 
+// равное -3.35 кПа. я не могу понять, с чем связана данная цифра.
+double get_water_pressure()
+{
+
+  int raw = analogRead(SENSOR);
+  float voltage = (float) raw * 5.0 / 1024.0;     // voltage at the pin of the Arduino
+  Serial.println("Pressure is");
+  float pressure_kPa = (voltage - 0.5) / 4.0 * 1.200;          // voltage to pressure
+  return pressure_kPa;
+}
+
 /// послать в шину изменение в температуре
 bool doSendTemp()
 {
+  {
+    float pressure = get_water_pressure();
+    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/pressure=");
+    r += "/temp="+String(pressure, 2);
+    sendToServer(r);
+  }
   // call sensors.requestTemperatures() to issue a global temperature
   // request to all devices on the bus
   if(s_therm_count == 0)
@@ -194,6 +231,16 @@ void setup(void)
   display.setBrightness(0x0f);
   // start serial485 port
   Serial.begin(RATE);
+  // TODO сконфигурировать выходы для управления мотором и датчиками
+  pinMode(IS_TAP_OPEN, INPUT); 
+  pinMode(IS_TAP_CLOSE, INPUT); 
+  pinMode(OPEN_TAP_CMD, OUTPUT); 
+  pinMode(CLOSE_TAP_CMD, OUTPUT); 
+  pinMode(IS_BURREL_FULL, INPUT); 
+  pinMode(IS_BURREL_EMPTY, INPUT); 
+  pinMode(LED_WATER_CLOSED, OUTPUT); 
+  pinMode(IS_FLOOR_WET, INPUT); 
+  pinMode(WATER_PRESSURE, INPUT); 
 
   Rtc.Begin();
   // never assume the Rtc was last configured by you, so
