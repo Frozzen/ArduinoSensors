@@ -19,7 +19,6 @@
 #include <Bounce2.h>
 #include "arduSensUtils.h"
 
-#define DO_MSG_RATE 500
 // Data wire is plugged into port 2 on the Arduino
 #define ONE_WIRE_BUS 2
 #define FOTO_SENSOR A1
@@ -28,7 +27,6 @@
 #define IN_PIN_COUNT 4
  
 #define TEMPERATURE_PRECISION 9
-#define DEVICE_NO "0001"
 #define MAX_DS1820_COUNT 3
 
 #define ADDR_TO ":01"
@@ -50,8 +48,6 @@ DallasTemperature sensors(&oneWire);
 
 // arrays to hold device addresses
 uint8_t s_therm_count = 0, s_last_light = 0;
-// счетчик keepalive
-uint8_t s_time_cnt = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 float s_last_temp[MAX_DS1820_COUNT];
 
@@ -179,18 +175,4 @@ void setupArduSens(void)
       s_last_temp[ix] = -200;
     }
   }
-}
-/*
-   Main function, calls the temperatures in a loop.
-*/
-void loop(void)
-{
-  doTestContacts();
-  if((s_time_cnt % DO_MSG_RATE) == 0) {
-    if(!doSendTemp())
-      doAlive();    
-  }
-
-  delay(100);
-  s_time_cnt++;
 }

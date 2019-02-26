@@ -2,6 +2,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
+void sendString(String &r);
 
 // Assign address manually. The addresses below will beed to be changed
 // to valid device addresses on your bus. Device address can be retrieved
@@ -16,7 +17,7 @@ String getAddrString(DeviceAddress &dev)
   }
   return r;
 }
-
+#if 0
 /**
  * подсчет контрольной суммы
  */
@@ -26,8 +27,9 @@ void sendToServer(String &r)
   for(int8_t i = 0; i < (uint8_t)r.length(); ++i)
     sum += r[i];
   sum = 0xff - sum;
-  r += ":";
+  r += ";";
   if (sum < 16) r += "0";
   r += String(sum, HEX);
-  Serial.println(r);
+  sendString(r);
 }
+#endif

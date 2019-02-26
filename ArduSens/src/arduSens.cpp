@@ -17,6 +17,10 @@
  *    ArduStatHHHH/INFO/count=val - один раз при старте
  * - все сточки закрываются контрольной суммой через :
  */
+#define DO_MSG_RATE 500
+
+// счетчик keepalive
+uint8_t s_time_cnt = 0;
 
 void setup(void)
 {
@@ -25,3 +29,17 @@ void setup(void)
   setupArduSens();
 }
 
+/*
+   Main function, calls the temperatures in a loop.
+*/
+void loop(void)
+{
+  doTestContacts();
+  if((s_time_cnt % DO_MSG_RATE) == 0) {
+    if(!doSendTemp())
+      doAlive();    
+  }
+
+  delay(100);
+  s_time_cnt++;
+}
