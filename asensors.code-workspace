@@ -8,6 +8,10 @@
 			"name": "ArduWater"
 		},
 		{
+			"path": "ArduWaterWL",
+			"name": "ArduWaterWL"
+		},
+		{
 			"path": "SetWaterClock",
 			"name": "SetWaterClock"
 		},
@@ -15,6 +19,9 @@
 			"path": "mqtt",
 			"name": "mqtt"
 		},
+		{
+			"path": "Lib"
+		}
 	],
 	"settings": {
 		"terminal.integrated.env.linux": {
