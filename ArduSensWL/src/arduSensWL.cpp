@@ -40,6 +40,7 @@ struct sBuf {
 CircularBuffer<struct sBuf, 10> buffer;
 
 
+// установили канал скоррость режим
 void setupJDY_40()
 {
   pinMode(JDY_40_SET, OUTPUT);
@@ -59,8 +60,6 @@ void setup(void)
   // start serial485 port
   Serial.begin(RATE);
   setupJDY_40();
-  // установили канал скоррость режим
-  setupArduSens();
 }
 
 void sendToServer(String &r)
@@ -96,18 +95,21 @@ void loop(void)
   if((s_time_cnt % DO_MSG_RATE) == 0) {
     doSendTemp();
   }
-
-
-  s_time_cnt++;
   {
     String cmd = altSerial.readString();
     if(cmd == SEND_DATA_CMD) {
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);      
     } else if(cmd == CONF_DATA_CMD) {
+      confArduSens();
+      while (!buffer.isEmpty())
+        altSerial.println (buffer.pop().b);      
       
     } else if(cmd == ALIVE_DATA_CMD) {
+      doAlive();
+      altSerial.println (buffer.pop().b);
     }
   }
+  s_time_cnt++;
   delay(100);
 }

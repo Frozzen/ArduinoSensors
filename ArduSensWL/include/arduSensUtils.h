@@ -6,7 +6,7 @@
 
 void sendToServer(String &r);
 String getAddrString(DeviceAddress &dev);
-void setupArduSens();
+void confArduSens();
 void doTestContacts();
 bool doSendTemp();
 void doAlive();
