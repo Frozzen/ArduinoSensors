@@ -1,0 +1,57 @@
+В git разнес по веткам - их не нужно сливать - там разные проекты, хотя по именам не 
+пересекаются. кроме readme
+
+датчики для ардуино
+
+# температуры и концевики
+    * цеплять к ардуине до 5х температурных датчиков ds1820
+    * обрабатывать состояние до 4х контактов D4-D8
+    * защитить входные контакты через резисторы 1к со стороны pin. внутри есть pullup.
+    * контакты опрашивает раз 100мсек 
+##    цеплять к ардуине до 4х температурных датчиков ds1820
+    * обрабатывать состояние до 4х контактов D6-D9
+    * защитить входные контакты через резисторы 1к со стороны pin. внутри есть pullup.
+    * контакты опрашивает раз 100мсек 
+
+## используемые pin
+
+    * ONE_WIRE_BUS 2
+    * SerialTxControl 10
+    * FOTO_PIN A1
+    * PIN6-PIN9 для датчиков состояния 
+
+## mqtt topic топики ArduSens
+
+
+#MQTT topic
+
+стандартные от ArduSens. меняется название датчика и добавляется сообщение
+
+    HHHH - номер платы
+    XXXXXXXXXXXXXXX адрес датчика
+    N номер контакта 
+
+    ArduStatHHHH/INFO/count=val - число термометров один раз при старте
+    ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте
+    ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/value=val - температура. раз в 60 сек при изменении
+    ArduStatHHHH/latch-N/value=val - состояние контакта раз в 0.1 сек
+    ArduStatHHHH/alight/value=val - состояние контакта раз в 0.1 сек
+    ArduStatHHHH/INFO/alive=cnt раз в 60 сек счетчик на каждое сообщение +1(%256) 
+
+```
+import paho.mqtt.client as mqtt
+import time
+client= mqtt.Client("control1") 
+client.username_pw_set('yhome', 'q1w2e3')
+client.connect('172.20.100.2')
+client.publish("stat/sensor_1/temperature1", "-15")
+client.publish("stat/sensor_1/temperature2", "15")
+client.publish("stat/sensor_1/input1", "0")
+client.publish("stat/sensor_1/input2", "1")
+```
+
+## используются адаптеры:
+
+  *  ​http://roboshop.spb.ru/USB-RS485-converter
+  *  ​http://roboshop.spb.ru/TTL-to-RS485-MAX485-module 
+

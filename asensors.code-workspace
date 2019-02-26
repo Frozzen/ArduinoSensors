@@ -8,10 +8,6 @@
 			"name": "ArduWater"
 		},
 		{
-			"path": "ArduWaterWL",
-			"name": "ArduWaterWL"
-		},
-		{
 			"path": "SetWaterClock",
 			"name": "SetWaterClock"
 		},
@@ -21,6 +17,9 @@
 		},
 		{
 			"path": "Lib"
+		},
+		{
+			"path": "ArduSensWL"
 		}
 	],
 	"settings": {
