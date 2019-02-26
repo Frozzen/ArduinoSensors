@@ -56,7 +56,7 @@ float s_last_temp[MAX_DS1820_COUNT];
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_time_cnt++, DEC);
+  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/alive=") + String(s_time_cnt++, DEC);
   sendToServer(r);
 }
 
@@ -141,7 +141,7 @@ bool doSendTemp()
 }
 
 //------------------------------------
-void setupArduSens(void)
+void confArduSens(void)
 {
   {
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
