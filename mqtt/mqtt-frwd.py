@@ -1,7 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-отправляем данные с com на mqtt
+отправляем данные с com на mqtt. данные просто шлются с устройства.
+
     mqtt-frwd.py /dev/ttyUSB0
+
 """
 import sys, os, time
 import serial

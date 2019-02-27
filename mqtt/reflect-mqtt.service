@@ -1,0 +1,15 @@
+[Unit]
+Description=Copying events from Automatic pert mqtt to human
+Requires=syslog.socket
+
+[Service]
+Type=simple
+GuessMainPID=false
+User=pi
+Group=pi
+WorkingDirectory=/home/pi
+ExecStart=/usr/bin/python /home/pi/reflect-mqtt.py
+
+[Install]
+WantedBy=multi-user.target
+Alias=reflect-mqtt.service

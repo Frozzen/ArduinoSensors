@@ -30,6 +30,7 @@
 #define ALT_RS232_TX 9
 #define JDY_40_SET 7
 
+#define DEVICE_NO "02"
 // счетчик keepalive
 uint8_t s_time_cnt = 0;
 #define DO_MSG_RATE 500
@@ -99,7 +100,8 @@ void loop(void)
     String cmd = altSerial.readString();
     if(cmd == SEND_DATA_CMD) {
       while (!buffer.isEmpty())
-        altSerial.println (buffer.pop().b);      
+        altSerial.println (buffer.pop().b);
+        altSerial.println(":")      ;
     } else if(cmd == CONF_DATA_CMD) {
       confArduSens();
       while (!buffer.isEmpty())
