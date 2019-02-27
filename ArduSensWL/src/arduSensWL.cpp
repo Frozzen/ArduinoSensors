@@ -53,13 +53,8 @@ struct sBuf {
 } s_buf;
 CircularBuffer<struct sBuf, 10> buffer;
 
-#if 1
-#define AltRATE_START RATE
-#define AltRATE RATE
-#define altSerial Serial
-#else
 AltSoftSerial altSerial;
-#endif
+
 // установили канал скоррость режим
 void setupJDY_40()
 {
@@ -68,9 +63,9 @@ void setupJDY_40()
   digitalWrite(JDY_40_SET, LOW);
 
   altSerial.print("AT+BAUD=6\r\n");
-  //altSerial.readString();
+  altSerial.readString();
   altSerial.print("AT+RFC=023\r\n");
-  //altSerial.readString();
+  altSerial.readString();
   digitalWrite(JDY_40_SET, HIGH);
   delay(500);
   altSerial.begin(AltRATE);
@@ -78,7 +73,6 @@ void setupJDY_40()
 
 void setup(void)
 {
-  // start serial485 port
   Serial.begin(RATE);
   setupJDY_40();
   Serial.println("ArduSensWL");
