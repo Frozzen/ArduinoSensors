@@ -20,6 +20,9 @@
 		},
 		{
 			"path": "ArduSensWL"
+		},
+		{
+			"path": "ArduWLdongle"
 		}
 	],
 	"settings": {
