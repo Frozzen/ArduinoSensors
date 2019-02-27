@@ -19,8 +19,22 @@
  * - раз в 5 секунд шлет keeralive
  *    ArduStatHHHH/INFO/alive=cnt раз в 5
  *    ArduStatHHHH/INFO/count=val - один раз при старте
- * - все сточки закрываются контрольной суммой через :
  */
+// послать проверить жив ли
+#define ALIVE_CMD "03"
+// послать конфигурацию
+#define CONF_CMD "02"
+// послать состояние
+#define SEND_CMD "01"
+// адрес от кого запрос 01 сервер
+#define ADDR_FROM "01"
+// этот адрес надо менять по платам
+#define ADDR_TO ":" DEVICE_NO
+#define SEND_DATA_CMD ADDR_TO ADDR_FROM SEND_CMD ";"
+#define CONF_DATA_CMD ADDR_TO ADDR_FROM CONF_CMD ";"
+#define ALIVE_DATA_CMD ADDR_TO ADDR_FROM ALIVE_CMD ";"
+// команды :020101; :020102; :020103;
+
 
 #define RATE 38400
 #define AltRATE_START 9600
@@ -72,28 +86,9 @@ void setup(void)
 
 void sendToServer(String &r)
 {
-  #if 1
   buffer.push(*(sBuf*)r.c_str());
-  #else
-  strncpy(s_buf.b, r.c_str(), 60);
-  buffer.push(s_buf);
-  #endif
 }
 
-// послать проверить жив ли
-#define ALIVE_CMD "03"
-// послать конфигурацию
-#define CONF_CMD "02"
-// послать состояние
-#define SEND_CMD "01"
-// адрес от кого запрос 01 сервер
-#define ADDR_FROM "01"
-// этот адрес надо менять по платам
-#define ADDR_TO ":" DEVICE_NO
-#define SEND_DATA_CMD ADDR_TO ADDR_FROM SEND_CMD ";"
-#define CONF_DATA_CMD ADDR_TO ADDR_FROM CONF_CMD ";"
-#define ALIVE_DATA_CMD ADDR_TO ADDR_FROM ALIVE_CMD ";"
-// :020102;
 /*
    Main function, calls the temperatures in a loop.
 */
@@ -109,12 +104,12 @@ void loop(void)
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);
         altSerial.println(":");
-    } else if(cmd == CONF_DATA_CMD) {
+    } /*else if(cmd == CONF_DATA_CMD) {
       confArduSens();
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);      
         altSerial.println(":");      
-    } else if(cmd == ALIVE_DATA_CMD) {
+    } */else if(cmd == ALIVE_DATA_CMD) {
       doAlive();
       altSerial.println (buffer.pop().b);
       altSerial.println(":");
