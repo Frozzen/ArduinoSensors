@@ -34,13 +34,18 @@
 // счетчик keepalive
 uint8_t s_time_cnt = 0;
 #define DO_MSG_RATE 500
-AltSoftSerial altSerial;
 struct sBuf {
   char b[60];
 } s_buf;
 CircularBuffer<struct sBuf, 10> buffer;
 
-
+#if 1
+#define AltRATE_START RATE
+#define AltRATE RATE
+#define altSerial Serial
+#else
+AltSoftSerial altSerial;
+#endif
 // установили канал скоррость режим
 void setupJDY_40()
 {
@@ -49,10 +54,11 @@ void setupJDY_40()
   digitalWrite(JDY_40_SET, LOW);
 
   altSerial.print("AT+BAUD=6\r\n");
-  altSerial.readString();
+  //altSerial.readString();
   altSerial.print("AT+RFC=023\r\n");
-  altSerial.readString();
+  //altSerial.readString();
   digitalWrite(JDY_40_SET, HIGH);
+  delay(500);
   altSerial.begin(AltRATE);
 }
 
@@ -61,6 +67,7 @@ void setup(void)
   // start serial485 port
   Serial.begin(RATE);
   setupJDY_40();
+  Serial.println("ArduSensWL");
 }
 
 void sendToServer(String &r)
@@ -83,10 +90,10 @@ void sendToServer(String &r)
 #define ADDR_FROM "01"
 // этот адрес надо менять по платам
 #define ADDR_TO ":" DEVICE_NO
-#define SEND_DATA_CMD ADDR_TO ADDR_FROM SEND_CMD
-#define CONF_DATA_CMD ADDR_TO ADDR_FROM CONF_CMD
-#define ALIVE_DATA_CMD ADDR_TO ADDR_FROM ALIVE_CMD
-
+#define SEND_DATA_CMD ADDR_TO ADDR_FROM SEND_CMD ";"
+#define CONF_DATA_CMD ADDR_TO ADDR_FROM CONF_CMD ";"
+#define ALIVE_DATA_CMD ADDR_TO ADDR_FROM ALIVE_CMD ";"
+// :020102;
 /*
    Main function, calls the temperatures in a loop.
 */
@@ -97,19 +104,20 @@ void loop(void)
     doSendTemp();
   }
   {
-    String cmd = altSerial.readString();
+    String cmd = altSerial.readString();    
     if(cmd == SEND_DATA_CMD) {
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);
-        altSerial.println(":")      ;
+        altSerial.println(":");
     } else if(cmd == CONF_DATA_CMD) {
       confArduSens();
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);      
-      
+        altSerial.println(":");      
     } else if(cmd == ALIVE_DATA_CMD) {
       doAlive();
       altSerial.println (buffer.pop().b);
+      altSerial.println(":");
     }
   }
   s_time_cnt++;
