@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 #!/usr/bin/python
 """
 crontab -l
@@ -21,6 +22,9 @@ import json
 import base64
 
 # Settings for the domoticz server
+import configparser
+import paho.mqtt.client as mqtt
+
 domoticzserver = "172.20.110.2:8080"
 domoticzusername = "vovva"
 domoticzpassword = "q1w2e3"
@@ -42,6 +46,15 @@ check_for_instances = "ps"
 if len(sys.argv) != 5:
     print ("Not enough parameters. Needs %Host %Switchid %Interval %Cooldownperiod.")
     sys.exit(0)
+__Connected = False
+
+def on_connect(client, userdata, flags, rc):
+    if rc == 0:
+        print("Connected to broker")
+        global __Connected  # Use global variable
+        __Connected = True  # Signal connection
+    else:
+        print("Connection failed", rc, flags)
 
 device = sys.argv[1]
 switchid = sys.argv[2]
@@ -53,24 +66,39 @@ lastreported = -1
 base64string = base64.encodestring('%s:%s' % (domoticzusername, domoticzpassword)).replace('\n', '')
 domoticzurl = 'http://' + domoticzserver + '/json.htm?type=devices&filter=all&used=true&order=Name'
 
+# send data to mqtt
+config = configparser.RawConfigParser()
+config.optionxform = str
+config.read('mqtt-frwd.ini')
+client = mqtt.Client(clean_session=True)  # , userdata=None, protocol=MQTTv311, transport=”tcp”)
+client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
+client.on_connect = on_connect
+client.connect(config['MQTT']['server'], port=int(config['MQTT']['port']))
+client.loop_start()  # start the loop
+mqtt_root = config['check_device_online']['root']+config['check_device_online'][device]
+mqtt_root = mqtt_root.encode("ascii")
+del  config
+while __Connected != True:  # Wait for connection
+    time.sleep(0.1)
+
+strftime = datetime.datetime.now().strftime("%H:%M:%S")
 if check_for_instances.lower() == "pid":
     pidfile = sys.argv[0] + '_' + sys.argv[1] + '.pid'
     if os.path.isfile(pidfile):
-        print datetime.datetime.now().strftime("%H:%M:%S") + "- pid file exists"
+        print strftime + "- pid file exists"
         if (time.time() - os.path.getmtime(pidfile)) < (float(interval) * 3):
-            print datetime.datetime.now().strftime("%H:%M:%S") + "- script seems to be still running, exiting"
-            print datetime.datetime.now().strftime(
-                "%H:%M:%S") + "- If this is not correct, please delete file " + pidfile
+            print strftime + "- script seems to be still running, exiting"
+            print strftime + "- If this is not correct, please delete file " + pidfile
             sys.exit(0)
         else:
-            print datetime.datetime.now().strftime("%H:%M:%S") + "- Seems to be an old file, ignoring."
+            print strftime + "- Seems to be an old file, ignoring."
     else:
         open(pidfile, 'w').close()
 
 if check_for_instances.lower() == "ps":
     if int(subprocess.check_output('ps x | grep \'' + sys.argv[0] + ' ' + sys.argv[1] + '\' | grep -cv grep',
                                    shell=True)) > 2:
-        print (datetime.datetime.now().strftime("%H:%M:%S") + "- script already running. exiting.")
+        print (strftime + "- script already running. exiting.")
         sys.exit(0)
 
 
@@ -94,8 +122,8 @@ def domoticzstatus():
                     status = 1
                 if json_object["result"][i]["Status"] == "Off":
                     status = 0
-    if switchfound == False: print (datetime.datetime.now().strftime(
-        "%H:%M:%S") + "- Error. Could not find switch idx in Domoticz response. Defaulting to switch off.")
+    if switchfound == False: print (
+                strftime + "- Error. Could not find switch idx in Domoticz response. Defaulting to switch off.")
     return status
 
 
@@ -106,13 +134,13 @@ def domoticzrequest(url):
     return response.read()
 
 
-log(datetime.datetime.now().strftime("%H:%M:%S") + "- script started.")
+log(strftime + "- script started.")
 
 lastreported = domoticzstatus()
 if lastreported == 1:
-    log(datetime.datetime.now().strftime("%H:%M:%S") + "- according to domoticz, " + device + " is online")
+    log(strftime + "- according to domoticz, " + device + " is online")
 if lastreported == 0:
-    log(datetime.datetime.now().strftime("%H:%M:%S") + "- according to domoticz, " + device + " is offline")
+    log(strftime + "- according to domoticz, " + device + " is offline")
 
 while 1 == 1:
     # currentstate = subprocess.call('ping -q -c1 -W 1 '+ device + ' > /dev/null', shell=True)
@@ -120,29 +148,31 @@ while 1 == 1:
 
     if currentstate == 0: lastsuccess = datetime.datetime.now()
     if currentstate == 0 and currentstate != previousstate and lastreported == 1:
-        log(datetime.datetime.now().strftime("%H:%M:%S") + "- " + device + " online, no need to tell domoticz")
+        log(strftime + "- " + device + " online, no need to tell domoticz")
     if currentstate == 0 and currentstate != previousstate and lastreported != 1:
         if domoticzstatus() == 0:
-            log(datetime.datetime.now().strftime("%H:%M:%S") + "- " + device + " online, tell domoticz it's back")
-	    # TODO вставить нотификацию на MQTT
+            log(strftime + "- " + device + " online, tell domoticz it's back")
+	        # вставить нотификацию на MQTT
+            client.publish(mqtt_root, "ON;"+strftime, retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=On&level=0" + "&passcode=" + domoticzpasscode)
         else:
-            log(datetime.datetime.now().strftime("%H:%M:%S") + "- " + device + " online, but domoticz already knew")
+            log(strftime + "- " + device + " online, but domoticz already knew")
         lastreported = 1
 
     if currentstate == 1 and currentstate != previousstate:
-        log(datetime.datetime.now().strftime("%H:%M:%S") + "- " + device + " offline, waiting for it to come back")
+        log(strftime + "- " + device + " offline, waiting for it to come back")
 
     if currentstate == 1 and (datetime.datetime.now() - lastsuccess).total_seconds() > float(
             cooldownperiod) and lastreported != 0:
         if domoticzstatus() == 1:
-            log(datetime.datetime.now().strftime("%H:%M:%S") + "- " + device + " offline, tell domoticz it's gone")
-	    # TODO вставить нотификацию на MQTT
+            log(strftime + "- " + device + " offline, tell domoticz it's gone")
+	        # вставить нотификацию на MQTT
+            client.publish(mqtt_root, "OFF;"+strftime, retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=Off&level=0" + "&passcode=" + domoticzpasscode)
         else:
-            log(datetime.datetime.now().strftime("%H:%M:%S") + "- " + device + " offline, but domoticz already knew")
+            log(strftime + "- " + device + " offline, but domoticz already knew")
         lastreported = 0
 
     time.sleep(float(interval))
