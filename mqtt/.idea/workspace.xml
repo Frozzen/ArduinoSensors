@@ -2,8 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="">
-      <change afterPath="$PROJECT_DIR$/detect-events-mqtt.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/../ArduSensWL/Schematic_ArduSens_s1.pdf" beforeDir="false" afterPath="$PROJECT_DIR$/../ArduSensWL/Schematic_ArduSens_s1.pdf" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/check_device_online.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_device_online.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/mqtt-frwd.ini" beforeDir="false" afterPath="$PROJECT_DIR$/mqtt-frwd.ini" afterDir="false" />
@@ -23,7 +21,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="6" />
+          <entry key="project.closed" value="7" />
           <entry key="project.open.time.11" value="1" />
           <entry key="project.open.time.26" value="1" />
           <entry key="project.open.time.27" value="1" />
@@ -31,41 +29,42 @@
           <entry key="project.open.time.32" value="1" />
           <entry key="project.open.time.33" value="1" />
           <entry key="project.open.time.39" value="1" />
+          <entry key="project.open.time.52" value="1" />
           <entry key="project.open.time.63" value="1" />
-          <entry key="project.opened" value="8" />
+          <entry key="project.opened" value="9" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="ini" value="3" />
           <entry key="md" value="1" />
-          <entry key="py" value="8" />
-          <entry key="service" value="1" />
+          <entry key="py" value="9" />
+          <entry key="service" value="2" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="Ini" value="3" />
           <entry key="Markdown" value="1" />
-          <entry key="PLAIN_TEXT" value="1" />
-          <entry key="Python" value="8" />
+          <entry key="PLAIN_TEXT" value="2" />
+          <entry key="Python" value="9" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
-          <entry key="ini" value="1188" />
+          <entry key="ini" value="1206" />
           <entry key="md" value="32" />
-          <entry key="py" value="2825" />
+          <entry key="py" value="3031" />
           <entry key="service" value="48" />
-          <entry key="txt" value="105" />
+          <entry key="txt" value="137" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
-          <entry key="Ini" value="1188" />
+          <entry key="Ini" value="1206" />
           <entry key="Markdown" value="32" />
-          <entry key="PLAIN_TEXT" value="153" />
-          <entry key="Python" value="2825" />
+          <entry key="PLAIN_TEXT" value="185" />
+          <entry key="Python" value="3031" />
         </counts>
       </usages-collector>
     </session>
@@ -75,8 +74,17 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="305">
-              <caret line="97" column="24" lean-forward="true" selection-start-line="97" selection-start-column="7" selection-end-line="97" selection-end-column="24" />
+            <state relative-caret-position="387">
+              <caret line="98" column="24" selection-start-line="98" selection-start-column="24" selection-end-line="98" selection-end-column="24" />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/reflect-mqtt.service">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="210">
+              <caret line="14" column="14" selection-start-line="14" selection-start-column="14" selection-end-line="14" selection-end-column="14" />
             </state>
           </provider>
         </entry>
@@ -84,25 +92,36 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="135">
-              <caret line="9" lean-forward="true" selection-start-line="8" selection-end-line="9" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/check_device_online.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="123">
-              <caret line="168" column="77" selection-start-line="168" selection-start-column="54" selection-end-line="168" selection-end-column="77" />
+            <state relative-caret-position="362">
+              <caret line="82" lean-forward="true" selection-start-line="81" selection-end-line="82" />
               <folding>
-                <element signature="e#491#501#0" expanded="true" />
+                <element signature="e#145#176#0" expanded="true" />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/check_device_online.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="45">
+              <caret line="3" column="72" selection-start-line="3" selection-start-column="72" selection-end-line="3" selection-end-column="72" />
+              <folding>
+                <element signature="e#233#266#0" />
+                <element signature="e#515#525#0" expanded="true" />
+              </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
+        <entry file="file://$USER_HOME$/.PyCharm2018.2/system/python_stubs/-1247972723/syslog.py">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="-135" />
+          </provider>
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/detect-events-mqtt.py">
           <provider selected="true" editor-type-id="text-editor">
             <state relative-caret-position="45">
@@ -153,6 +172,7 @@
       <find>lastreported</find>
       <find>offline, waiting for it to come back</find>
       <find>tell domoticz it's gone</find>
+      <find>check_for_instances</find>
     </findStrings>
     <replaceStrings>
       <replace>/house</replace>
@@ -168,9 +188,9 @@
         <option value="$PROJECT_DIR$/mqtt-frwd.py" />
         <option value="$PROJECT_DIR$/reflect-mqtt.py" />
         <option value="$PROJECT_DIR$/reflect-mqtt.service" />
-        <option value="$PROJECT_DIR$/check_device_online.py" />
-        <option value="$PROJECT_DIR$/mqtt-frwd.ini" />
         <option value="$PROJECT_DIR$/detect-events-mqtt.py" />
+        <option value="$PROJECT_DIR$/mqtt-frwd.ini" />
+        <option value="$PROJECT_DIR$/check_device_online.py" />
       </list>
     </option>
   </component>
@@ -181,8 +201,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="97" />
-    <option name="y" value="131" />
+    <option name="x" value="106" />
+    <option name="y" value="15" />
     <option name="width" value="1346" />
     <option name="height" value="885" />
   </component>
@@ -192,7 +212,6 @@
       <foldersAlwaysOnTop value="true" />
     </navigator>
     <panes>
-      <pane id="Scope" />
       <pane id="ProjectPane">
         <subPane>
           <expand>
@@ -204,6 +223,7 @@
           <select />
         </subPane>
       </pane>
+      <pane id="Scope" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -342,28 +362,42 @@
       <option name="project" value="LOCAL" />
       <updated>1550843968873</updated>
     </task>
-    <option name="localTasksCounter" value="5" />
+    <task id="LOCAL-00005" summary="выложил событе в mqtt">
+      <created>1551368329910</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1551368329910</updated>
+    </task>
+    <task id="LOCAL-00006" summary="Merge branches 'full-water' and 'master' of https://github.com/Frozzen/ArduinoSensors into sens-wireless&#10;&#10;# Conflicts:&#10;#&#9;mqtt/mqtt-frwd.ini">
+      <created>1551533369727</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1551533369727</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="97" y="131" width="1346" height="885" extended-state="0" />
+    <frame x="106" y="15" width="1346" height="885" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" visible="true" weight="0.28018576" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" visible="true" weight="0.28482974" />
       <window_info id="Structure" order="1" side_tool="true" weight="0.25" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32978722" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32978722" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.39893618" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.39893618" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Version Control" order="8" show_stripe_button="false" />
-      <window_info anchor="bottom" id="File Transfer" order="9" weight="0.32978722" />
+      <window_info anchor="bottom" id="Version Control" order="8" weight="0.32978722" />
+      <window_info anchor="bottom" id="File Transfer" order="9" visible="true" weight="0.32978722" />
       <window_info anchor="bottom" id="Database Changes" order="10" show_stripe_button="false" />
-      <window_info anchor="bottom" id="Terminal" order="11" />
+      <window_info anchor="bottom" id="Terminal" order="11" weight="0.32978722" />
       <window_info anchor="bottom" id="Event Log" order="12" side_tool="true" />
       <window_info anchor="bottom" id="Python Console" order="13" />
       <window_info anchor="right" id="Commander" internal_type="SLIDING" order="0" type="SLIDING" weight="0.4" />
@@ -385,7 +419,9 @@
     <MESSAGE value="заработаало" />
     <MESSAGE value="запустил из под systemd" />
     <MESSAGE value="запустил из под systemd." />
-    <option name="LAST_COMMIT_MESSAGE" value="запустил из под systemd." />
+    <MESSAGE value="выложил событе в mqtt" />
+    <MESSAGE value="Merge branches 'full-water' and 'master' of https://github.com/Frozzen/ArduinoSensors into sens-wireless&#10;&#10;# Conflicts:&#10;#&#9;mqtt/mqtt-frwd.ini" />
+    <option name="LAST_COMMIT_MESSAGE" value="Merge branches 'full-water' and 'master' of https://github.com/Frozzen/ArduinoSensors into sens-wireless&#10;&#10;# Conflicts:&#10;#&#9;mqtt/mqtt-frwd.ini" />
   </component>
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
@@ -421,6 +457,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="385">
+          <caret line="137" selection-start-line="134" selection-end-line="137" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file:///usr/lib/python2.7/urllib2.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="6315">
@@ -438,13 +481,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="385">
-          <caret line="137" selection-start-line="134" selection-end-line="137" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/reflect-mqtt.service">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="210">
@@ -452,34 +488,43 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
+    <entry file="file://$PROJECT_DIR$/detect-events-mqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="135">
-          <caret line="9" lean-forward="true" selection-start-line="8" selection-end-line="9" />
+        <state relative-caret-position="45">
+          <caret line="3" column="100" selection-start-line="3" selection-start-column="100" selection-end-line="3" selection-end-column="100" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="305">
-          <caret line="97" column="24" lean-forward="true" selection-start-line="97" selection-start-column="7" selection-end-line="97" selection-end-column="24" />
+        <state relative-caret-position="387">
+          <caret line="98" column="24" selection-start-line="98" selection-start-column="24" selection-end-line="98" selection-end-column="24" />
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/check_device_online.py">
+    <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="123">
-          <caret line="168" column="77" selection-start-line="168" selection-start-column="54" selection-end-line="168" selection-end-column="77" />
+        <state relative-caret-position="362">
+          <caret line="82" lean-forward="true" selection-start-line="81" selection-end-line="82" />
           <folding>
-            <element signature="e#491#501#0" expanded="true" />
+            <element signature="e#145#176#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/detect-events-mqtt.py">
+    <entry file="file://$USER_HOME$/.PyCharm2018.2/system/python_stubs/-1247972723/syslog.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="-135" />
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/check_device_online.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="45">
-          <caret line="3" column="100" selection-start-line="3" selection-start-column="100" selection-end-line="3" selection-end-column="100" />
+          <caret line="3" column="72" selection-start-line="3" selection-start-column="72" selection-end-line="3" selection-end-column="72" />
+          <folding>
+            <element signature="e#233#266#0" />
+            <element signature="e#515#525#0" expanded="true" />
+          </folding>
         </state>
       </provider>
     </entry>
