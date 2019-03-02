@@ -13,7 +13,7 @@ crontab -l
 #   Info: Checks the presence of the given device on the network and reports back to domoticz
 #   URL : https://www.chopperrob.nl/domoticz/5-report-devices-online-status-to-domoticz
 #   Version : 1.6.2
-
+import fcntl
 import sys
 import datetime
 import syslog
@@ -43,7 +43,7 @@ log_to_file = False
 # every interval. If a new instance of the script spawns it will check the age of the pid file.
 # If the file doesn't exist or it is older then 3 * Interval it will keep running, otherwise is stops.
 # Please chose the option you want to use "ps" or "pid", if this option is kept empty it will not check and just run.
-check_for_instances = "ps"
+check_for_instances = "flock"
 
 syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 # DO NOT CHANGE BEYOND THIS LINE
@@ -60,10 +60,43 @@ def on_connect(client, userdata, flags, rc):
     else:
         syslog.syslog(syslog.LOG_INFO, "Connection failed %s %s" % ( rc, flags))
 
+def run_once(ip):
+    global fh_singleton
+    fh_singleton=open(os.path.realpath(__file__+ip),'r')
+    try:
+        fcntl.flock(fh_singleton, fcntl.LOCK_EX|fcntl.LOCK_NB)
+    except:
+        os._exit(0)
+
+fh_singleton  = 0
 device = sys.argv[1]
 switchid = sys.argv[2]
 interval = sys.argv[3]
 cooldownperiod = sys.argv[4]
+
+if check_for_instances.lower() == "pid":
+    pidfile = sys.argv[0] + '_' + device + '.pid'
+    if os.path.isfile(pidfile):
+        syslog.syslog(syslog.LOG_ALERT, "- pid file exists")
+        if (time.time() - os.path.getmtime(pidfile)) < (float(interval) * 3):
+            syslog.syslog(syslog.LOG_ALERT, "- script seems to be still running, exiting")
+            syslog.syslog(syslog.LOG_ALERT, "- If this is not correct, please delete file " + pidfile)
+            sys.exit(1)
+        else:
+            syslog.syslog(syslog.LOG_NOTICE, "- Seems to be an old file, ignoring.")
+    else:
+        open(pidfile, 'w').close()
+elif check_for_instances.lower() == "ps":
+    if int(subprocess.check_output('ps x | grep \'' + sys.argv[0] + ' ' + device + '\' | grep -cv grep',
+                                   shell=True)) > 2:
+        syslog.syslog(syslog.LOG_ALERT, "- script already running. exiting.")
+        sys.exit(1)
+elif check_for_instances.lower() == "flock":
+    run_once(device)
+else:
+        syslog.syslog(syslog.LOG_ALERT, "undefned method to check start %s" % (check_for_instances))
+        sys.exit(1)
+
 previousstate = -1
 lastsuccess = datetime.datetime.now()
 lastreported = -1
@@ -85,27 +118,6 @@ del  config
 while __Connected != True:  # Wait for connection
     time.sleep(0.1)
 
-strftime = datetime.datetime.now().strftime("%H:%M:%S")
-if check_for_instances.lower() == "pid":
-    pidfile = sys.argv[0] + '_' + sys.argv[1] + '.pid'
-    if os.path.isfile(pidfile):
-        syslog.syslog(syslog.LOG_ALERT, strftime + "- pid file exists")
-        if (time.time() - os.path.getmtime(pidfile)) < (float(interval) * 3):
-            syslog.syslog(syslog.LOG_ALERT, strftime + "- script seems to be still running, exiting")
-            syslog.syslog(syslog.LOG_ALERT, strftime + "- If this is not correct, please delete file " + pidfile)
-            sys.exit(1)
-        else:
-            syslog.syslog(syslog.LOG_NOTICE, strftime + "- Seems to be an old file, ignoring.")
-    else:
-        open(pidfile, 'w').close()
-elif check_for_instances.lower() == "ps":
-    if int(subprocess.check_output('ps x | grep \'' + sys.argv[0] + ' ' + sys.argv[1] + '\' | grep -cv grep',
-                                   shell=True)) > 2:
-        syslog.syslog(syslog.LOG_ALERT, strftime + "- script already running. exiting.")
-        sys.exit(1)
-else:
-        syslog.syslog(syslog.LOG_ALERT, "undefned method to check start %s" % (check_for_instances))
-        sys.exit(1)
 
 def domoticzstatus():
     json_object = json.loads(domoticzrequest(domoticzurl))
@@ -120,7 +132,7 @@ def domoticzstatus():
                 if json_object["result"][i]["Status"] == "Off":
                     status = 0
     if switchfound == False:
-        syslog.syslog(syslog.LOG_ALERT, strftime + "- Error. Could not find switch idx in Domoticz response. Defaulting to switch off.")
+        syslog.syslog(syslog.LOG_ALERT, "- Error. Could not find switch idx in Domoticz response. Defaulting to switch off.")
     return status
 
 
@@ -131,13 +143,13 @@ def domoticzrequest(url):
     return response.read()
 
 
-syslog.syslog(syslog.LOG_INFO, strftime + "- script started.")
+syslog.syslog(syslog.LOG_INFO, "- script started.")
 
 lastreported = domoticzstatus()
 if lastreported == 1:
-    syslog.syslog(syslog.LOG_INFO, strftime + "- according to domoticz, " + device + " is online")
+    syslog.syslog(syslog.LOG_INFO, "- according to domoticz, " + device + " is online")
 if lastreported == 0:
-    syslog.syslog(syslog.LOG_INFO, strftime + "- according to domoticz, " + device + " is offline")
+    syslog.syslog(syslog.LOG_INFO, "- according to domoticz, " + device + " is offline")
 
 while 1:
     # currentstate = subprocess.call('ping -q -c1 -W 1 '+ device + ' > /dev/null', shell=True)
@@ -145,31 +157,31 @@ while 1:
 
     if currentstate == 0: lastsuccess = datetime.datetime.now()
     if currentstate == 0 and currentstate != previousstate and lastreported == 1:
-        log(strftime + "- " + device + " online, no need to tell domoticz")
+        log("- " + device + " online, no need to tell domoticz")
     if currentstate == 0 and currentstate != previousstate and lastreported != 1:
         if domoticzstatus() == 0:
-            syslog.syslog(syslog.LOG_INFO, strftime + "- " + device + " online, tell domoticz it's back")
+            syslog.syslog(syslog.LOG_INFO, "- " + device + " online, tell domoticz it's back")
 	        # вставить нотификацию на MQTT
             client.publish(mqtt_root, "ON;"+strftime, retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=On&level=0" + "&passcode=" + domoticzpasscode)
         else:
-            syslog.syslog(syslog.LOG_INFO, strftime + "- " + device + " online, but domoticz already knew")
+            syslog.syslog(syslog.LOG_INFO, "- " + device + " online, but domoticz already knew")
         lastreported = 1
 
     if currentstate == 1 and currentstate != previousstate:
-        syslog.syslog(syslog.LOG_INFO, strftime + "- " + device + " offline, waiting for it to come back")
+        syslog.syslog(syslog.LOG_INFO, "- " + device + " offline, waiting for it to come back")
 
     if currentstate == 1 and (datetime.datetime.now() - lastsuccess).total_seconds() > float(
             cooldownperiod) and lastreported != 0:
         if domoticzstatus() == 1:
-            syslog.syslog(syslog.LOG_INFO, strftime + "- " + device + " offline, tell domoticz it's gone")
+            syslog.syslog(syslog.LOG_INFO, "- " + device + " offline, tell domoticz it's gone")
 	        # вставить нотификацию на MQTT
             client.publish(mqtt_root, "OFF;"+strftime, retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=Off&level=0" + "&passcode=" + domoticzpasscode)
         else:
-            syslog.syslog(syslog.LOG_INFO, strftime + "- " + device + " offline, but domoticz already knew")
+            syslog.syslog(syslog.LOG_INFO, "- " + device + " offline, but domoticz already knew")
         lastreported = 0
 
     time.sleep(float(interval))

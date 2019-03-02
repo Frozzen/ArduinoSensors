@@ -1,10 +1,16 @@
 # -*- coding: utf-8 -*-
+"""
+заношу в MQTT астрономические события и события по расписанию
 
+"""
 import astral
 import datetime, time
 import schedule
+import os
+import fcntl
 
 from mymqtt import MyMQTT
+
 
 class MySunSched(object):
     def __init__(self):
@@ -24,10 +30,9 @@ class MySunSched(object):
         a.solar_depression = 'nautical'
         city = astral.Location(('Home', None, 54, 83, 'Asia/Novosibirsk', 0))
         # print('Information for %s/%s\n' % ('Novosibirsk', city.region))
-        # timezone = city.timezone
-        # print('Timezone: %s' % timezone)
+        # print('Timezone: %s' % city.timezone)
         # print('Latitude: %.02f; Longitude: %.02f\n' % (city.latitude, city.longitude))
-        sun = city.sun(date=datetime.date.today()+datetime.timedelta(days = 1), local=True)
+        sun = city.sun(date=datetime.date.today() + datetime.timedelta(days=1), local=True)
         return sun
 
     def sun_event(self, ev_type):
@@ -36,7 +41,7 @@ class MySunSched(object):
         sun = self._astral()
         s = sun[ev_type].strftime("%H:%M:%S")
         self.jobs[ev_type] = schedule.every().day.at(s).do(self.sun_event, ev_type)
-        # TODO send MQTT event
+        #  send MQTT event
         mqtt = MyMQTT()
         mqtt.connect()
         topic = mqtt.config.get('astral', 'sun_topic')
@@ -44,7 +49,7 @@ class MySunSched(object):
         mqtt.close()
 
     def day_event(self, ev_type):
-        # TODO send MQTT event
+        #  send MQTT event
         mqtt = MyMQTT()
         mqtt.connect()
         topic = mqtt.config.get('astral', 'day_topic')
@@ -70,4 +75,15 @@ def main():
         time.sleep(1)
 
 
-main()
+fh = 0
+if __name__ == '__main__':
+    def run_once():
+        global fh
+        fh = open(os.path.realpath(__file__), 'r')
+        try:
+            fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except:
+            os._exit(1)
+
+    run_once()
+    main()
