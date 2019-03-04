@@ -34,7 +34,7 @@
 #define CONF_DATA_CMD ADDR_TO ADDR_FROM CONF_CMD ";"
 #define ALIVE_DATA_CMD ADDR_TO ADDR_FROM ALIVE_CMD ";"
 // команды :020101; :020102; :020103;
-
+#define BUFFER_PROBLEM
 
 #define RATE 38400
 #define AltRATE_START 9600
@@ -98,12 +98,16 @@ void loop(void)
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);
         altSerial.println(":");
-    } /*else if(cmd == CONF_DATA_CMD) {
+    } 
+#ifndef BUFFER_PROBLEM
+    else if(cmd == CONF_DATA_CMD) {
       confArduSens();
       while (!buffer.isEmpty())
         altSerial.println (buffer.pop().b);      
         altSerial.println(":");      
-    } */else if(cmd == ALIVE_DATA_CMD) {
+    } 
+#endif
+    else if(cmd == ALIVE_DATA_CMD) {
       doAlive();
       altSerial.println (buffer.pop().b);
       altSerial.println(":");
