@@ -2,7 +2,9 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 
-#define DEVICE_NO "0001"
+#ifndef DEVICE_NO
+#define DEVICE_NO "02"
+#endif
 
 void sendToServer(String &r);
 String getAddrString(DeviceAddress &dev);
