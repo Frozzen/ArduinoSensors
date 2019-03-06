@@ -94,11 +94,15 @@ void sendBuffToHost()
 /*
    Main function, calls the temperatures in a loop.
 */
+unsigned long s_last_tick = 0;
 void loop(void)
 {
-  doTestContacts();
-  if((s_time_cnt % DO_MSG_RATE) == 0) {
-    doSendTemp(); // сложить температуру в буффер    
+  if((millis() - s_last_tick) > 100) {
+    doTestContacts();
+    s_time_cnt++;
+    if((s_time_cnt % DO_MSG_RATE) == 0) {
+      doSendTemp(); // сложить температуру в буффер    
+    }
   }
   
 #ifdef DEBUG    
@@ -113,8 +117,4 @@ void loop(void)
     confArduSens();
   else if(cmd == ALIVE_DATA_CMD) 
     doAlive();
-  else if(cmd.length() > 0)
-    Serial.print("-");
-  s_time_cnt++;
-  delay(100);
 }
