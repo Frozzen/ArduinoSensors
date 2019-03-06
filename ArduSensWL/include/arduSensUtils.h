@@ -6,7 +6,7 @@
 #define DEVICE_NO "02"
 #endif
 
-void sendToServer(String &r);
+void sendToServer(String &r, bool now = false);
 String getAddrString(DeviceAddress &dev);
 void confArduSens();
 void doTestContacts();

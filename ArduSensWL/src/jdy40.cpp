@@ -1,5 +1,6 @@
 #include <Arduino.h>
-#include <AltSoftSerial.h>
+//#include <AltSoftSerial.h>
+#include <SoftwareSerial.h>
 
 #define AltRATE_START 9600
 #define AltRATE 19200
@@ -9,13 +10,16 @@
 #define JDY_40_SET 7
 
 
-AltSoftSerial altSerial;
+//AltSoftSerial altSerial;
+SoftwareSerial altSerial(ALT_RS232_RX, ALT_RS232_TX);
 
 // установили канал скоррость режим
 void setupJDY_40()
 {
   pinMode(JDY_40_SET, OUTPUT);
+  digitalWrite(JDY_40_SET, HIGH);
   altSerial.begin(AltRATE_START);
+  #if 0
   digitalWrite(JDY_40_SET, LOW);
 
   altSerial.print("AT+BAUD=6\r\n");
@@ -25,4 +29,5 @@ void setupJDY_40()
   digitalWrite(JDY_40_SET, HIGH);
   delay(500);
   altSerial.begin(AltRATE);
+  #endif
 }

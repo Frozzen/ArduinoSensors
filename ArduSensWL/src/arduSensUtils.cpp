@@ -57,7 +57,7 @@ float s_last_temp[MAX_DS1820_COUNT];
 void doAlive()
 {
   String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/alive=") + String(s_time_cnt++, DEC);
-  sendToServer(r);
+  sendToServer(r, true);
 }
 
 /// настроили кнопки которые нажимают
@@ -145,7 +145,7 @@ void confArduSens(void)
 {
   {
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
-    sendToServer(r);
+    sendToServer(r, true);
   }
  
    for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
@@ -153,7 +153,7 @@ void confArduSens(void)
     String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-");
     r += String(ix, DEC);
     r += LOG_MESSAGE_END;
-    sendToServer(r);
+    sendToServer(r, true);
   }
 // locate devices on the bus
   // Start up the library
@@ -171,7 +171,7 @@ void confArduSens(void)
       String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/DS1820-");
       r += getAddrString(s_thermometer[ix]);
       r += LOG_MESSAGE_END;
-      sendToServer(r);
+      sendToServer(r, true);
       s_last_temp[ix] = -200;
     }
   }

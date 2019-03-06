@@ -1,10 +1,11 @@
 #include <Arduino.h>
-#include <AltSoftSerial.h>
+//#include <AltSoftSerial.h>
+#include <SoftwareSerial.h>
 
 #include "arduSensUtils.h"
 #include <CircularBuffer.h>
 
-//#define BUFFER_PROBLEM
+//#define DEBUG
 
 /*
  * измеритель температуры + 4 контакта на замыкание
@@ -51,7 +52,8 @@ struct sBuf {
 uint8_t s_buf_idx = 0;
 CircularBuffer<struct sBuf*, 10> buffer;
 
-extern AltSoftSerial altSerial;
+//extern AltSoftSerial altSerial;
+extern SoftwareSerial altSerial;
 extern void setupJDY_40();
 
 void setup(void)
@@ -61,20 +63,31 @@ void setup(void)
   Serial.println("ArduSensWL");
 }
 
-void sendToServer(String &r)
+void sendToServer(String &r, bool now)
 {
-  strncpy(s_buf[s_buf_idx].b, r.c_str(), sizeof(sBuf));
-  buffer.push(&(s_buf[s_buf_idx & 0x7]));
-  ++s_buf_idx;
+  if(now) {
+#ifdef DEBUG    
+      Serial.print (r);
+      Serial.println(":");
+#endif
+      altSerial.print(r);
+      altSerial.println(":");
+  } else {
+    strncpy(s_buf[s_buf_idx].b, r.c_str(), sizeof(sBuf));
+    buffer.push(&(s_buf[s_buf_idx & 0x7]));
+    ++s_buf_idx;
+  }
 }
 
 void sendBuffToHost()
 {
     while (!buffer.isEmpty()) {
       char *b = buffer.shift()->b;
-      Serial.println (b);
+#ifdef DEBUG    
+      Serial.print (b);
       Serial.println(":");
-      altSerial.println (b);
+#endif
+      altSerial.print(b);
       altSerial.println(":");
   }   
 }
@@ -88,18 +101,20 @@ void loop(void)
     doSendTemp(); // сложить температуру в буффер    
   }
   
+#ifdef DEBUG    
+  String cmd = Serial.readString();    
+#else  
   String cmd = altSerial.readString();    
+#endif  
+  Serial.print(cmd);
   if(cmd == SEND_DATA_CMD) 
     sendBuffToHost();  
-#ifndef BUFFER_PROBLEM
-  else if(cmd == CONF_DATA_CMD) {
+  else if(cmd == CONF_DATA_CMD) 
     confArduSens();
-    sendBuffToHost();
-#endif
-  } else if(cmd == ALIVE_DATA_CMD) {
+  else if(cmd == ALIVE_DATA_CMD) 
     doAlive();
-    sendBuffToHost();
-  }
+  else if(cmd.length() > 0)
+    Serial.print("-");
   s_time_cnt++;
   delay(100);
 }
