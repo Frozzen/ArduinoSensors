@@ -34,7 +34,7 @@ def __on_connect(client, userdata, flags, rc):
 def __on_message(client, userdata, msg):
     global reflect
     if msg.topic in reflect:
-        msg_info = client.publish(reflect[msg.topic], msg.payload, retain=True)
+        msg_info = client.publish(reflect[msg.topic], msg.payload.decode("utf-8"), retain=True)
 
 def __on_disconnect(client, userdata, flags, rc):
     global __Connected  # Use global variable

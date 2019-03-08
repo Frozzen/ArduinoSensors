@@ -93,28 +93,28 @@ def main_loop(TOPIC_START, client, ser, domotizc):
         # print line,result
         if __dump_msg_cnt:
             __dump_msg_cnt = False
-            client.publish('tele/'+TOPIC_START + "bus/msg_cnt", str(msg_cnt), retain=True)
+            client.publish('tele/'+TOPIC_START + "bus/msg_cnt", str(msg_cnt).decode("utf-8"), retain=True)
 
         if result == 'Ok':
             topic, val = line.split('=')
-            client.publish('stat/'+TOPIC_START + topic, val, retain=True)
+            client.publish('stat/'+TOPIC_START + topic, val.decode("utf-8"), retain=True)
             topic = topic.decode('utf-8').lower()
             if topic in domotizc:
                 tval = '{ "idx" : %s, "svalue": "%s" }' % (domotizc[topic], val)
-                client.publish("domoticz/in", tval)
+                client.publish("domoticz/in", tval.decode("utf-8"))
                 __dump_msg_cnt = True
             msg_cnt += 1
             continue
         __dump_msg_cnt = True
         if result == 'BadCS':
             bad_cs_cnt += 1
-            client.publish('tele/'+TOPIC_START + "bus/errors", str(bad_cs_cnt), retain=True)
+            client.publish('tele/'+TOPIC_START + "bus/errors", str(bad_cs_cnt).decode("utf-8"), retain=True)
         elif result == 'NotForMe':
             not_for_me_cnt += 1
-            client.publish('tele/'+TOPIC_START + "bus/not4me", str(not_for_me_cnt), retain=True)
+            client.publish('tele/'+TOPIC_START + "bus/not4me", str(not_for_me_cnt).decode("utf-8"), retain=True)
         elif result == 'BadData':
             bad_data_cnt += 1
-            client.publish('tele/'+TOPIC_START + "bus/bad_data", str(bad_data_cnt), retain=True)
+            client.publish('tele/'+TOPIC_START + "bus/bad_data", str(bad_data_cnt).decode("utf-8"), retain=True)
 
 
 def main(argv):
