@@ -75,10 +75,10 @@ def main():
         time.sleep(1)
 
 
-fh = 0
+_fh_lock = 0
 if __name__ == '__main__':
     def run_once():
-        global fh
+        global _fh_lock
         fh = open(os.path.realpath(__file__), 'r')
         try:
             fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)

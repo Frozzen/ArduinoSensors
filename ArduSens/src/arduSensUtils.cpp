@@ -44,6 +44,18 @@ DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 
 char s_buf[MAX_OUT_BUFF];
 ////////////////////////////////////////////////////////
+// Assign address manually. The addresses below will beed to be changed
+// to valid device addresses on your bus. Device address can be retrieved
+// by using either oneWire.search(deviceAddress) or individually via
+const char *getAddrString(DeviceAddress &dev)
+{
+  static char _buf[17];
+  for (uint8_t i = 0; i < 8; i++)   {
+    sprintf(_buf+i*2, "%02x", (char)dev[i]);
+  }
+  _buf[16] = 0;
+  return _buf;
+}
 
 /// сформировать пакет что устройство живо
 void doAlive()
@@ -122,7 +134,7 @@ bool doSendTemp()
       continue;
     // формируем строку с температурой
     char str_temp[6];
-    dtostrf(tempC, 4, 1, str_temp);
+    dtostrf(tempC, -5, 1, str_temp);
     snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/DS1820-%s/temp=%s",
       getAddrString(s_thermometer[ix]), str_temp);
     sendToServer(s_buf);

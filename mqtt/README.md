@@ -1,5 +1,5 @@
 # описание как зарегить
-sudo vi /etc/systemd/system/mqtt-forward@.service:
+sudo vi /lib/systemd/system/mqtt-forward@.service:
 ```
 [Unit]
 Description=Copying events from COM to mqtt
@@ -11,7 +11,7 @@ GuessMainPID=false
 User=pi
 Group=pi
 #Environment=
-ExecStart=/usr/bin/python mqtt-frwd.py %I
+ExecStart=/usr/bin/python3 mqtt-frwd.py %I
 #activating=udev
 WorkingDirectory=/home/pi
 

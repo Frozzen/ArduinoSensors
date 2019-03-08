@@ -1,21 +1,23 @@
 # -*- coding: utf-8 -*-
 """
 отправляем данные с com на mqtt. данные просто шлются с устройства.
+    udev send sys/devices/platform/soc/20980000.usb/usb1/1-1/1-1.2/1-1.2:1.0/ttyUSB0/tty/ttyUSB0
 
     mqtt-frwd.py /dev/ttyUSB0
 
 """
-import sys, os, time
-import serial
-import paho.mqtt.client as mqtt
+import sys
 
-import configparser
+import serial
+
+from mymqtt import MyMQTT
 
 MAX_LINE_LENGTH = 150
 __Connected = False
 
 import syslog
 
+DEBUG = True
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
     """
@@ -32,20 +34,19 @@ def read_line_serial(ser, my_addr=':01'):
     ok = False
     cs = 0
     # ждем ':' - начало строки
-    for i in range(MAX_LINE_LENGTH):
-        if ser.read() == ':':
-            line = ':'
+    while True:
+        ch = ser.read()
+        if ch == b':':
             break
-    if line != ':':
-        return ('', 'BadData')
+    line = ':'
 
     for i in range(MAX_LINE_LENGTH):
-        l = ser.read()
-        if l == '\n':
+        ch = ser.read()
+        if ch == b'\n':
             break
-        if l != '\r':
-            line += l
-    if l != '\n':
+        if ch != b'\r':
+            line += "".join(map(chr, ch))
+    if ch != b'\n':
         return (line, 'BadData')
 
     if line[:3] != ':01':
@@ -89,64 +90,60 @@ def main_loop(TOPIC_START, client, ser, domotizc):
     global __dump_msg_cnt
     msg_cnt = bad_cs_cnt = not_for_me_cnt = bad_data_cnt = 0
     while True:
-        line, result = read_line_serial(ser)
+        try:
+            line, result = read_line_serial(ser)
+        except serial.SerialException as e:
+            if 'disconnected' in e.args[0]:
+                syslog.syslog(syslog.LOG_ERR, "mqtt-frwd error %s **" % (str(e),))
+                return
+            continue
         # print line,result
         if __dump_msg_cnt:
             __dump_msg_cnt = False
-            client.publish('tele/'+TOPIC_START + "bus/msg_cnt", str(msg_cnt).decode("utf-8"), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/msg_cnt", str(msg_cnt).encode('utf-8'), retain=True)
 
         if result == 'Ok':
             topic, val = line.split('=')
-            client.publish('stat/'+TOPIC_START + topic, val.decode("utf-8"), retain=True)
-            topic = topic.decode('utf-8').lower()
+            if DEBUG:
+                print("t:%s = %s" % (topic, val))
+            if "log" == topic:
+                client.publish('log/' + TOPIC_START, val)
+                continue
+
+            client.publish('stat/' + TOPIC_START + topic, val.encode('utf-8'), retain=True)
+            topic = topic.lower()
             if topic in domotizc:
-                tval = '{ "idx" : %s, "svalue": "%s" }' % (domotizc[topic], val)
-                client.publish("domoticz/in", tval.decode("utf-8"))
+                tval = '{ "idx" : %s, "svalue": "%s" }' % (domotizc[topic], val.strip())
+                client.publish("domoticz/in", tval.encode('utf-8'))
                 __dump_msg_cnt = True
             msg_cnt += 1
             continue
         __dump_msg_cnt = True
         if result == 'BadCS':
             bad_cs_cnt += 1
-            client.publish('tele/'+TOPIC_START + "bus/errors", str(bad_cs_cnt).decode("utf-8"), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/errors", str(bad_cs_cnt).encode('utf-8'), retain=True)
         elif result == 'NotForMe':
             not_for_me_cnt += 1
-            client.publish('tele/'+TOPIC_START + "bus/not4me", str(not_for_me_cnt).decode("utf-8"), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/not4me", str(not_for_me_cnt).encode('utf-8'), retain=True)
         elif result == 'BadData':
             bad_data_cnt += 1
-            client.publish('tele/'+TOPIC_START + "bus/bad_data", str(bad_data_cnt).decode("utf-8"), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/bad_data", str(bad_data_cnt).encode('utf-8'), retain=True)
 
 
 def main(argv):
     global __Connected  # Use global variable
     syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s started" % (argv[1]))
-    config = configparser.ConfigParser()
-    config.read('mqtt-frwd.ini')
-    TOPIC_START = config['MQTT']['topic_head']
-    domotizc = dict(config.items('Domotizc'))
+    mqtt = MyMQTT()
+    TOPIC_START = mqtt.config['MQTT']['topic_head']
+    domotizc = dict(mqtt.config.items('Domotizc'))
     port = argv[1].split('/')[-1]
-    ser = serial.Serial(port='/dev/'+port, baudrate=config['COM']['baudrate'])
-    client = mqtt.Client(clean_session=True)  # , userdata=None, protocol=MQTTv311, transport=”tcp”)
-    client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
-    client.on_connect = on_connect
-    client.connect(config['MQTT']['server'], port=int(config['MQTT']['port']))
-    client.loop_start()  # start the loop
+    ser = serial.Serial(port='/dev/' + port, baudrate=mqtt.config['COM']['baudrate'])
+    mqtt.connect()
+    main_loop(TOPIC_START, mqtt.client, ser, domotizc)
 
-    while __Connected != True:  # Wait for connection
-        time.sleep(0.1)
-
-    main_loop(TOPIC_START, client, ser, domotizc)
-
-    client.disconnect()
-    client.loop_stop()
     syslog.syslog(syslog.LOG_ERR, "mqtt-frwd on %s stopped **" % (argv[1]))
     ser.close()
 
-
 if __name__ == '__main__':
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
-    try:
-	# udev send sys/devices/platform/soc/20980000.usb/usb1/1-1/1-1.2/1-1.2:1.0/ttyUSB0/tty/ttyUSB0
-        main(sys.argv)
-    except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "** exception %s" % (str(e)))
+    main(sys.argv)
