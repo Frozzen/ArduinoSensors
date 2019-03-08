@@ -1,11 +1,11 @@
 #include <Arduino.h>
-//#include <AltSoftSerial.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <SoftwareSerial.h>
 
+#include "ardudev.h"
 #include "arduSensUtils.h"
 #include <CircularBuffer.h>
-
-//#define DEBUG
 
 /*
  * измеритель температуры + 4 контакта на замыкание
@@ -21,38 +21,16 @@
  * - раз в 5 секунд шлет keeralive
  *    ArduStatHHHH/INFO/alive=cnt раз в 5
  */
-// послать проверить жив ли
-#define ALIVE_CMD "03"
-// послать конфигурацию
-#define CONF_CMD "02"
-// послать состояние
-#define SEND_CMD "01"
-// адрес от кого запрос 01 сервер
-#define ADDR_FROM "01"
-// этот адрес надо менять по платам
-#define HOST_ADDR ":" DEVICE_NO
-#define SEND_DATA_CMD HOST_ADDR ADDR_FROM SEND_CMD ";"
-#define CONF_DATA_CMD HOST_ADDR ADDR_FROM CONF_CMD ";"
-#define ALIVE_DATA_CMD HOST_ADDR ADDR_FROM ALIVE_CMD ";"
-// команды :020101; :020102; :020103;
-
-#define RATE 38400
-
-#define ALT_RS232_RX 8
-#define ALT_RS232_TX 9
-#define JDY_40_SET 7
 
 
 // счетчик keepalive
-uint8_t s_time_cnt = 0;
+uint16_t s_time_cnt = 0;
 #define DO_MSG_RATE 500
 struct sBuf {
-  char b[60];
-} s_buf[8];
-uint8_t s_buf_idx = 0;
-CircularBuffer<struct sBuf*, 10> buffer;
+  char b[80];
+};
+CircularBuffer<struct sBuf, 8> s_buffer;
 
-//extern AltSoftSerial altSerial;
 extern SoftwareSerial altSerial;
 extern void setupJDY_40();
 
@@ -63,7 +41,7 @@ void setup(void)
   Serial.println("ArduSensWL");
 }
 
-void sendToServer(String &r, bool now)
+void sendToServer(const char *r, bool now)
 {
   if(now) {
 #ifdef DEBUG    
@@ -73,21 +51,19 @@ void sendToServer(String &r, bool now)
       altSerial.print(r);
       altSerial.println(":");
   } else {
-    strncpy(s_buf[s_buf_idx].b, r.c_str(), sizeof(sBuf));
-    buffer.push(&(s_buf[s_buf_idx & 0x7]));
-    ++s_buf_idx;
+    s_buffer.push(*(sBuf*)r);
   }
 }
 
 void sendBuffToHost()
 {
-    while (!buffer.isEmpty()) {
-      char *b = buffer.shift()->b;
+    while (!s_buffer.isEmpty()) {
+      sBuf bf = s_buffer.shift();
 #ifdef DEBUG    
       Serial.print (b);
       Serial.println(":");
 #endif
-      altSerial.print(b);
+      altSerial.print(bf.b);
       altSerial.println(":");
   }   
 }
@@ -104,17 +80,12 @@ void loop(void)
       doSendTemp(); // сложить температуру в буффер    
     }
   }
-  
-#ifdef DEBUG    
-  String cmd = Serial.readString();    
-#else  
-  String cmd = altSerial.readString();    
-#endif  
-  Serial.print(cmd);
-  if(cmd == SEND_DATA_CMD) 
+  char buf[10];
+  altSerial.readBytesUntil('\n', buf, 10);
+  if(strcmp(SEND_DATA_CMD, buf) == 0) 
     sendBuffToHost();  
-  else if(cmd == CONF_DATA_CMD) 
-    confArduSens();
-  else if(cmd == ALIVE_DATA_CMD) 
+  else if(strcmp(CONF_DATA_CMD, buf) == 0) 
+    setupArduSens();
+  else if(strcmp(ALIVE_DATA_CMD, buf) == 0) 
     doAlive();
 }
