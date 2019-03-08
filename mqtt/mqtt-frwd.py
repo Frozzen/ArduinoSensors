@@ -17,7 +17,7 @@ __Connected = False
 
 import syslog
 
-DEBUG = True
+DEBUG = False
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
     """
