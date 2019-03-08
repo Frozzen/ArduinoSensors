@@ -43,7 +43,7 @@ log_to_file = False
 # every interval. If a new instance of the script spawns it will check the age of the pid file.
 # If the file doesn't exist or it is older then 3 * Interval it will keep running, otherwise is stops.
 # Please chose the option you want to use "ps" or "pid", if this option is kept empty it will not check and just run.
-check_for_instances = "flock"
+check_for_instances = "ps"
 
 syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
 # DO NOT CHANGE BEYOND THIS LINE
@@ -60,13 +60,6 @@ def on_connect(client, userdata, flags, rc):
     else:
         syslog.syslog(syslog.LOG_INFO, "Connection failed %s %s" % ( rc, flags))
 
-def run_once(ip):
-    global fh_singleton
-    fh_singleton=open(os.path.realpath(__file__+ip),'r')
-    try:
-        fcntl.flock(fh_singleton, fcntl.LOCK_EX|fcntl.LOCK_NB)
-    except:
-        os._exit(0)
 
 fh_singleton  = 0
 device = sys.argv[1]
@@ -91,8 +84,6 @@ elif check_for_instances.lower() == "ps":
                                    shell=True)) > 2:
         syslog.syslog(syslog.LOG_ALERT, "- script already running. exiting.")
         sys.exit(1)
-elif check_for_instances.lower() == "flock":
-    run_once(device)
 else:
         syslog.syslog(syslog.LOG_ALERT, "undefned method to check start %s" % (check_for_instances))
         sys.exit(1)
@@ -157,11 +148,12 @@ while 1:
 
     if currentstate == 0: lastsuccess = datetime.datetime.now()
     if currentstate == 0 and currentstate != previousstate and lastreported == 1:
-        log("- " + device + " online, no need to tell domoticz")
+        syslog.syslog(syslog.LOG_INFO, "- " + device + " online, no need to tell domoticz")
     if currentstate == 0 and currentstate != previousstate and lastreported != 1:
         if domoticzstatus() == 0:
             syslog.syslog(syslog.LOG_INFO, "- " + device + " online, tell domoticz it's back")
 	        # вставить нотификацию на MQTT
+            strftime = datetime.datetime.now().strftime("%H:%M:%S").encode('ascii')
             client.publish(mqtt_root, "ON;"+strftime, retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=On&level=0" + "&passcode=" + domoticzpasscode)
@@ -177,6 +169,7 @@ while 1:
         if domoticzstatus() == 1:
             syslog.syslog(syslog.LOG_INFO, "- " + device + " offline, tell domoticz it's gone")
 	        # вставить нотификацию на MQTT
+            strftime = datetime.datetime.now().strftime("%H:%M:%S").encode('ascii')
             client.publish(mqtt_root, "OFF;"+strftime, retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=Off&level=0" + "&passcode=" + domoticzpasscode)
