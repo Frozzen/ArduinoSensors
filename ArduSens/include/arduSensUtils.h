@@ -1,13 +1,11 @@
-#include <Arduino.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 
-#define DEVICE_NO "0001"
+#define MAX_OUT_BUFF 100
+#define HOST_ADDR ":01"
 
-void sendToServer(String &r);
-String getAddrString(DeviceAddress &dev);
+void sendToServer(const char *r, bool send=false);
+const char *getAddrString(DeviceAddress &dev);
 void setupArduSens();
 void doTestContacts();
 bool doSendTemp();
 void doAlive();
-extern uint8_t s_time_cnt;
+extern uint16_t s_time_cnt;

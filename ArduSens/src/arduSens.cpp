@@ -1,5 +1,8 @@
 #include <Arduino.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #define RATE 38400
+#include "ardudev.h"
 #include "arduSensUtils.h"
 /*
  * измеритель температуры + 4 контакта на замыкание
@@ -17,10 +20,10 @@
  *    ArduStatHHHH/INFO/count=val - один раз при старте
  * - все сточки закрываются контрольной суммой через :
  */
-#define DO_MSG_RATE 500
+#define DO_MSG_RATE 5000
 
 // счетчик keepalive
-uint8_t s_time_cnt = 0;
+uint16_t s_time_cnt = 0;
 
 void setup(void)
 {

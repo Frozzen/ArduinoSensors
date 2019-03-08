@@ -30,10 +30,10 @@
 // адрес от кого запрос 01 сервер
 #define ADDR_FROM "01"
 // этот адрес надо менять по платам
-#define ADDR_TO ":" DEVICE_NO
-#define SEND_DATA_CMD ADDR_TO ADDR_FROM SEND_CMD ";"
-#define CONF_DATA_CMD ADDR_TO ADDR_FROM CONF_CMD ";"
-#define ALIVE_DATA_CMD ADDR_TO ADDR_FROM ALIVE_CMD ";"
+#define HOST_ADDR ":" DEVICE_NO
+#define SEND_DATA_CMD HOST_ADDR ADDR_FROM SEND_CMD ";"
+#define CONF_DATA_CMD HOST_ADDR ADDR_FROM CONF_CMD ";"
+#define ALIVE_DATA_CMD HOST_ADDR ADDR_FROM ALIVE_CMD ";"
 // команды :020101; :020102; :020103;
 
 #define RATE 38400

@@ -29,7 +29,7 @@
 #define TEMPERATURE_PRECISION 9
 #define MAX_DS1820_COUNT 3
 
-#define ADDR_TO ":01"
+#define HOST_ADDR ":01"
 #define SENSOR_NAME "ArduStat"
 
 // время на дребезг контактов
@@ -56,7 +56,7 @@ float s_last_temp[MAX_DS1820_COUNT];
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/alive=") + String(s_time_cnt++, DEC);
+  String r = (HOST_ADDR SENSOR_NAME DEVICE_NO "/alive=") + String(s_time_cnt++, DEC);
   sendToServer(r, true);
 }
 
@@ -92,7 +92,7 @@ void   doTestContacts(){
     boolean changed = s_input_pin[ix].update(); 
     if ( changed ) {
         uint8_t value = s_input_pin[ix].read();
-        String r(ADDR_TO SENSOR_NAME DEVICE_NO "/latch-");
+        String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/latch-");
         r += String(ix, DEC);
         r += "=" +String(value, DEC);
         sendToServer(r);
@@ -107,7 +107,7 @@ bool doSendTemp()
   uint16_t adc_value = analogRead(FOTO_SENSOR);
   {
     // формируем строку с температурой
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/light=");
+    String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/light=");
  		// Расчет напряжения во входе ADC
 		double voltage = 5.0 - 5.0 * ((double)adc_value / 1024.0);
  		// Измерение сопротивления фоторезистора в делителе напряжения
@@ -130,7 +130,7 @@ bool doSendTemp()
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
     // формируем строку с температурой
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
+    String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/DS1820-");
     r += getAddrString(s_thermometer[ix]);
     r += "/temp="+String(tempC, 2);
     sendToServer(r);

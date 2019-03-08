@@ -16,21 +16,13 @@
  * - все сточки закрываются контрольной суммой через :
  */
 // Include the libraries we need
+#include <Arduino.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include <Bounce2.h>
+#include "ardudev.h"
 #include "arduSensUtils.h"
 
-// Data wire is plugged into port 2 on the Arduino
-#define ONE_WIRE_BUS 2
-#define FOTO_SENSOR A1
-// чило сканируемых pin начиная с PIN4-PIN8
-#define IN_PIN_START 6
-#define IN_PIN_COUNT 4
- 
-#define TEMPERATURE_PRECISION 9
-#define MAX_DS1820_COUNT 3
-
-#define ADDR_TO ":01"
-#define SENSOR_NAME "ArduStat"
 
 // время на дребезг контактов
 #define TIME_TO_RELAX 5
@@ -47,17 +39,17 @@ Bounce s_input_pin[IN_PIN_COUNT];
 DallasTemperature sensors(&oneWire);
 
 // arrays to hold device addresses
-uint8_t s_therm_count = 0, s_last_light = 0;
+uint8_t s_therm_count = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
-float s_last_temp[MAX_DS1820_COUNT];
 
+char s_buf[MAX_OUT_BUFF];
 ////////////////////////////////////////////////////////
 
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_time_cnt++, DEC);
-  sendToServer(r);
+  snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/alive=%d", s_time_cnt++);
+  sendToServer(s_buf, true);
 }
 
 /// настроили кнопки которые нажимают
@@ -67,7 +59,6 @@ void iniInputPin(Bounce &bounce, uint8_t pin)
   digitalWrite(pin, HIGH);
   bounce.attach(pin); // Настраиваем Bouncer
   bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
-
 }
 
 /// проверили что кнопку отпустили
@@ -92,10 +83,8 @@ void   doTestContacts(){
     boolean changed = s_input_pin[ix].update(); 
     if ( changed ) {
         uint8_t value = s_input_pin[ix].read();
-        String r(ADDR_TO SENSOR_NAME DEVICE_NO "/latch-");
-        r += String(ix, DEC);
-        r += "=" +String(value, DEC);
-        sendToServer(r);
+        snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/latch-%d=%d", ix, value);
+        sendToServer(s_buf);
       }  
     }
 }
@@ -107,16 +96,16 @@ bool doSendTemp()
   uint16_t adc_value = analogRead(FOTO_SENSOR);
   {
     // формируем строку с температурой
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/light=");
  		// Расчет напряжения во входе ADC
 		double voltage = 5.0 - 5.0 * ((double)adc_value / 1024.0);
  		// Измерение сопротивления фоторезистора в делителе напряжения
 		double resistance = (10.0 * 5.0) / voltage - 10.0;
  		// Вычисление освещенности в люксах		
 		double illuminance = 255.84 * pow(resistance, -10/9);
-    r += String(illuminance);
-    s_last_light = adc_value;
-    sendToServer(r);
+    char str_temp[6];
+    dtostrf((float)illuminance, 4, 1, str_temp);
+    snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/light=%s", str_temp);
+    sendToServer(s_buf);
     updated = true;
   }
    
@@ -129,12 +118,14 @@ bool doSendTemp()
   // print the device information
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
+    if(tempC > 67.0)
+      continue;
     // формируем строку с температурой
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
-    r += getAddrString(s_thermometer[ix]);
-    r += "/temp="+String(tempC, 2);
-    sendToServer(r);
-    s_last_temp[ix] = tempC;
+    char str_temp[6];
+    dtostrf(tempC, 4, 1, str_temp);
+    snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/DS1820-%s/temp=%s",
+      getAddrString(s_thermometer[ix]), str_temp);
+    sendToServer(s_buf);
     updated = true;
   }
   return updated;
@@ -143,17 +134,13 @@ bool doSendTemp()
 //------------------------------------
 void setupArduSens(void)
 {
-  {
-    String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
-    sendToServer(r);
-  }
+  snprintf(s_buf, sizeof(s_buf),LOG_MESSAGE SENSOR_NAME DEVICE_NO "/light" LOG_MESSAGE_END);
+  sendToServer(s_buf, true);
  
    for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
     iniInputPin(s_input_pin[ix], IN_PIN_START+ix); 
-    String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-");
-    r += String(ix, DEC);
-    r += LOG_MESSAGE_END;
-    sendToServer(r);
+    snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-%d" LOG_MESSAGE_END, ix);
+    sendToServer(s_buf, true);
   }
 // locate devices on the bus
   // Start up the library
@@ -168,11 +155,9 @@ void setupArduSens(void)
     else {
       // set the resolution to 9 bit per device
       sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);
-      String r(LOG_MESSAGE SENSOR_NAME DEVICE_NO "/DS1820-");
-      r += getAddrString(s_thermometer[ix]);
-      r += LOG_MESSAGE_END;
-      sendToServer(r);
-      s_last_temp[ix] = -200;
+      snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO "/DS1820-%s" LOG_MESSAGE_END,
+        getAddrString(s_thermometer[ix]));
+      sendToServer(s_buf, true);
     }
   }
 }

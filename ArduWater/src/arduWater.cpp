@@ -73,7 +73,7 @@
 #define PRIORITY_485 4
 
 // адрес куда отправляется сообщение :01 хост
-#define ADDR_TO ":01"
+#define HOST_ADDR ":01"
 #define SENSOR_NAME "ArduWater"
 
 // время на дребезг контактов
@@ -117,7 +117,7 @@ uint16_t s_time_cnt = 0;
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  String r = (ADDR_TO SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
+  String r = (HOST_ADDR SENSOR_NAME DEVICE_NO "/INFO/alive=") + String(s_cnt++,DEC);
   sendToServer(r);
 }
 
@@ -151,7 +151,7 @@ bool checkButtonChanged(Bounce &bounce)
 void   doTestContacts(){
   if(checkButtonChanged(waterClick)) {
     ++s_water_count;
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/water=");
+    String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/water=");
     r += String(s_water_count, DEC);    
     sendToServer(r);
   }
@@ -162,7 +162,7 @@ void   doTestContacts(){
     boolean changed = freeClick[ix].update(); 
     if ( changed ) {
         uint8_t value = freeClick[ix].read();
-        String r(ADDR_TO SENSOR_NAME DEVICE_NO "/latch-");
+        String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/latch-");
         r += String(ix, DEC);
         r += "=" +String(value, DEC);
         sendToServer(r);
@@ -188,7 +188,7 @@ bool doSendTemp()
 {
   {
     float pressure = get_water_pressure();
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/pressure=");
+    String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/pressure=");
     r += "/temp="+String(pressure, 2);
     sendToServer(r);
   }
@@ -203,7 +203,7 @@ bool doSendTemp()
   for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {
     float tempC = sensors.getTempC(s_thermometer[ix]);
     // формируем строку с температурой
-    String r(ADDR_TO SENSOR_NAME DEVICE_NO "/DS1820-");
+    String r(HOST_ADDR SENSOR_NAME DEVICE_NO "/DS1820-");
     r += getAddrString(s_thermometer[ix]);
     r += "/temp="+String(tempC, 2);
     sendToServer(r);
