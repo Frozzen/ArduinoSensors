@@ -103,7 +103,7 @@ if lastreported == 0:
     syslog.syslog(syslog.LOG_INFO, "- according to domoticz, " + device + " is offline")
 
 while 1:
-    # currentstate = subprocess.call('ping -q -c1 -W 1 '+ device + ' > /dev/null', shell=True)
+    subprocess.call('ping -q -c1 -W 1 '+ device + ' > /dev/null', shell=True)
     # currentstate = subprocess.call('arping -c1 -w 1 ' + device + ' > /dev/null', shell=True)
     currentstate = subprocess.call('arp | grep  ' + device + ' | grep ether > /dev/null', shell=True)
 
