@@ -6,7 +6,7 @@ stat/house/
 данные берутся из дескрипторов
 
 """
-import fcntl
+import fcntl, os
 import json
 
 import paho.mqtt.client as mqtt

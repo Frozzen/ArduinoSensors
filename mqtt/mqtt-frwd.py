@@ -47,7 +47,7 @@ def read_line_serial(ser, my_addr=':01'):
         if ch == b'\n':
             break
         if ch != b'\r':
-            line += "".join(map(chr, ch))
+            line += ch.decode('ascii')
     if ch != b'\n':
         return (line, 'BadData')
 
