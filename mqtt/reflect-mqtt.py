@@ -6,6 +6,8 @@ stat/house/
 данные берутся из дескрипторов
 
 """
+import json
+
 import paho.mqtt.client as mqtt
 
 import configparser, sys, time
@@ -34,7 +36,14 @@ def __on_connect(client, userdata, flags, rc):
 def __on_message(client, userdata, msg):
     global reflect
     if msg.topic in reflect:
-        msg_info = client.publish(reflect[msg.topic], msg.payload.decode("utf-8"), retain=True)
+        data = msg.payload.decode("utf-8")
+        topic_ = reflect[msg.topic]
+        tpc = topic_.split('/')[-1]
+        if tpc == 'ENERGY':
+            js = json.loads(data)
+            data = js['ENERGY']['Current']
+            topic_ += "/Current"
+        msg_info = client.publish(topic_, data, retain=True)
 
 def __on_disconnect(client, userdata, flags, rc):
     global __Connected  # Use global variable

@@ -104,7 +104,8 @@ if lastreported == 0:
 
 while 1:
     # currentstate = subprocess.call('ping -q -c1 -W 1 '+ device + ' > /dev/null', shell=True)
-    currentstate = subprocess.call('arping -c1 -w 1 ' + device + ' > /dev/null', shell=True)
+    # currentstate = subprocess.call('arping -c1 -w 1 ' + device + ' > /dev/null', shell=True)
+    currentstate = subprocess.call('arp | grep  ' + device + ' | grep ether > /dev/null', shell=True)
 
     if currentstate == 0: lastsuccess = datetime.datetime.now()
     if currentstate == 0 and currentstate != previousstate and lastreported == 1:
@@ -113,8 +114,7 @@ while 1:
         if domoticzstatus() == 0:
             syslog.syslog(syslog.LOG_INFO, "- " + device + " online, tell domoticz it's back")
             # вставить нотификацию на MQTT
-            strftime = datetime.datetime.now().strftime("%H:%M:%S")
-            mqtt.client.publish(mqtt_user, ("ON;" + strftime).encode("utf-8"), retain=True);
+            mqtt.client.publish(mqtt_user, "ON", retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=On&level=0" + "&passcode=" + domoticzpasscode)
         else:
@@ -129,8 +129,7 @@ while 1:
         if domoticzstatus() == 1:
             syslog.syslog(syslog.LOG_INFO, "- " + device + " offline, tell domoticz it's gone")
             # вставить нотификацию на MQTT
-            strftime = datetime.datetime.now().strftime("%H:%M:%S")
-            mqtt.client.publish(mqtt_user, ("OFF;" + strftime).encode("utf-8"), retain=True);
+            mqtt.client.publish(mqtt_user, "OFF", retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=Off&level=0" + "&passcode=" + domoticzpasscode)
         else:

@@ -7,6 +7,7 @@
 
 """
 import sys
+import time
 
 import serial
 
@@ -38,6 +39,7 @@ def read_line_serial(ser, my_addr=':01'):
         ch = ser.read()
         if ch == b':':
             break
+        time.sleep(0.001)
     line = ':'
 
     for i in range(MAX_LINE_LENGTH):
@@ -113,7 +115,7 @@ def main_loop(TOPIC_START, client, ser, domotizc):
             client.publish('stat/' + TOPIC_START + topic, val.encode('utf-8'), retain=True)
             topic = topic.lower()
             if topic in domotizc:
-                tval = '{ "idx" : %s, "svalue": "%s" }' % (domotizc[topic], val.strip())
+                tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (domotizc[topic], val.strip())
                 client.publish("domoticz/in", tval.encode('utf-8'))
                 __dump_msg_cnt = True
             msg_cnt += 1
