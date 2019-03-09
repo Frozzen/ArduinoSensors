@@ -6,6 +6,7 @@ stat/house/
 данные берутся из дескрипторов
 
 """
+import fcntl
 import json
 
 import paho.mqtt.client as mqtt
@@ -82,8 +83,19 @@ def main(argv):
     client.loop_stop()
     syslog.syslog(syslog.LOG_ERR, "reflect-mqtt  stopped **" )
 
+_fh_lock = 0
+def run_once():
+    global _fh_lock
+    fh = open(os.path.realpath(__file__), 'r')
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except:
+        os._exit(1)
+
 
 if __name__ == '__main__':
+
+    run_once()
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
     try:
         main(sys.argv)
