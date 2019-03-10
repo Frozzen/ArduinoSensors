@@ -50,7 +50,7 @@ def read_line_serial(ser, my_addr=':01'):
             line += ch.decode('ascii')
     if ch != b'\n':
         return (line, 'BadData')
-
+    # line = ser.readline()
     if line[:3] != ':01':
         return (line[:-3], 'NotForMe')
 
@@ -59,7 +59,11 @@ def read_line_serial(ser, my_addr=':01'):
     cs0 = 0
     for ch in str:
         cs0 += ord(ch)
-    return (str[3:], 'Ok' if ((cs0 & 0xff)) + int(cs, 16) == 255 else 'BadCS')
+    try:
+        res = ((cs0 & 0xff)) + int(cs, 16)
+    except ValueError:
+        return (str, 'BadCS')
+    return (str[3:], 'Ok' if res == 255 else 'BadCS')
 
 
 ###################################
@@ -94,9 +98,11 @@ def main_loop(TOPIC_START, client, ser, domotizc):
     while True:
         try:
             line, result = read_line_serial(ser)
-        except serial.SerialException as e:
+        except (serial.SerialException, ValueError) as e:
+            if DEBUG:
+                print("mqtt-frwd error %s **" % (str(e),))
             if 'disconnected' in e.args[0]:
-                syslog.syslog(syslog.LOG_ERR, "mqtt-frwd error %s **" % (str(e),))
+                syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd error %s **" % (str(e),))
                 return
             continue
         # print line,result
@@ -121,6 +127,9 @@ def main_loop(TOPIC_START, client, ser, domotizc):
             msg_cnt += 1
             continue
         __dump_msg_cnt = True
+        syslog.syslog(syslog.LOG_NOTICE, "*bad: %s:%s**" % (result, line))
+        if DEBUG:
+            print("*bad:%s = %s" % (result, line))
         if result == 'BadCS':
             bad_cs_cnt += 1
             client.publish('tele/' + TOPIC_START + "bus/errors", str(bad_cs_cnt).encode('utf-8'), retain=True)
@@ -139,11 +148,13 @@ def main(argv):
     TOPIC_START = mqtt.config['MQTT']['topic_head']
     domotizc = dict(mqtt.config.items('Domotizc'))
     port = argv[1].split('/')[-1]
-    ser = serial.Serial(port='/dev/' + port, baudrate=mqtt.config['COM']['baudrate'])
+    ser = serial.Serial(port='/dev/' + port, baudrate=mqtt.config['COM']['baudrate'], timeout = 0.1)
     mqtt.connect()
     main_loop(TOPIC_START, mqtt.client, ser, domotizc)
 
-    syslog.syslog(syslog.LOG_ERR, "mqtt-frwd on %s stopped **" % (argv[1]))
+    syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s stopped **" % (argv[1]))
+    if DEBUG:
+        print("mqtt-frwd on %s stopped **" % (argv[1]))
     ser.close()
 
 if __name__ == '__main__':
