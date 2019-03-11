@@ -44,7 +44,7 @@ def __on_message(client, userdata, msg):
             js = json.loads(data)
             data = js['ENERGY']['Current']
             topic_ += "/Current"
-        msg_info = client.publish(topic_, data, retain=True)
+        msg_info = client.publish(topic_, data.decode('utf-8'), retain=True)
 
 def __on_disconnect(client, userdata, flags, rc):
     global __Connected  # Use global variable

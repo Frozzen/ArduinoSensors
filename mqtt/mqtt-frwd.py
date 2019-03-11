@@ -6,6 +6,8 @@
     mqtt-frwd.py /dev/ttyUSB0
 
 """
+import fcntl
+import os
 import sys
 import time
 
@@ -108,21 +110,21 @@ def main_loop(TOPIC_START, client, ser, domotizc):
         # print line,result
         if __dump_msg_cnt:
             __dump_msg_cnt = False
-            client.publish('tele/' + TOPIC_START + "bus/msg_cnt", str(msg_cnt).encode('utf-8'), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/msg_cnt", str(msg_cnt).decode('utf-8'), retain=True)
 
         if result == 'Ok':
             topic, val = line.split('=')
             if DEBUG:
                 print("t:%s = %s" % (topic, val))
             if "log" == topic:
-                client.publish('log/' + TOPIC_START, val)
+                client.publish('log/' + TOPIC_START, val.decode('utf-8'))
                 continue
 
-            client.publish('stat/' + TOPIC_START + topic, val.encode('utf-8'), retain=True)
+            client.publish('stat/' + TOPIC_START + topic, val.decode('utf-8'), retain=True)
             topic = topic.lower()
             if topic in domotizc:
                 tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (domotizc[topic], val.strip())
-                client.publish("domoticz/in", tval.encode('utf-8'))
+                client.publish("domoticz/in", tval.decode('utf-8'))
                 __dump_msg_cnt = True
             msg_cnt += 1
             continue
@@ -132,13 +134,13 @@ def main_loop(TOPIC_START, client, ser, domotizc):
             print("*bad:%s = %s" % (result, line))
         if result == 'BadCS':
             bad_cs_cnt += 1
-            client.publish('tele/' + TOPIC_START + "bus/errors", str(bad_cs_cnt).encode('utf-8'), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/errors", str(bad_cs_cnt).decode('utf-8'), retain=True)
         elif result == 'NotForMe':
             not_for_me_cnt += 1
-            client.publish('tele/' + TOPIC_START + "bus/not4me", str(not_for_me_cnt).encode('utf-8'), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/not4me", str(not_for_me_cnt).decode('utf-8'), retain=True)
         elif result == 'BadData':
             bad_data_cnt += 1
-            client.publish('tele/' + TOPIC_START + "bus/bad_data", str(bad_data_cnt).encode('utf-8'), retain=True)
+            client.publish('tele/' + TOPIC_START + "bus/bad_data", str(bad_data_cnt).decode('utf-8'), retain=True)
 
 
 def main(argv):
@@ -157,6 +159,18 @@ def main(argv):
         print("mqtt-frwd on %s stopped **" % (argv[1]))
     ser.close()
 
+
+_fh_lock = 0
+def run_once():
+    global _fh_lock
+    fh = open(os.path.realpath(__file__), 'r')
+    try:
+        fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
+    except:
+        os._exit(1)
+
+
 if __name__ == '__main__':
+    run_once()
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
     main(sys.argv)
