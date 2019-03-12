@@ -21,8 +21,7 @@ reflect = {}
 def  main_subscribe(client):
     global  reflect
     for tpc in reflect.keys():
-        decode = tpc.encode('ascii')
-        client.subscribe(decode)
+        client.subscribe(tpc.decode('utf-8'))
 
 ###################################
 def __on_connect(client, userdata, flags, rc):
