@@ -114,7 +114,7 @@ while 1:
         if domoticzstatus() == 0:
             syslog.syslog(syslog.LOG_INFO, "- " + device + " online, tell domoticz it's back")
             # вставить нотификацию на MQTT
-            mqtt.client.publish(mqtt_user, "ON", retain=True);
+            mqtt.client.publish(mqtt_user, u"ON", retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=On&level=0" + "&passcode=" + domoticzpasscode)
         else:
@@ -129,7 +129,7 @@ while 1:
         if domoticzstatus() == 1:
             syslog.syslog(syslog.LOG_INFO, "- " + device + " offline, tell domoticz it's gone")
             # вставить нотификацию на MQTT
-            mqtt.client.publish(mqtt_user, "OFF", retain=True);
+            mqtt.client.publish(mqtt_user, u"OFF", retain=True);
             domoticzrequest(
                 "http://" + domoticzserver + "/json.htm?type=command&param=switchlight&idx=" + switchid + "&switchcmd=Off&level=0" + "&passcode=" + domoticzpasscode)
         else:
