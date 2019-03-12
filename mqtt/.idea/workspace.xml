@@ -3,8 +3,7 @@
   <component name="ChangeListManager">
     <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/mqtt-frwd.py" beforeDir="false" afterPath="$PROJECT_DIR$/mqtt-frwd.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/reflect-mqtt.py" beforeDir="false" afterPath="$PROJECT_DIR$/reflect-mqtt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/check_device_online.py" beforeDir="false" afterPath="$PROJECT_DIR$/check_device_online.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -22,7 +21,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="16" />
+          <entry key="project.closed" value="18" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.103" value="1" />
           <entry key="project.open.time.11" value="1" />
@@ -33,7 +32,7 @@
           <entry key="project.open.time.32" value="1" />
           <entry key="project.open.time.33" value="1" />
           <entry key="project.open.time.34" value="1" />
-          <entry key="project.open.time.35" value="1" />
+          <entry key="project.open.time.35" value="2" />
           <entry key="project.open.time.36" value="1" />
           <entry key="project.open.time.37" value="2" />
           <entry key="project.open.time.39" value="2" />
@@ -42,7 +41,7 @@
           <entry key="project.open.time.49" value="1" />
           <entry key="project.open.time.52" value="1" />
           <entry key="project.open.time.63" value="1" />
-          <entry key="project.opened" value="21" />
+          <entry key="project.opened" value="22" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -68,7 +67,7 @@
           <entry key="dummy" value="2" />
           <entry key="ini" value="1310" />
           <entry key="md" value="36" />
-          <entry key="py" value="5060" />
+          <entry key="py" value="5062" />
           <entry key="service" value="48" />
           <entry key="txt" value="262" />
         </counts>
@@ -78,7 +77,7 @@
           <entry key="Ini" value="1310" />
           <entry key="Markdown" value="36" />
           <entry key="PLAIN_TEXT" value="312" />
-          <entry key="Python" value="5060" />
+          <entry key="Python" value="5062" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages">
@@ -93,16 +92,16 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="960">
+            <state relative-caret-position="743">
               <caret line="64" column="53" selection-start-line="64" selection-start-column="46" selection-end-line="64" selection-end-column="53" />
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="92">
+            <state relative-caret-position="227">
               <caret line="42" column="23" selection-start-line="46" selection-start-column="26" selection-end-line="46" selection-end-column="33" />
               <folding>
                 <element signature="e#145#161#0" expanded="true" />
@@ -114,8 +113,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/sunpos.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="613">
-              <caret line="86" lean-forward="true" selection-start-line="77" selection-end-line="86" />
+            <state relative-caret-position="1200">
+              <caret line="86" selection-start-line="77" selection-end-line="86" />
             </state>
           </provider>
         </entry>
@@ -129,11 +128,11 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/check_device_online.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="1605">
-              <caret line="123" column="4" selection-start-line="123" selection-start-column="4" selection-end-line="123" selection-end-column="4" />
+            <state relative-caret-position="598">
+              <caret line="131" column="44" selection-start-line="131" selection-start-column="44" selection-end-line="131" selection-end-column="44" />
               <folding>
                 <element signature="e#308#321#0" expanded="true" />
               </folding>
@@ -144,8 +143,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="236">
-              <caret line="117" column="49" lean-forward="true" selection-start-line="112" selection-start-column="19" selection-end-line="112" selection-end-column="26" />
+            <state relative-caret-position="1650">
+              <caret line="117" column="49" selection-start-line="112" selection-start-column="19" selection-end-line="112" selection-end-column="26" />
               <folding>
                 <element signature="e#229#241#0" expanded="true" />
               </folding>
@@ -234,10 +233,10 @@
         <option value="$PROJECT_DIR$/README.md" />
         <option value="$PROJECT_DIR$/mymqtt.py" />
         <option value="$PROJECT_DIR$/light.node-red" />
-        <option value="$PROJECT_DIR$/check_device_online.py" />
         <option value="$PROJECT_DIR$/mqtt-frwd.ini" />
         <option value="$PROJECT_DIR$/reflect-mqtt.py" />
         <option value="$PROJECT_DIR$/mqtt-frwd.py" />
+        <option value="$PROJECT_DIR$/check_device_online.py" />
       </list>
     </option>
   </component>
@@ -248,8 +247,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="175" />
-    <option name="y" value="40" />
+    <option name="x" value="96" />
+    <option name="y" value="66" />
     <option name="width" value="1346" />
     <option name="height" value="933" />
   </component>
@@ -507,15 +506,21 @@
       <option name="project" value="LOCAL" />
       <updated>1552232858524</updated>
     </task>
-    <option name="localTasksCounter" value="15" />
+    <task id="LOCAL-00015" summary="обработка и вывод ошибок">
+      <created>1552279516594</created>
+      <option name="number" value="00015" />
+      <option name="presentableId" value="LOCAL-00015" />
+      <option name="project" value="LOCAL" />
+      <updated>1552279516594</updated>
+    </task>
+    <option name="localTasksCounter" value="16" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="175" y="40" width="1346" height="933" extended-state="0" />
-    <editor active="true" />
+    <frame x="96" y="66" width="1346" height="933" extended-state="0" />
     <layout>
-      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.48230913" visible="true" weight="0.34597522" />
-      <window_info id="Structure" order="1" sideWeight="0.5176909" side_tool="true" visible="true" weight="0.34597522" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48125" visible="true" weight="0.3513932" />
+      <window_info active="true" id="Structure" order="1" sideWeight="0.51875" side_tool="true" visible="true" weight="0.3513932" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32978722" />
@@ -526,7 +531,7 @@
       <window_info anchor="bottom" id="TODO" order="6" />
       <window_info anchor="bottom" id="Docker" order="7" show_stripe_button="false" />
       <window_info anchor="bottom" id="Version Control" order="8" weight="0.32978722" />
-      <window_info anchor="bottom" id="File Transfer" order="9" visible="true" weight="0.32875" />
+      <window_info active="true" anchor="bottom" id="File Transfer" order="9" visible="true" weight="0.32875" />
       <window_info anchor="bottom" id="Database Changes" order="10" show_stripe_button="false" />
       <window_info anchor="bottom" id="Terminal" order="11" weight="0.32978722" />
       <window_info anchor="bottom" id="Event Log" order="12" side_tool="true" />
@@ -668,10 +673,10 @@
     <entry file="file://$PROJECT_DIR$/light.node-red">
       <provider selected="true" editor-type-id="text-editor" />
     </entry>
-    <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
+    <entry file="file://$PROJECT_DIR$/sunpos.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="960">
-          <caret line="64" column="53" selection-start-line="64" selection-start-column="46" selection-end-line="64" selection-end-column="53" />
+        <state relative-caret-position="1200">
+          <caret line="86" selection-start-line="77" selection-end-line="86" />
         </state>
       </provider>
     </entry>
@@ -682,12 +687,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/check_device_online.py">
+    <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="1605">
-          <caret line="123" column="4" selection-start-line="123" selection-start-column="4" selection-end-line="123" selection-end-column="4" />
+        <state relative-caret-position="1650">
+          <caret line="117" column="49" selection-start-line="112" selection-start-column="19" selection-end-line="112" selection-end-column="26" />
           <folding>
-            <element signature="e#308#321#0" expanded="true" />
+            <element signature="e#229#241#0" expanded="true" />
           </folding>
         </state>
       </provider>
@@ -712,29 +717,29 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/sunpos.py">
+    <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="613">
-          <caret line="86" lean-forward="true" selection-start-line="77" selection-end-line="86" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="236">
-          <caret line="117" column="49" lean-forward="true" selection-start-line="112" selection-start-column="19" selection-end-line="112" selection-end-column="26" />
-          <folding>
-            <element signature="e#229#241#0" expanded="true" />
-          </folding>
+        <state relative-caret-position="743">
+          <caret line="64" column="53" selection-start-line="64" selection-start-column="46" selection-end-line="64" selection-end-column="53" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="92">
+        <state relative-caret-position="227">
           <caret line="42" column="23" selection-start-line="46" selection-start-column="26" selection-end-line="46" selection-end-column="33" />
           <folding>
             <element signature="e#145#161#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/check_device_online.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="598">
+          <caret line="131" column="44" selection-start-line="131" selection-start-column="44" selection-end-line="131" selection-end-column="44" />
+          <folding>
+            <element signature="e#308#321#0" expanded="true" />
           </folding>
         </state>
       </provider>

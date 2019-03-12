@@ -38,18 +38,19 @@ void setup(void)
 {
   Serial.begin(RATE);
   setupJDY_40();
+  setupArduSens();
   Serial.println("ArduSensWL");
 }
 
 void sendToServer(const char *r, bool now)
 {
+  Serial.println(r);
   if(now) {
 #ifdef DEBUG    
       Serial.print (r);
       Serial.println(":");
 #endif
-      altSerial.print(r);
-      altSerial.println(":");
+      altSerial.println(r);
   } else {
     s_buffer.push(*(sBuf*)r);
   }
@@ -74,14 +75,18 @@ unsigned long s_last_tick = 0;
 void loop(void)
 {
   if((millis() - s_last_tick) > 100) {
+    s_last_tick = millis();
     doTestContacts();
     s_time_cnt++;
     if((s_time_cnt % DO_MSG_RATE) == 0) {
       doSendTemp(); // сложить температуру в буффер    
     }
   }
-  char buf[10];
+  if(!altSerial.available())
+    return;
+  char buf[10] = {0};
   altSerial.readBytesUntil('\n', buf, 10);
+  Serial.print(buf);
   if(strcmp(SEND_DATA_CMD, buf) == 0) 
     sendBuffToHost();  
   else if(strcmp(CONF_DATA_CMD, buf) == 0) 
