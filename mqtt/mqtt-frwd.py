@@ -6,8 +6,8 @@
     mqtt-frwd.py [--debug|--jdy40] /dev/ttyUSB0
 
 """
+import argparse
 import fcntl
-import getopt
 import sys
 import syslog
 import time
@@ -20,7 +20,8 @@ MAX_LINE_LENGTH = 150
 __Connected = False
 
 DEBUG = False
-
+ADDR_FROM = 0x1
+SEND_CMD = 0x1
 
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
@@ -160,8 +161,6 @@ class FrwdMQTT(MyMQTT):
         :param ser:
         :return:
         """
-        ADDR_FROM = 0x1
-        SEND_CMD = 0x1
         while True:
             if len(self.jdy_dev_list) > 0:
                 for DEVICE_NO in self.jdy_dev_list:
@@ -174,29 +173,24 @@ class FrwdMQTT(MyMQTT):
 
 def main(argv):
     global __Connected, DEBUG  # Use global variable
-    port = '/dev/' + argv[1].split('/')[-1]
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("-v", "--verbose", action="store_true",
+                    help="increase output verbosity")
+    parser.add_argument("-j", "--jdy40", action="store_true",
+                    help="active polling by jdy40 dongle")
+    parser.add_argument('-s', '--serial', action='store')
+    opts = parser.parse_args()
+    DEBUG = opts.verbose
+    port = '/dev/' + opts.serial.split('/')[-1]
+
     fh = open(port, 'r')
     try:
         fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except OSError:
         sys.exit(1)
 
-    jdy40 = False
-    try:
-        opts, args = getopt.getopt(argv, "hdj", ["help", "debug", "jdy40"])
-    except getopt.GetoptError:
-        print(__doc__)
-        sys.exit(2)
-    for opt, arg in opts:
-        if opt == '-h':
-            print(__doc__)
-            sys.exit(1)
-        elif opt in ("-d", "--debug"):
-            DEBUG = True
-        elif opt in ("-j", "--jdy40"):
-            jdy40 = True
-
-    mqtt = FrwdMQTT(jdy40)
+    mqtt = FrwdMQTT(opts.jdy40)
     syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s started" % (argv[1]))
     ser = serial.Serial(port=port, baudrate=mqtt.config['COM']['baudrate'], timeout=0.1)
     mqtt.connect()
