@@ -179,7 +179,7 @@ def main(argv):
                     help="increase output verbosity")
     parser.add_argument("-j", "--jdy40", action="store_true",
                     help="active polling by jdy40 dongle")
-    parser.add_argument('-s', '--serial', action='store')
+    parser.add_argument('serial')
     opts = parser.parse_args()
     DEBUG = opts.verbose
     port = '/dev/' + opts.serial.split('/')[-1]
