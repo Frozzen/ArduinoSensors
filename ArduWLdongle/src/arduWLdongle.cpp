@@ -1,17 +1,15 @@
 #include <Arduino.h>
-//#include <AltSoftSerial.h>
 #include <SoftwareSerial.h>
 
 #define RATE 38400
 extern void setupJDY_40();
-//extern AltSoftSerial altSerial;
 extern SoftwareSerial altSerial;
 
 void setup(void)
 {
   Serial.begin(RATE);
-  setupJDY_40();
   Serial.println("ArduSens WL dongle");
+  setupJDY_40();
 }
 
 /*
@@ -19,15 +17,13 @@ void setup(void)
 */
 void loop(void)
 {
-  char c;
 
   if (Serial.available()) {
-    c = Serial.read();
-    altSerial.print(c);
-    //Serial.print(c);
+    char c;
+    altSerial.write(c = Serial.read());
+    Serial.write(c);
   }
   if (altSerial.available()) {
-    c = altSerial.read();
-    Serial.print(c);
+    Serial.write(altSerial.read());
   }
 }
