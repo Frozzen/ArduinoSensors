@@ -32,13 +32,12 @@ void loop(void)
   }
   #else
     char c;
-  delayMicroseconds(380);
+  delayMicroseconds(580);
   if (Serial.available()) {
     c = Serial.read();
     altSerial.write(c);
     //Serial.write(c);
   }
-  //delayMicroseconds(80);
   if (altSerial.available()) {
     c = altSerial.read();
     Serial.write(c);

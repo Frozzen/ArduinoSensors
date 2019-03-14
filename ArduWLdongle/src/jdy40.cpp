@@ -9,20 +9,17 @@
 
 //AltSoftSerial altSerial;
 SoftwareSerial altSerial(rX, tX);
+// послать команду и получить ответ от устройства
 static void getConfig(const char*str)
 {
-  delay(500);  
-char buf[20] = {0};
+  delay(20);  
   while(*str){
     delayMicroseconds(580);
     altSerial.write(*str++);
   }
-  Serial.print(">");
-  while(!altSerial.available());
-  Serial.print(".");
-  size_t ix = altSerial.readBytesUntil('\n', buf, sizeof(buf));
-  Serial.write(buf, ix); 
-  Serial.println("<");
+char buf[20] = {0};
+  altSerial.readBytesUntil('\n', buf, sizeof(buf));
+  Serial.println(buf); 
 }
 // установили канал скоррость режим
 void setupJDY_40()
@@ -54,6 +51,5 @@ void setupJDY_40()
   getConfig("AT+RFC\r\n");
   getConfig("AT+POWE\r\n");
   getConfig("AT+CLSS\r\n");
-  return;
   digitalWrite(JDY_40_SET, HIGH);
 }
