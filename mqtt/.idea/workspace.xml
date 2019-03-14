@@ -16,7 +16,7 @@
   </component>
   <component name="CoverageDataManager">
     <SUITE FILE_PATH="coverage/mqtt$reflect.coverage" NAME="reflect Coverage Results" MODIFIED="1552367533771" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/mqtt$mqtt_frwd.coverage" NAME="mqtt-frwd Coverage Results" MODIFIED="1552391534781" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/mqtt$mqtt_frwd.coverage" NAME="mqtt-frwd Coverage Results" MODIFIED="1552392963718" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$sun___shedule.coverage" NAME="sun &amp; shedule Coverage Results" MODIFIED="1551540575074" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$check_my.coverage" NAME="check my Coverage Results" MODIFIED="1552100488844" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
@@ -38,7 +38,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="18" />
+          <entry key="project.closed" value="19" />
           <entry key="project.open.time.1" value="1" />
           <entry key="project.open.time.103" value="1" />
           <entry key="project.open.time.105" value="1" />
@@ -87,17 +87,17 @@
           <entry key="dummy" value="2" />
           <entry key="ini" value="1329" />
           <entry key="md" value="36" />
-          <entry key="py" value="6251" />
+          <entry key="py" value="6259" />
           <entry key="service" value="48" />
-          <entry key="txt" value="375" />
+          <entry key="txt" value="407" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="Ini" value="1329" />
           <entry key="Markdown" value="36" />
-          <entry key="PLAIN_TEXT" value="425" />
-          <entry key="Python" value="6251" />
+          <entry key="PLAIN_TEXT" value="457" />
+          <entry key="Python" value="6259" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages">
@@ -147,11 +147,12 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="150">
-              <caret line="10" selection-start-line="10" selection-end-line="10" />
+            <state relative-caret-position="234">
+              <caret line="161" column="16" lean-forward="true" selection-start-line="161" selection-start-column="16" selection-end-line="161" selection-end-column="16" />
               <folding>
-                <marker date="1552391483209" expanded="true" signature="1932:2361" ph="..." />
-                <marker date="1552391483209" expanded="true" signature="2565:4791" ph="..." />
+                <element signature="e#247#262#0" expanded="true" />
+                <marker date="1552393837597" expanded="true" signature="1932:2361" ph="..." />
+                <marker date="1552393837597" expanded="true" signature="2565:4791" ph="..." />
               </folding>
             </state>
           </provider>
@@ -325,7 +326,7 @@
       <option name="ADD_SOURCE_ROOTS" value="true" />
       <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
       <option name="SCRIPT_NAME" value="$PROJECT_DIR$/mqtt-frwd.py" />
-      <option name="PARAMETERS" value="-s ttyUSB0" />
+      <option name="PARAMETERS" value="ttyUSB0" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />
       <option name="MODULE_MODE" value="false" />
@@ -521,7 +522,21 @@
       <option name="project" value="LOCAL" />
       <updated>1552390099632</updated>
     </task>
-    <option name="localTasksCounter" value="19" />
+    <task id="LOCAL-00019" summary="передаю cmd line args">
+      <created>1552391577603</created>
+      <option name="number" value="00019" />
+      <option name="presentableId" value="LOCAL-00019" />
+      <option name="project" value="LOCAL" />
+      <updated>1552391577603</updated>
+    </task>
+    <task id="LOCAL-00020" summary="передаю cmd line args">
+      <created>1552392979734</created>
+      <option name="number" value="00020" />
+      <option name="presentableId" value="LOCAL-00020" />
+      <option name="project" value="LOCAL" />
+      <updated>1552392979734</updated>
+    </task>
+    <option name="localTasksCounter" value="21" />
     <servers />
   </component>
   <component name="ToolWindowManager">
@@ -535,7 +550,7 @@
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32875" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.32875" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.33625" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.33625" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -604,7 +619,8 @@
     <MESSAGE value="начал сервера" />
     <MESSAGE value="вычислил изменение тока в розетках и отправил событие в mqtt" />
     <MESSAGE value="накодировал вариант опроса" />
-    <option name="LAST_COMMIT_MESSAGE" value="накодировал вариант опроса" />
+    <MESSAGE value="передаю cmd line args" />
+    <option name="LAST_COMMIT_MESSAGE" value="передаю cmd line args" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -618,6 +634,11 @@
           <url>file://$PROJECT_DIR$/check_device_online.py</url>
           <line>131</line>
           <option name="timeStamp" value="41" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/mqtt-frwd.py</url>
+          <line>186</line>
+          <option name="timeStamp" value="48" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -830,11 +851,12 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="150">
-          <caret line="10" selection-start-line="10" selection-end-line="10" />
+        <state relative-caret-position="234">
+          <caret line="161" column="16" lean-forward="true" selection-start-line="161" selection-start-column="16" selection-end-line="161" selection-end-column="16" />
           <folding>
-            <marker date="1552391483209" expanded="true" signature="1932:2361" ph="..." />
-            <marker date="1552391483209" expanded="true" signature="2565:4791" ph="..." />
+            <element signature="e#247#262#0" expanded="true" />
+            <marker date="1552393837597" expanded="true" signature="1932:2361" ph="..." />
+            <marker date="1552393837597" expanded="true" signature="2565:4791" ph="..." />
           </folding>
         </state>
       </provider>

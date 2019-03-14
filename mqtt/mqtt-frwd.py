@@ -164,7 +164,7 @@ class FrwdMQTT(MyMQTT):
         while True:
             if len(self.jdy_dev_list) > 0:
                 for DEVICE_NO in self.jdy_dev_list:
-                    cmd = ":%02x%02x%02x;" % (DEVICE_NO, ADDR_FROM, SEND_CMD)
+                    cmd = ":%02x%02x%02x;\r\n" % (DEVICE_NO, ADDR_FROM, SEND_CMD)
                     ser.write(cmd)
                     self.read_data(ser)
             else:
