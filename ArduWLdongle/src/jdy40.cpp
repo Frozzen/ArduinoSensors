@@ -2,28 +2,31 @@
 #include <SoftwareSerial.h>
 #define AltRATE 19200
 
-#define ALT_RS232_RX 8
-#define ALT_RS232_TX 9
+#define rX 8
+#define tX 9
 #define JDY_40_SET 7
 
 
 //AltSoftSerial altSerial;
-SoftwareSerial altSerial(ALT_RS232_RX, ALT_RS232_TX);
+SoftwareSerial altSerial(rX, tX);
 static void getConfig(const char*str)
 {
+  delay(500);  
 char buf[20] = {0};
-  altSerial.print(str);
-  for(uint8_t i =0; i <2; ++i) {
-    while(!altSerial.available());
-    altSerial.readBytesUntil('\n', buf, sizeof(buf));
-    Serial.println(buf); Serial.print(":");
+  while(*str){
+    delayMicroseconds(580);
+    altSerial.write(*str++);
   }
+  Serial.print(">");
+  while(!altSerial.available());
+  Serial.print(".");
+  size_t ix = altSerial.readBytesUntil('\n', buf, sizeof(buf));
+  Serial.write(buf, ix); 
+  Serial.println("<");
 }
 // установили канал скоррость режим
 void setupJDY_40()
 {
-  pinMode(ALT_RS232_RX, INPUT);
-  pinMode(ALT_RS232_TX, OUTPUT);
   pinMode(JDY_40_SET, OUTPUT);
 #ifdef FISRT_INIT
 #define AltRATE_START 9600
@@ -41,17 +44,16 @@ void setupJDY_40()
   delay(100);
   digitalWrite(JDY_40_SET, HIGH);
 #endif
-  altSerial.begin(AltRATE);
+  altSerial.begin(19200);
   // отчет о текущий конфигурации
   digitalWrite(JDY_40_SET, LOW);
+  getConfig("AT+BAUD\r\n");
+  getConfig("AT+RFID\r\n");
+  getConfig("AT+DVID\r\n");
+  getConfig("AT+RFID\r\n");
+  getConfig("AT+RFC\r\n");
+  getConfig("AT+POWE\r\n");
+  getConfig("AT+CLSS\r\n");
   return;
-  delay(500);
-  getConfig("AT+BAUD\n");
-  getConfig("AT+RFID\n");
-  getConfig("AT+DVID\n");
-  getConfig("AT+RFID\n");
-  getConfig("AT+RFC\n");
-  getConfig("AT+PWOE\n");
-  getConfig("AT+CLSS\n");
   digitalWrite(JDY_40_SET, HIGH);
 }

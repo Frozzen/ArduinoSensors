@@ -17,13 +17,31 @@ void setup(void)
 */
 void loop(void)
 {
-
+#if 0
+  char buf[100];
   if (Serial.available()) {
-    char c;
-    altSerial.write(c = Serial.read());
-    Serial.write(c);
+    Serial.write('<');
+    size_t ix = Serial.readBytesUntil('\n', buf, sizeof(buf));
+    altSerial.write(buf, ix);
+    //Serial.write(buf, ix);
   }
   if (altSerial.available()) {
-    Serial.write(altSerial.read());
+    Serial.write('>');
+    size_t ix = altSerial.readBytesUntil('\n', buf, sizeof(buf));
+    Serial.write(buf, ix);
   }
+  #else
+    char c;
+  delayMicroseconds(380);
+  if (Serial.available()) {
+    c = Serial.read();
+    altSerial.write(c);
+    //Serial.write(c);
+  }
+  //delayMicroseconds(80);
+  if (altSerial.available()) {
+    c = altSerial.read();
+    Serial.write(c);
+  }
+  #endif
 }
