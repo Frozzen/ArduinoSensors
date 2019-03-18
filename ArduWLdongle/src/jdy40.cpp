@@ -63,6 +63,7 @@ void JDY40::init()
 
 uint8_t JDY40::status()
 {
+  delay(20);  
   return altSerial.available();
 }
 
@@ -80,5 +81,6 @@ void JDY40::put(char c)
 
 void JDY40::send(const char* str)
 {
-    altSerial.write(":020101;\n\r");
+  delay(20);  
+    altSerial.write(str);
 }
