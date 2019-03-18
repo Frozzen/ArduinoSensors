@@ -5,7 +5,6 @@
 
 #include "ardudev.h"
 #include "arduSensUtils.h"
-#include <CircularBuffer.h>
 
 /*
  * через JDY40 рабоает по опросу, на serial рабоатет - просто печать
@@ -27,18 +26,13 @@
 // счетчик keepalive
 uint16_t s_time_cnt = 0;
 #define DO_MSG_RATE 500
-struct sBuf {
-  char b[80];
-};
-CircularBuffer<struct sBuf, 8> s_buffer;
 
-extern SoftwareSerial altSerial;
-extern void setupJDY_40();
+SoftwareSerial altSerial(ALT_RS232_RX,ALT_RS232_TX);
 
 void setup(void)
 {
   Serial.begin(RATE);
-  setupJDY_40();
+  altSerial.begin(RATE);
   setupArduSens();
   Serial.println("ArduSensWL");
 }
@@ -46,52 +40,18 @@ void setup(void)
 void sendToServer(const char *r, bool now)
 {
   Serial.println(r);
-  if(now) {
-#ifdef DEBUG    
-      Serial.print (r);
-      Serial.println(":");
-#endif
-      altSerial.println(r);
-  } else {
-    s_buffer.push(*(sBuf*)r);
-  }
+  altSerial.println(r);
 }
 
-void sendBuffToHost()
-{
-    while (!s_buffer.isEmpty()) {
-      sBuf bf = s_buffer.shift();
-#ifdef DEBUG    
-      Serial.print (b);
-      Serial.println(":");
-#endif
-      altSerial.print(bf.b);
-      altSerial.println(":");
-  }   
-}
 /*
    Main function, calls the temperatures in a loop.
 */
-unsigned long s_last_tick = 0;
 void loop(void)
 {
-  if((millis() - s_last_tick) > 100) {
-    s_last_tick = millis();
-    doTestContacts();
-    s_time_cnt++;
-    if((s_time_cnt % DO_MSG_RATE) == 0) {
-      doSendTemp(); // сложить температуру в буффер    
-    }
+  doTestContacts();
+  s_time_cnt++;
+  if((s_time_cnt % DO_MSG_RATE) == 0) {
+    doSendTemp(); // сложить температуру в буффер    
   }
-  if(!altSerial.available())
-    return;
-  char buf[10] = {0};
-  altSerial.readBytesUntil('\n', buf, 10);
-  Serial.print(buf);
-  if(strcmp(SEND_DATA_CMD, buf) == 0) 
-    sendBuffToHost();  
-  else if(strcmp(CONF_DATA_CMD, buf) == 0) 
-    setupArduSens();
-  else if(strcmp(ALIVE_DATA_CMD, buf) == 0) 
-    doAlive();
+  delay(100);
 }

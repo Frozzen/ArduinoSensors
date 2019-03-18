@@ -26,9 +26,11 @@
 // команды :020101; :020102; :020103;
 
 // serial rate
-#define RATE 38400
+#define RATE 19200
+#if 0
 // set jdy40 config
 #define JDY_40_SET 7
+#endif
 // SoftSerial pin
 #define ALT_RS232_RX 8
 #define ALT_RS232_TX 9
