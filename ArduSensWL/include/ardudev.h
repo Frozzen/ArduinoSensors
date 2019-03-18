@@ -10,8 +10,10 @@
 #define TEMPERATURE_PRECISION 9
 #define MAX_DS1820_COUNT 2
 
+#define USE_SERIAL
+#define USE_ALT_SERIAL
 // serial rate
-#define RATE 19200
+#define ALT_SERIAL_RATE 19200
 #if 0
 // set jdy40 config
 #define JDY_40_SET 7
