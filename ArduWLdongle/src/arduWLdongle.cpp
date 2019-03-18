@@ -1,17 +1,18 @@
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include "jdy40.h"
 
 #define RATE 38400
-extern void setupJDY_40();
-extern SoftwareSerial altSerial;
 
 void setup(void)
 {
   Serial.begin(RATE);
   Serial.println("ArduSens WL dongle");
-  setupJDY_40();
+  jdy.init();
+  jdy.put('#');
 }
 
+unsigned long s_last_tick = 0;
 /*
    Main function, calls the temperatures in a loop.
 */
@@ -31,15 +32,20 @@ void loop(void)
     Serial.write(buf, ix);
   }
   #else
-    char c;
-  delayMicroseconds(580);
+  if((millis() - s_last_tick) > 1000) {
+    s_last_tick = millis();
+    //jdy_send(":020101;\n\r");
+    Serial.print('.'); 
+    jdy.put(']');
+  }
+  char c;
+  //delayMicroseconds(580);
   if (Serial.available()) {
     c = Serial.read();
-    altSerial.write(c);
-    //Serial.write(c);
+    jdy.put(c);
   }
-  if (altSerial.available()) {
-    c = altSerial.read();
+  if (jdy.status()) {
+    c = jdy.get();
     Serial.write(c);
   }
   #endif
