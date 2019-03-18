@@ -27,9 +27,10 @@
 // время на дребезг контактов
 #define TIME_TO_RELAX 5
 
-#define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
+#define LOG_MESSAGE HOST_ADDR "log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
 
+#define ADDR_STR HOST_ADDR SENSOR_NAME DEVICE_NO
 // Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
 OneWire oneWire(ONE_WIRE_BUS);
 
@@ -60,7 +61,7 @@ const char *getAddrString(DeviceAddress &dev)
 /// сформировать пакет что устройство живо
 void doAlive()
 {
-  snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/alive=%d", s_time_cnt++);
+  snprintf(s_buf, sizeof(s_buf), ADDR_STR "/alive=%d", s_time_cnt++);
   sendToServer(s_buf, true);
 }
 
@@ -95,7 +96,7 @@ void   doTestContacts(){
     boolean changed = s_input_pin[ix].update(); 
     if ( changed ) {
         uint8_t value = s_input_pin[ix].read();
-        snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/latch-%d=%d", ix, value);
+        snprintf(s_buf, sizeof(s_buf), ADDR_STR "/latch-%d=%d", ix, value);
         sendToServer(s_buf);
       }  
     }
@@ -116,7 +117,7 @@ bool doSendTemp()
 		double illuminance = 255.84 * pow(resistance, -10/9);
     char str_temp[6];
     dtostrf((float)illuminance, 4, 1, str_temp);
-    snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/light=%s", str_temp);
+    snprintf(s_buf, sizeof(s_buf), ADDR_STR "/light=%s", str_temp);
     sendToServer(s_buf);
     updated = true;
   }
@@ -135,7 +136,7 @@ bool doSendTemp()
     // формируем строку с температурой
     char str_temp[6];
     dtostrf(tempC, -5, 1, str_temp);
-    snprintf(s_buf, sizeof(s_buf), HOST_ADDR SENSOR_NAME DEVICE_NO "/DS1820-%s/temp=%s",
+    snprintf(s_buf, sizeof(s_buf), ADDR_STR "/DS1820-%s/temp=%s",
       getAddrString(s_thermometer[ix]), str_temp);
     sendToServer(s_buf);
     updated = true;

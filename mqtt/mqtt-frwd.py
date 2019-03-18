@@ -79,17 +79,14 @@ def on_connect(client, userdata, flags, rc):
 
 
 class FrwdMQTT(MyMQTT):
-    def __init__(self, jdy40):
+    def __init__(self):
         super(FrwdMQTT, self).__init__()
         self.dump_msg_cnt = False
         self.msg_cnt = self.bad_cs_cnt = self.not_for_me_cnt = self.bad_data_cnt = 0
         self.TOPIC_START = ''
         self.domitizc = {}
-        self.jdy_dev_list = []
         self.TOPIC_START = self.config['MQTT']['topic_head']
         self.domotizc = dict(self.config.items('Domotizc'))
-        if jdy40:
-            self.jdy_dev_list = self.config['jdy-40']['dev_list'].split(',')
 
     ###################################
     def read_data(self, ser):
@@ -152,23 +149,17 @@ class FrwdMQTT(MyMQTT):
 
     ##########################################
     def main_loop(self, ser):
-        """
-        основной цикл приложения
+    """
+    основной цикл приложения
 
-        устойчивость по отпаданию COM и MQTT
-        запустить по таймеру печать bus/msg_cnt
+    устойчивость по отпаданию COM и MQTT
+    запустить по таймеру печать bus/msg_cnt
 
-        :param ser:
-        :return:
-        """
+    :param ser:
+    :return:
+    """
         while True:
-            if len(self.jdy_dev_list) > 0:
-                for DEVICE_NO in self.jdy_dev_list:
-                    cmd = ":%02x%02x%02x;\r\n" % (DEVICE_NO, ADDR_FROM, SEND_CMD)
-                    ser.write(cmd)
-                    self.read_data(ser)
-            else:
-                self.read_data(ser)
+            self.read_data(ser)
 
 
 def main(argv):
@@ -177,8 +168,6 @@ def main(argv):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true",
                     help="increase output verbosity")
-    parser.add_argument("-j", "--jdy40", action="store_true",
-                    help="active polling by jdy40 dongle")
     parser.add_argument('serial')
     opts = parser.parse_args()
     DEBUG = opts.verbose
@@ -190,7 +179,7 @@ def main(argv):
     except OSError:
         sys.exit(1)
 
-    mqtt = FrwdMQTT(opts.jdy40)
+    mqtt = FrwdMQTT()
     syslog.syslog(syslog.LOG_NOTICE, "mqtt-frwd on %s started" % (argv[1]))
     ser = serial.Serial(port=port, baudrate=mqtt.config['COM']['baudrate'], timeout=0.1)
     mqtt.connect()

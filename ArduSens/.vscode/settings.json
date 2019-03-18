@@ -1,6 +1,0 @@
-{
-    "terminal.integrated.env.linux": {
-        "PATH": "/home/vovva/.platformio/penv/bin:/home/vovva/.platformio/penv:/home/vovva/bin:/home/vovva/.local/bin:/home/vovva/bin:/home/vovva/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin",
-        "PLATFORMIO_CALLER": "vscode"
-    }
-}
