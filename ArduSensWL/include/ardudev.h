@@ -19,3 +19,6 @@
 // SoftSerial pin
 #define ALT_RS232_RX 8
 #define ALT_RS232_TX 9
+
+// нужно изменять между образцами - чтобы было поменьше коллизий
+#define DO_MSG_RATE 5000

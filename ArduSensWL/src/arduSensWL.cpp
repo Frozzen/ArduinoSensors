@@ -8,13 +8,12 @@
 
 // счетчик keepalive
 uint16_t s_time_cnt = 0;
-#define DO_MSG_RATE 5000
 
 SoftwareSerial altSerial(ALT_RS232_RX,ALT_RS232_TX);
 
 void setup(void)
 {
-  Serial.begin(RATE);
+  Serial.begin(38400);
   altSerial.begin(RATE);
   setupArduSens();
   Serial.println("ArduSensWL");
