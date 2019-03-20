@@ -1,0 +1,1331 @@
+{
+	"auto_complete":
+	{
+		"selected_items":
+		[
+			[
+				"doTe",
+				"doTestWater"
+			],
+			[
+				"option",
+				"option"
+			],
+			[
+				"referral",
+				"referral_code"
+			],
+			[
+				"FREE",
+				"FREE_BOOKINGS_FOR_RECIPIENT"
+			],
+			[
+				"free_bookin",
+				"free_bookings_remaining"
+			],
+			[
+				"free_booking",
+				"free_bookings_credit_used"
+			],
+			[
+				"free_bookings",
+				"free_bookings_remaining"
+			],
+			[
+				"bus",
+				"bus_registration_number"
+			],
+			[
+				"last",
+				"last_bus_stop_departure_time"
+			],
+			[
+				"alighting",
+				"alighting_bus_stop_id"
+			],
+			[
+				"board",
+				"boarding_bus_stop_id"
+			],
+			[
+				"boarding_bus",
+				"boarding_bus_stop_name"
+			],
+			[
+				"prev",
+				"previous_path"
+			],
+			[
+				"crossed",
+				"crossed_bus_stop"
+			],
+			[
+				"current",
+				"current_bus"
+			],
+			[
+				"depar",
+				"departure_time"
+			],
+			[
+				"regi",
+				"registration_number"
+			],
+			[
+				"boarding",
+				"boarding_bus_stop_id"
+			],
+			[
+				"paths",
+				"paths_on_route"
+			],
+			[
+				"destin",
+				"destination_path"
+			],
+			[
+				"source",
+				"source_path"
+			],
+			[
+				"avail",
+				"available"
+			],
+			[
+				"last_bus",
+				"last_bus_stop_path"
+			],
+			[
+				"last_bus_stop",
+				"last_bus_stop_id"
+			],
+			[
+				"update",
+				"update_firebase_entry_for_trip"
+			],
+			[
+				"aligh",
+				"alighting_bus_stop_id"
+			],
+			[
+				"aut",
+				"authenticate_bus_with_token"
+			],
+			[
+				"walki",
+				"walking_directions_to_bus_stop"
+			],
+			[
+				"boardin",
+				"boarding_bus_stop"
+			],
+			[
+				"walking",
+				"walking_direction_from_bus_stop"
+			],
+			[
+				"walk",
+				"walking_direction_from_bus_stop"
+			],
+			[
+				"source_bus",
+				"source_bus_stop_path"
+			],
+			[
+				"destination",
+				"destination"
+			],
+			[
+				"trips",
+				"trips_with_availability"
+			],
+			[
+				"max",
+				"max_occupancy"
+			],
+			[
+				"total",
+				"total_deboarded"
+			],
+			[
+				"alight",
+				"alighting_bus_stop_id"
+			],
+			[
+				"alig",
+				"alighting_bus_stop_id"
+			]
+		]
+	},
+	"buffers":
+	[
+		{
+			"contents": "#include <Arduino.h>\n/*\n * измеритель температуры + 4 контакта на замыкание\n * - температурных датчиков ds1820 может быть любое количество\n *  шлет только изменение опрос 30сек\n *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте\n *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/value=val раз в 30 сек при изменении\n *   ArduStatHHHH/light=val раз в 0.1 сек освещенность\n * - контакты опрашивает раз 100мсек\n *   ArduStatHHHH/latch-1=val раз в 0.1 сек при изменении\n *   ArduStatHHHH/latch-4=val раз в 0.1 сек при изменении\n *  шлет только изменения\n * - раз в 5 секунд шлет keeralive\n *    ArduStatHHHH/INFO/alive=cnt раз в 5\n *    ArduStatHHHH/INFO/count=val - один раз при старте\n * - все сточки закрываются контрольной суммой через :\n */\n// Include the libraries we need\n#include <Arduino.h>\n#include <OneWire.h>\n#include <DallasTemperature.h>\n#include <Bounce2.h>\n#include \"ardudev.h\"\n#include \"arduSensUtils.h\"\n\n\n// время на дребезг контактов\n#define TIME_TO_RELAX 5\n\n#define LOG_MESSAGE HOST_ADDR \"log={\\\"type\\\":\\\"device_connected\\\",\\\"message\\\":\\\"\"\n#define LOG_MESSAGE_END \"\\\"}\"\n\n#define ADDR_STR HOST_ADDR SENSOR_NAME DEVICE_NO\n// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)\nOneWire oneWire(ONE_WIRE_BUS);\n\nBounce s_input_pin[IN_PIN_COUNT];\n\n// Pass our oneWire reference to Dallas Temperature.\nDallasTemperature sensors(&oneWire);\n\n// arrays to hold device addresses\nuint8_t s_therm_count = 0;\nDeviceAddress s_thermometer[MAX_DS1820_COUNT];\n\nchar s_buf[MAX_OUT_BUFF];\n////////////////////////////////////////////////////////\n// Assign address manually. The addresses below will beed to be changed\n// to valid device addresses on your bus. Device address can be retrieved\n// by using either oneWire.search(deviceAddress) or individually via\nconst char *getAddrString(DeviceAddress &dev)\n{\n  static char _buf[17];\n  for (uint8_t i = 0; i < 8; i++)   {\n    sprintf(_buf+i*2, \"%02x\", (char)dev[i]);\n  }\n  _buf[16] = 0;\n  return _buf;\n}\n\n/// сформировать пакет что устройство живо\nvoid doAlive()\n{\n  snprintf(s_buf, sizeof(s_buf), ADDR_STR \"/alive=%d\", s_time_cnt++);\n  sendToServer(s_buf, true);\n}\n\n/// настроили кнопки которые нажимают\nvoid iniInputPin(Bounce &bounce, uint8_t pin)\n{\n  pinMode(pin, INPUT); \n  digitalWrite(pin, HIGH);\n  bounce.attach(pin); // Настраиваем Bouncer\n  bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга\n}\n\n/// проверили что кнопку отпустили\nbool checkButtonChanged(Bounce &bounce)\n{\n  boolean changed = bounce.update(); \n  int value = HIGH;\n  if ( changed ) {\n      value = bounce.read();\n      // Если значение датчика стало ЗАМКНУТО\n      if ( value == LOW) {\n        return true;\n      }\n    }  \n  return false;\n}\n\n//------------------------------------------------------\n/// послать в шину изменения в контакотах\nvoid   doTestContacts(){\n  for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix ) {\n    boolean changed = s_input_pin[ix].update(); \n    if ( changed ) {\n        uint8_t value = s_input_pin[ix].read();\n        snprintf(s_buf, sizeof(s_buf), ADDR_STR \"/latch-%d=%d\", ix, value);\n        sendToServer(s_buf);\n      }  \n    }\n}\n\n/// послать в шину изменение в температуре\nbool doSendTemp()\n{\n  bool updated = false;\n  uint16_t adc_value = analogRead(FOTO_SENSOR);\n  {\n    // формируем строку с температурой\n \t\t// Расчет напряжения во входе ADC\n\t\tdouble voltage = 5.0 - 5.0 * ((double)adc_value / 1024.0);\n \t\t// Измерение сопротивления фоторезистора в делителе напряжения\n\t\tdouble resistance = (10.0 * 5.0) / voltage - 10.0;\n \t\t// Вычисление освещенности в люксах\t\t\n\t\tdouble illuminance = 255.84 * pow(resistance, -10/9);\n    char str_temp[6];\n    dtostrf((float)illuminance, 4, 1, str_temp);\n    snprintf(s_buf, sizeof(s_buf), ADDR_STR \"/light=%s\", str_temp);\n    sendToServer(s_buf);\n    updated = true;\n  }\n   \n  // call sensors.requestTemperatures() to issue a global temperature\n  // request to all devices on the bus\n  if(s_therm_count == 0)\n    return updated;\n  sensors.requestTemperatures();\n\n  // print the device information\n  for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {\n    float tempC = sensors.getTempC(s_thermometer[ix]);\n    if(tempC > 67.0)\n      continue;\n    // формируем строку с температурой\n    char str_temp[6];\n    dtostrf(tempC, -5, 1, str_temp);\n    snprintf(s_buf, sizeof(s_buf), ADDR_STR \"/DS1820-%s/temp=%s\",\n      getAddrString(s_thermometer[ix]), str_temp);\n    sendToServer(s_buf);\n    updated = true;\n  }\n  return updated;\n}\n\n//------------------------------------\nvoid setupArduSens(void)\n{\n  snprintf(s_buf, sizeof(s_buf),LOG_MESSAGE SENSOR_NAME DEVICE_NO \"/light\" LOG_MESSAGE_END);\n  sendToServer(s_buf, true);\n \n   for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {\n    iniInputPin(s_input_pin[ix], IN_PIN_START+ix); \n    snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO \"/latch-%d\" LOG_MESSAGE_END, ix);\n    sendToServer(s_buf, true);\n  }\n// locate devices on the bus\n  // Start up the library\n  sensors.begin();\n  s_therm_count = sensors.getDeviceCount();\n  if(s_therm_count == 0)\n    return;\n  // method 1: by index ***\n  for(uint8_t ix = 0; ix < s_therm_count; ++ix ) {\n    if (!sensors.getAddress(s_thermometer[ix], ix)) \n      memset(&s_thermometer[ix], 0, sizeof(DeviceAddress));\n    else {\n      // set the resolution to 9 bit per device\n      sensors.setResolution(s_thermometer[ix], TEMPERATURE_PRECISION);\n      snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO \"/DS1820-%s\" LOG_MESSAGE_END,\n        getAddrString(s_thermometer[ix]));\n      sendToServer(s_buf, true);\n    }\n  }\n}\n",
+			"file": "src/arduSensUtils.cpp",
+			"file_size": 4553,
+			"file_write_time": 131975502159836242,
+			"settings":
+			{
+				"buffer_size": 5603,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"file": "src/arduSensWL.cpp",
+			"settings":
+			{
+				"buffer_size": 1098,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "#define SENSOR_NAME \"ArduStat\"\n#define DEVICE_NO \"02\"\n// Data wire is plugged into port 2 on the Arduino\n#define ONE_WIRE_BUS 2\n#define FOTO_SENSOR A1\n// чило сканируемых pin начиная с PIN3-PIN7\n#define IN_PIN_START 3\n#define IN_PIN_COUNT 8\n \n#define TEMPERATURE_PRECISION 9\n#define MAX_DS1820_COUNT 2\n\n#define USE_SERIAL\n#define USE_ALT_SERIAL\n// serial rate\n#define ALT_SERIAL_RATE 19200\n#if 0\n// set jdy40 config\n#define JDY_40_SET 7\n#endif\n// SoftSerial pin\n#define ALT_RS232_RX 8\n#define ALT_RS232_TX 9\n\n// нужно изменять между образцами - чтобы было поменьше коллизий\n#define DO_MSG_RATE 5000\n",
+			"file": "include/ardudev.h",
+			"file_size": 674,
+			"file_write_time": 131975418434485890,
+			"settings":
+			{
+				"buffer_size": 599,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		},
+		{
+			"contents": "#include <Arduino.h>\n#include <Wire.h>\n#include <RtcDS1307.h>\n#include <TM1637Display.h>\n\n#include \"ardudev.h\"\n#include \"arduSensUtils.h\"\n\n\n// Data wire is plugged into port 2 on the Arduino\n#define ONE_WIRE_BUS 2\n// Module connection pins (Digital Pins)\n#define DISPLAY_CLK 4\n#define DISPLAY_DIO 3\n\n// выход со счетчика\n#define WATER_COUNTER_PIN 5\n// показать/убрать показания на дисплее\n#define DISPLAY_BUTTON_PIN 6\n// кнопка открыть/закрыть воду\n#define OPEN_WATER_BUTTON_PIN 7 \n// кран открыт\n#define IS_TAP_OPEN 9\n// кран закрыт\n#define IS_TAP_CLOSE 10\n// закрыть кран\n#define OPEN_TAP_CMD 11\n// открыть кран\n#define CLOSE_TAP_CMD 12\n\n// бочка полная\n#define IS_BURREL_FULL A7\n// бочка пустая\n#define IS_BURREL_EMPTY A6\n// PIN  A4(SDA),A5(SCL) - I2C - display\n// вода на полу - LED протечка\n#define IS_FLOOR_WET A2\n// LED кран закрыт\n#define WATER_PRESSURE A1 //the YELLOW pin of the Sensor is connected with A2 of Arduino/Catduino\n\n// адреса в eeprom\n#define EERPOM_ADDR_COUNT 0\n\n#define LOG_MESSAGE \":01log={\\\"type\\\":\\\"device_connected\\\",\\\"message\\\":\\\"\"\n#define LOG_MESSAGE_END \"\\\"}\"\n\n// Setup  instancees to communicate with devices\nRtcDS1307<TwoWire> Rtc(Wire);\n\nTM1637Display display(DISPLAY_CLK, DISPLAY_DIO);\n \nBounce &waterClick = s_input_pin[0],                // счетчик воды\n       &displayClick = s_input_pin[1],           // кнопка показать значения\n       &openTapClick = s_input_pin[2],\n       &isTapOpen = s_input_pin[3],\n       &isTapClosed = s_input_pin[4],\n       &isBarrelFull = s_input_pin[5],\n       &isBarrelEmpty = s_input_pin[6],\n       &isFloorWet = s_input_pin[7];\n\n// arrays to hold device addresses\nuint8_t s_therm_count = 0;\n// значение счетчика воды в 10 литрах\nuint32_t s_water_count = 0, s_water_count_rtc;\n// показывать на дисплее счетчик\nbool s_displayMode = true;\n// счетчик времени - для задержанных операций\nuint16_t s_time_cnt = 0;\n\n////////////////////////////////////////////////////////\n\nvoid isButtonChanged(Bounce &bounce, const char *title)\n{\n  boolean changed = bounce.update(); \n  if ( changed ) {\n      uint8_t value = bounce.read();\n      String r(ADDR_TO SENSOR_NAME DEVICE_NO + String(title));\n      r += \"=\" +String(value, DEC);\n      sendToServer(r);\n    }  \n}\n\nenum eTapStates {\n  eTapNone,\n  eTapWorking,\n  eTapStop\n} s_fsm_tap_state;\nuint32_t s_fsm_timeout = 0;\n//------------------------------------------------------\n/// послать в шину изменения в контакотах\nvoid   doTestWater(){\n  if(checkButtonChanged(displayClick)) {\n      s_displayMode ^= true;\n  }\n  if(checkButtonChanged(openTapClick)) {\n    if(isTapOpen.value) {\n      digitalWrite(OPEN_TAP_CMD, HIGH);    \n      digitalWrite(CLOSE_TAP_CMD, LOW);    \n    } else  {\n      digitalWrite(CLOSE_TAP_CMD, HIGH);    \n      digitalWrite(OPEN_TAP_CMD, LOW);    \n    }\n    s_fsm_tap_state = eTapWorking;\n    s_fsm_timeout = millis();\n  }\n  isButtonChanged(isBarrelEmpty, \"barrel_empty\");\n  isButtonChanged(isBarrelFull, \"barrel_full\");\n  isButtonChanged(isTapClosed, \"tap_closed\");\n  isButtonChanged(isTapOpen, \"tap_open\");\n  isButtonChanged(isFloorWet, \"wet_floor\");\n}\n\n/*macro definition of sensor*/\n// Использовал программу, которую предоставил продавец. Заметил, что в покое он показывает отрицательное значение, \n// равное -3.35 кПа. я не могу понять, с чем связана данная цифра.\nvoid doWaterPressure()\n{\n\n  int raw = analogRead(WATER_PRESSURE);\n  float voltage = (float) raw * 5.0 / 1024.0;     // voltage at the pin of the Arduino\n  float pressure_kPa = (voltage - 0.5) / 4.0 * 1.200;          // voltage to pressure\n    char str_press[6];\n  dtostrf((float)pressure_kPa, 4, 1, str_press);\n  snprintf(s_buf, sizeof(s_buf), ADDR_STR \"/wpress=%s\", str_press);\n  sendToServer(s_buf);\n}\n\n/// показать текущее значение на дисплее. показываем ddd.ddd. \n/// если захотите учидеть старшие цифры - на mqtt или в подвал\nvoid doDisplayValue()\n{\n  if(s_displayMode) {\n    int16_t val = (s_water_count / 10) & 0x3fff;\n    display.showNumberDec(val, true); \n  } else \n    display.clear();\n}\n\n\n//------------------------------------\nvoid setup(void)\n{\n  display.clear();\n  display.setBrightness(0x0f);\n  Serial.begin(38400);\n  setupArduSens();\n  \n  Rtc.Begin();\n  // never assume the Rtc was last configured by you, so\n  // just clear them to your needed s_time_cnt\n  Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); \n  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count_rtc, (uint8_t)sizeof(s_water_count_rtc));\n  s_water_count = s_water_count_rtc;\n  // конфигурирую входные pin для кнопок\n\n  sendDeviceConfig(\"/water\");\n  iniInputPin(isBarrelEmpty, IS_BURREL_EMPTY); \n  sendDeviceConfig(\"/barrel_empty\");\n  iniInputPin(isBarrelFull, IS_BURREL_FULL); \n  sendDeviceConfig(\"/barrel_full\");\n  iniInputPin(isTapClosed, IS_TAP_CLOSE); \n  sendDeviceConfig(\"/tap_closed\");\n  iniInputPin(isTapOpen, IS_TAP_OPEN); \n  sendDeviceConfig(\"/tap_open\");\n  iniInputPin(isFloorWet, IS_FLOOR_WET); \n  sendDeviceConfig(\"/wet_floor\");\n\n}\n\n/*\n   Main function, calls the temperatures in a loop.\n*/\nvoid loop(void)\n{\n  // контакты посылаем 10 раз в сек\n  doTestContacts();\n  // обновляем дисплей 10 раз в сек\n  doDisplayValue();\n  doTestWater();\n  // раз в 1 минуту послать alive или температуру\n  if((s_time_cnt % DO_MSG_RATE) == 0) {\n    if(!doSendTemp())\n      doAlive();    \n    // write in eeprom\n    if(s_water_count_rtc != s_water_count) {\n      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count_rtc));\n      s_water_count_rtc = s_water_count;\n    }\n  }\n  // FSM для открытия и закрытия крана\n  switch (s_fsm_tap_state)\n  {\n    case eTapWorking: {\n      uint32_t delay = millis() - s_fsm_timeout;\n      if(delay > TAP_TIMEOUT)\n        s_fsm_tap_state = eTapStop;\n      }\n      break;\n    case eTapStop:\n      digitalWrite(OPEN_TAP_CMD, LOW);\n      digitalWrite(CLOSE_TAP_CMD, LOW);      \n      break;\n    case eTapNone:\n    default:\n      break;\n  }\n  delay(100);\n  s_time_cnt++;\n}\n",
+			"file": "/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduWater/src/arduWater.cpp",
+			"file_size": 13432,
+			"file_write_time": 131975418535045794,
+			"settings":
+			{
+				"buffer_size": 5915,
+				"encoding": "UTF-8",
+				"line_ending": "Unix"
+			}
+		}
+	],
+	"build_system": "",
+	"build_system_choices":
+	[
+	],
+	"build_varint": "",
+	"command_palette":
+	{
+		"height": 392.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"subl merg",
+				"Sublime Merge: File History"
+			],
+			[
+				"merge",
+				"Sublime Merge: Blame File"
+			],
+			[
+				"git",
+				"Package Control: Install Package"
+			],
+			[
+				"sublime tuto",
+				"Sublime Tutor: Start"
+			],
+			[
+				"sublimegit",
+				"SublimeGit: Version"
+			],
+			[
+				"install ",
+				"Package Control: Install Package"
+			],
+			[
+				"Remove ",
+				"Package Control: Remove Package"
+			],
+			[
+				"fine key ",
+				"FindKeyConflicts: All Key Maps to Quick Panel"
+			],
+			[
+				"install package",
+				"Package Control: Install Package"
+			],
+			[
+				"install packae",
+				"Package Control: Install Package"
+			],
+			[
+				"list package",
+				"Package Control: List Packages"
+			],
+			[
+				"install",
+				"Package Control: Install Package"
+			],
+			[
+				"synta",
+				"Set Syntax: Diff"
+			],
+			[
+				"git diff",
+				"Git: Diff"
+			],
+			[
+				"git blame",
+				"Git: Blame"
+			],
+			[
+				"ruby",
+				"Set Syntax: Ruby"
+			],
+			[
+				"diff",
+				"Set Syntax: Diff"
+			],
+			[
+				"pretty ",
+				"Pretty Ruby: Format"
+			],
+			[
+				"install pac",
+				"Package Control: Install Package"
+			],
+			[
+				"remove pa",
+				"Package Control: Remove Package"
+			],
+			[
+				"packageinstal",
+				"Package Control: Install Package"
+			],
+			[
+				"syntax git diff",
+				"Set Syntax: SublimeGit Diff"
+			],
+			[
+				"syntax",
+				"Set Syntax: Diff"
+			],
+			[
+				"git b lame",
+				"Git: Blame"
+			],
+			[
+				"install pack",
+				"Package Control: Install Package"
+			],
+			[
+				"removepac",
+				"Package Control: Remove Package"
+			],
+			[
+				"remove pack",
+				"Package Control: Remove Package"
+			],
+			[
+				"package remove",
+				"Package Control: Remove Package"
+			],
+			[
+				"css",
+				"Set Syntax: CSS"
+			],
+			[
+				"package remove ",
+				"Package Control: Remove Package"
+			],
+			[
+				"syntax css",
+				"Set Syntax: CSS"
+			],
+			[
+				"git blam",
+				"Git: Blame"
+			],
+			[
+				"syntax diff",
+				"Set Syntax: Diff"
+			],
+			[
+				"syntax ",
+				"Set Syntax: Diff"
+			],
+			[
+				"package install",
+				"Package Control: Install Package"
+			],
+			[
+				"syntax:diff",
+				"Set Syntax: Diff"
+			],
+			[
+				"syntax git",
+				"Set Syntax: SublimeGit Diff"
+			],
+			[
+				"blame",
+				"Git: Blame"
+			],
+			[
+				"gst",
+				"Git: Status"
+			]
+		],
+		"width": 539.0
+	},
+	"console":
+	{
+		"height": 263.0,
+		"history":
+		[
+			"sublime.log_commands(True)",
+			"subprocess.Popen([executable_path, './Tutorial'], cwd='/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/')",
+			"subprocess.Popen([executable_path, './'], cwd='/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/')",
+			"subprocess([executable_path, './'], cwd='/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/')",
+			"executable_path",
+			"executable_path = app_path+\"Contents/SharedSupport/bin/subl\"",
+			"app_path = executable_path[:executable_path.rfind(\".app/\")+5]",
+			"executable_path = sublime.executable_path()",
+			"subprocess.Popen(['pwd'])",
+			"import subprocess",
+			"sublime.active_window().run_command(\"sublime_tutor_new_window\")",
+			"sublime.active_window().run_command",
+			"sublime.active_window()",
+			"sublime.executable_path()",
+			"subliem.executable_path()",
+			"executable_path[:executable_path.rfind(\".app/\")+5] + \"Contents/SharedSupport/bin/subl\"",
+			"executable_path[:executable_path.rfind(\".app/\")+5]",
+			"executable_path = sublime.executable_path()",
+			"sublime.executable_path().executable_path[:executable_path.rfind(\".app/\")+5]",
+			"executable_path[:executable_path.rfind(\".app/\")+5]",
+			"sublime.executable_path()",
+			"sublime.log_commands(False)",
+			"sublime.open_project",
+			"window.open_project",
+			"window.open_file",
+			"view.run_command(\"select_by_index\")",
+			"window.run_command(\"select_by_index\")",
+			"sublime.select_by_index",
+			"view.run_command(\"example\")",
+			"sublime.run_command(\"example\")",
+			"import urllib.request,os,hashlib; h = 'eb2297e1a458f27d836c04bb0cbaf282' + 'd0e7a3098092775ccb37ca9d6b2e4b7d'; pf = 'Package Control.sublime-package'; ipp = sublime.installed_packages_path(); urllib.request.install_opener( urllib.request.build_opener( urllib.request.ProxyHandler()) ); by = urllib.request.urlopen( 'http://packagecontrol.io/' + pf.replace(' ', '%20')).read(); dh = hashlib.sha256(by).hexdigest(); print('Error validating download (got %s instead of %s), please try manual install' % (dh, h)) if dh != h else open(os.path.join( ipp, pf), 'wb' ).write(by)"
+		]
+	},
+	"distraction_free":
+	{
+		"menu_visible": true,
+		"show_minimap": false,
+		"show_open_files": false,
+		"show_tabs": false,
+		"side_bar_visible": false,
+		"status_bar_visible": false
+	},
+	"expanded_folders":
+	[
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL",
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL/include",
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL/src"
+	],
+	"file_history":
+	[
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL/src/arduSensWL.cpp",
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL/README",
+		"/home/vovva/Dropbox/алена/dissemination_public_meds.sql",
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL/lib/rs232.cpp",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_2.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_3.md",
+		"/home/vovva/Dropbox/ДОм/README.md",
+		"/home/vovva/Dropbox/Тибетский/перевод/thl/thl.sh",
+		"/home/vovva/Dropbox/Тибетский/перевод/thl/thi.sh",
+		"/home/vovva/Dropbox/rpi/FuzzyTriangular.py",
+		"/home/vovva/земляника.txt",
+		"/home/vovva/Dropbox/Тибетский/RT/контрольная/12 органов и 3 ньепа.txt",
+		"/home/vovva/work/node/myfirstmodule.js",
+		"/home/vovva/PycharmProjects/specesdb/tools/README.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_14.md",
+		"/home/vovva/work/node/demo_module.js",
+		"/home/vovva/work/archiveA/lib/sensyda-python-2.0/mq_test.py",
+		"/home/vovva/work/archiveA/lib/sensyda-python-2.0/mq_server.py",
+		"/home/vovva/Загрузки/F5XAS9CIFMTNEBR.ino",
+		"/home/vovva/Dropbox/rpi/install network-monitor.txt",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_13.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_10.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_11.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_9.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_8.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_7.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_6.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_1.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_1.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/README.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_3.md",
+		"/home/vovva/.config/sublime-text-3/Packages/Sublime Tutor/tutorial/chapter_2_4.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_15.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/README.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_9.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_13.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_3.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_12.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_11.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_8.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_7.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_6.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_5.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_4.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_3.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_2.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/code/chapter_1.rb",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/tutorial.sublime-completions",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/README.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_6.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_2_14.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/contents.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_4_3.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_4.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_4_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/sublimetutor/tutorial/chapter_4_2.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/code/chapter_1.rb",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_2.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_3.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_4.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_6.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_5.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/contents.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_7.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_8.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_2.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_3.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_10.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_9.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/sublimetutor.sublime-project",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_11.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_12.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_13.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_14.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_15.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_3_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/User/Preferences.sublime-settings",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_7.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_8.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_4.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_5.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_6.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/chapter_2_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/README.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/Contents.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/tutorial/tutorial.sublime-completions",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/Default/Preferences.sublime-settings",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/Default/Default (OSX).sublime-keymap",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/Tutorial/chapter_1.md",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/Tutorial/sublimetutor.sublime-project",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeLinter/Default.sublime-commands",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/Default.sublime-commands",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/sublime_tutor.py",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/Main.sublime-menu",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeTutor/SublimeTutor.sublime-commands",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/KeyBindingInspector/KeyBindingListener.py",
+		"/Users/jai/Workspace/sublimetutor/CONTRIBUTORS.md",
+		"/Users/jai/Workspace/sublimetutor/Default (OSX).sublime-keymap",
+		"/Users/jai/Workspace/sublimetutor/Default (Windows).sublime-keymap",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/Cheat Sheets/cheat-sheets/Git.cheatsheet",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/bz2/st2_windows_x32/bz2.pyd",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/bz2/dependency-metadata.json",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeLinter/commands.py",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/SublimeLinter/sublimelinter.py",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/Cheat Sheets/cheat-sheets/VIM Editor.cheatsheet",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/Cheat Sheets/cheat-sheets/Github Flavored Markdown.cheatsheet",
+		"/Users/jai/Library/Application Support/Sublime Text 3/Packages/Cheat Sheets/cheat-sheets/Go.cheatsheet",
+		"/Users/jai/go/src/github.com/mattermost/platform/config/config.json",
+		"/Users/jai/go/src/github.com/mattermost/platform/docker/local/Dockerfile",
+		"/Users/jai/go/src/github.com/mattermost/platform/web/react/components/navbar_dropdown.jsx",
+		"/etc/hosts",
+		"/Users/jai/Workspace/trevo/app/models/user.rb",
+		"/Users/jai/.bash_profile",
+		"/Users/jai/.profile",
+		"/Users/jai/Workspace/trevo/app/controllers/api/v1/bookings_controller.rb",
+		"/Users/jai/Workspace/trevo/app/controllers/api/v1/feedbacks_controller.rb",
+		"/Users/jai/Workspace/trevo/app/controllers/api/v1/users_controller.rb",
+		"/Users/jai/Workspace/trevo/app/models/free_booking.rb",
+		"/Users/jai/Workspace/trevo/app/controllers/api/v1/free_bookings_controller.rb",
+		"/Users/jai/Workspace/trevo/app/models/referral.rb",
+		"/Users/jai/Workspace/trevo/app/models/trip.rb",
+		"/Users/jai/Workspace/trevo/app/models/booking.rb"
+	],
+	"find":
+	{
+		"height": 27.0
+	},
+	"find_in_files":
+	{
+		"height": 93.0,
+		"where_history":
+		[
+		]
+	},
+	"find_state":
+	{
+		"case_sensitive": true,
+		"find_history":
+		[
+			"б\\n",
+			"п\\n",
+			"п"
+		],
+		"highlight": true,
+		"in_selection": false,
+		"preserve_case": false,
+		"regex": true,
+		"replace_history":
+		[
+			" банка\\n",
+			" пакет\\n",
+			" пакет"
+		],
+		"reverse": false,
+		"show_context": true,
+		"use_buffer2": true,
+		"whole_word": false,
+		"wrap": true
+	},
+	"groups":
+	[
+		{
+			"selected": 1,
+			"sheets":
+			[
+				{
+					"buffer": 0,
+					"file": "src/arduSensUtils.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5603,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								696,
+								696
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 1,
+					"type": "text"
+				},
+				{
+					"buffer": 1,
+					"file": "src/arduSensWL.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 1098,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								122,
+								122
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 0,
+					"type": "text"
+				},
+				{
+					"buffer": 2,
+					"file": "include/ardudev.h",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 599,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								240,
+								240
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax"
+						},
+						"translation.x": 0.0,
+						"translation.y": 0.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 3,
+					"type": "text"
+				},
+				{
+					"buffer": 3,
+					"file": "/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduWater/src/arduWater.cpp",
+					"semi_transient": false,
+					"settings":
+					{
+						"buffer_size": 5915,
+						"regions":
+						{
+						},
+						"selection":
+						[
+							[
+								2249,
+								2249
+							],
+							[
+								5046,
+								5046
+							]
+						],
+						"settings":
+						{
+							"syntax": "Packages/C++/C++.sublime-syntax",
+							"tab_size": 2,
+							"translate_tabs_to_spaces": true
+						},
+						"translation.x": 0.0,
+						"translation.y": 3012.0,
+						"zoom_level": 1.0
+					},
+					"stack_index": 2,
+					"type": "text"
+				}
+			]
+		}
+	],
+	"incremental_find":
+	{
+		"height": 27.0
+	},
+	"input":
+	{
+		"height": 33.0
+	},
+	"layout":
+	{
+		"cells":
+		[
+			[
+				0,
+				0,
+				1,
+				1
+			]
+		],
+		"cols":
+		[
+			0.0,
+			1.0
+		],
+		"rows":
+		[
+			0.0,
+			1.0
+		]
+	},
+	"menu_visible": true,
+	"output.exec":
+	{
+		"height": 112.0
+	},
+	"output.find_results":
+	{
+		"height": 0.0
+	},
+	"pinned_build_system": "",
+	"project": "ardusenswl.sublime-project",
+	"replace":
+	{
+		"height": 70.0
+	},
+	"save_all_on_build": true,
+	"select_file":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"ch",
+				"chapter_2_3.md"
+			],
+			[
+				"",
+				"chapter_2_2.md"
+			],
+			[
+				"1",
+				"chapter_1.md"
+			],
+			[
+				"chapt2.2",
+				"chapter_2_2.md"
+			],
+			[
+				"c21",
+				"chapter_2_1.md"
+			],
+			[
+				"c2.md",
+				"chapter_2.md"
+			],
+			[
+				"c1rb",
+				"code/chapter_1.rb"
+			],
+			[
+				"1.",
+				"chapter_1.md"
+			],
+			[
+				"readme",
+				"README.md"
+			],
+			[
+				"readme.",
+				"README.md"
+			],
+			[
+				"keybind",
+				"KeyBindingInspector/KeyBindingListener.py"
+			],
+			[
+				"keyb",
+				"KeyBindingInspector/KeyBindingListener.py"
+			],
+			[
+				"user.rb",
+				"app/models/user.rb"
+			],
+			[
+				"feedbackcontr",
+				"app/controllers/api/v1/feedbacks_controller.rb"
+			],
+			[
+				"referral.rb",
+				"app/models/referral.rb"
+			],
+			[
+				"freebookin",
+				"app/models/free_booking.rb"
+			],
+			[
+				"freebookingcontr",
+				"app/controllers/api/v1/free_bookings_controller.rb"
+			],
+			[
+				"usercontr",
+				"app/controllers/api/v1/users_controller.rb"
+			],
+			[
+				"trip.rb",
+				"app/models/trip.rb"
+			],
+			[
+				"route.rb",
+				"app/models/route.rb"
+			],
+			[
+				"bookingcontr",
+				"app/controllers/api/v1/bookings_controller.rb"
+			],
+			[
+				"routecontr",
+				"app/controllers/api/v1/routes_controller.rb"
+			],
+			[
+				"booking.rb",
+				"app/models/booking.rb"
+			],
+			[
+				"static",
+				"app/controllers/api/v1/static_controller.rb"
+			],
+			[
+				"schemar.b",
+				"db/schema.rb"
+			],
+			[
+				"secret",
+				"config/secrets.yml"
+			],
+			[
+				"bookingserial",
+				"app/serializers/booking_serializer.rb"
+			],
+			[
+				"freebookingscredit",
+				"db/migrate/20151015072825_add_default_value_for_free_bookings_credit_used.rb"
+			],
+			[
+				"freebookingcred",
+				"db/migrate/20151008113500_add_free_bookings_credit_used_to_bookings.rb"
+			],
+			[
+				"vagrantfile",
+				"railsbox/development/Vagrantfile"
+			],
+			[
+				"adddefault",
+				"db/migrate/20150820081758_add_default_values_to_booking_attributes.rb"
+			],
+			[
+				"bookingseria",
+				"app/serializers/booking_serializer.rb"
+			],
+			[
+				"routescontr",
+				"app/controllers/api/v1/routes_controller.rb"
+			],
+			[
+				"feedba",
+				"app/admin/feedback.rb"
+			],
+			[
+				"path.rb",
+				"app/admin/path.rb"
+			],
+			[
+				"bus.rb",
+				"app/admin/bus.rb"
+			],
+			[
+				"driver.rb",
+				"app/admin/driver.rb"
+			],
+			[
+				"driver.",
+				"app/admin/driver.rb"
+			],
+			[
+				"feedback.",
+				"app/admin/feedback.rb"
+			],
+			[
+				"booking",
+				"app/admin/booking.rb"
+			],
+			[
+				"secret.",
+				"config/secrets.yml"
+			],
+			[
+				".yml",
+				"config/locales/en.yml"
+			],
+			[
+				"en.ym",
+				"config/locales/en.yml"
+			],
+			[
+				"freebooking.rb",
+				"app/models/free_booking.rb"
+			],
+			[
+				"freebookingcont",
+				"app/controllers/api/v1/free_bookings_controller.rb"
+			],
+			[
+				"referralcontr",
+				"app/controllers/api/v1/referrals_controller.rb"
+			],
+			[
+				"reffer",
+				"db/migrate/20151014084146_add_referrer_credited_to_referrals.rb"
+			],
+			[
+				"schema.rb",
+				"db/schema.rb"
+			],
+			[
+				"referral",
+				"app/models/referral.rb"
+			],
+			[
+				"gettrevo",
+				"railsbox/ansible/roles/nginx/templates/get_trevoapp.conf.j2"
+			],
+			[
+				"gettrev",
+				"railsbox/ansible/roles/nginx/templates/get_trevoapp.conf.j2"
+			],
+			[
+				"unicorn.con",
+				"railsbox/ansible/roles/nginx/templates/nginx_unicorn.conf.j2"
+			],
+			[
+				"nginxunico",
+				"railsbox/ansible/roles/nginx/templates/nginx_unicorn.conf.j2"
+			],
+			[
+				"nginxconf",
+				"railsbox/ansible/roles/nginx/templates/nginx.conf.j2"
+			],
+			[
+				"userseria",
+				"app/serializers/user_serializer.rb"
+			],
+			[
+				"routes.rb",
+				"config/routes.rb"
+			],
+			[
+				"freebookings",
+				"app/serializers/free_booking_serializer.rb"
+			],
+			[
+				"freebookingscon",
+				"app/controllers/api/v1/free_bookings_controller.rb"
+			],
+			[
+				"referralseria",
+				"app/serializers/referral_serializer.rb"
+			],
+			[
+				"userserializer",
+				"app/serializers/user_serializer.rb"
+			],
+			[
+				"wallettransactionser",
+				"app/serializers/wallet_transaction_serializer.rb"
+			],
+			[
+				"applicationcontr",
+				"app/controllers/application_controller.rb"
+			],
+			[
+				"freebooking",
+				"app/models/free_booking.rb"
+			],
+			[
+				"freebookingser",
+				"app/serializers/free_booking_serializer.rb"
+			],
+			[
+				"freebookingscontr",
+				"app/controllers/api/v1/free_bookings_controller.rb"
+			],
+			[
+				"trevo.rake",
+				"lib/tasks/trevo.rake"
+			],
+			[
+				"bookingcontroller",
+				"app/controllers/api/v1/bookings_controller.rb"
+			],
+			[
+				"referralcon",
+				"app/controllers/api/v1/referrals_controller.rb"
+			],
+			[
+				"schem",
+				"db/schema.rb"
+			],
+			[
+				"location.rb",
+				"app/models/location.rb"
+			],
+			[
+				"referralscontr",
+				"app/controllers/api/v1/referrals_controller.rb"
+			],
+			[
+				"freebookingseri",
+				"app/serializers/free_booking_serializer.rb"
+			],
+			[
+				"freeb",
+				"app/models/free_booking.rb"
+			],
+			[
+				"bookingfreebooking",
+				"db/migrate/20151008130311_create_bookings_free_bookings.rb"
+			],
+			[
+				"bookingfree",
+				"app/models/bookings_free_booking.rb"
+			],
+			[
+				"bookingsfree",
+				"db/migrate/20151008130311_create_bookings_free_bookings.rb"
+			],
+			[
+				"renamefree",
+				"db/migrate/20151008125554_rename_free_bookings_to_promotions.rb"
+			],
+			[
+				"bookingscontr",
+				"app/controllers/api/v1/bookings_controller.rb"
+			],
+			[
+				"freebookingscontroller",
+				"app/controllers/api/v1/free_bookings_controller.rb"
+			],
+			[
+				"busserializer",
+				"app/serializers/bus_serializer.rb"
+			],
+			[
+				"freebookingseria",
+				"app/serializers/free_booking_serializer.rb"
+			],
+			[
+				"freebookings.rb",
+				"spec/models/free_booking_spec.rb"
+			],
+			[
+				"addfreebookings",
+				"db/migrate/20151008113500_add_free_bookings_credit_used_to_bookings.rb"
+			],
+			[
+				"addfreebooking",
+				"db/migrate/20151008110423_add_free_bookings_credit_used_to_bookings.rb"
+			],
+			[
+				"addfrees",
+				"db/migrate/20151008110423_add_frees_trip_credit_used_to_bookings.rb"
+			],
+			[
+				"addbooking",
+				"db/migrate/20151008110423_add_frees_trip_credit_used_to_bookings.rb"
+			],
+			[
+				"createreferr",
+				"db/migrate/20151008110827_create_referrals.rb"
+			],
+			[
+				"createbooking",
+				"db/migrate/20150819092129_create_bookings.rb"
+			],
+			[
+				"referralcode",
+				"db/migrate/20151008081112_add_referral_code_to_users.rb"
+			],
+			[
+				"add",
+				"db/migrate/20150828142243_add_devise_to_buses.rb"
+			],
+			[
+				"applicationcont",
+				"app/controllers/application_controller.rb"
+			],
+			[
+				"parkingsequence",
+				"app/models/parking_sequence.rb"
+			],
+			[
+				"drivercontr",
+				"app/controllers/api/v1/drivers_controller.rb"
+			],
+			[
+				"parameter",
+				"app/models/parameter.rb"
+			],
+			[
+				"feedback.rb",
+				"app/models/feedback.rb"
+			],
+			[
+				"hasnfc",
+				"db/migrate/20151007061805_add_has_ble_and_has_nfc_to_users.rb"
+			],
+			[
+				"driversess",
+				"app/controllers/api/v1/driver_sessions_controller.rb"
+			],
+			[
+				"userserial",
+				"app/serializers/user_serializer.rb"
+			],
+			[
+				"staticcont",
+				"app/controllers/api/v1/static_controller.rb"
+			],
+			[
+				"logout",
+				"app/workers/logout_drivers_worker.rb"
+			],
+			[
+				"driversession",
+				"app/controllers/api/v1/driver_sessions_controller.rb"
+			],
+			[
+				"smswor",
+				"app/workers/send_sms_worker.rb"
+			],
+			[
+				"removeuniqu",
+				"db/migrate/20151005140605_remove_uniq_index_from_buses.rb"
+			],
+			[
+				"session",
+				"app/controllers/api/v1/sessions_controller.rb"
+			],
+			[
+				"sendsms",
+				"app/workers/send_sms_worker.rb"
+			],
+			[
+				"bussession",
+				"app/controllers/api/v1/bus_sessions_controller.rb"
+			],
+			[
+				"routescont",
+				"app/controllers/api/v1/routes_controller.rb"
+			],
+			[
+				"sess",
+				"app/controllers/api/v1/sessions_controller.rb"
+			],
+			[
+				"trip",
+				"app/admin/trip.rb"
+			],
+			[
+				"routecont",
+				"app/controllers/api/v1/routes_controller.rb"
+			],
+			[
+				"authe",
+				"app/controllers/concerns/authenticable.rb"
+			],
+			[
+				"buscontr",
+				"app/controllers/api/v1/buses_controller.rb"
+			],
+			[
+				"authent",
+				"app/controllers/concerns/authenticable.rb"
+			],
+			[
+				"buscontro",
+				"app/controllers/api/v1/buses_controller.rb"
+			],
+			[
+				"isactivedri",
+				"db/migrate/20151003112122_add_is_active_to_drivers.rb"
+			],
+			[
+				"isactive",
+				"db/migrate/20151003104401_add_is_active_to_buses.rb"
+			],
+			[
+				"paymentcontr",
+				"app/controllers/api/v1/payments_controller.rb"
+			],
+			[
+				"payment.rb",
+				"app/models/payment.rb"
+			],
+			[
+				"bussessions",
+				"app/controllers/api/v1/bus_sessions_controller.rb"
+			],
+			[
+				"book",
+				"app/models/booking.rb"
+			],
+			[
+				"capturepaym",
+				"app/workers/capture_payment_worker.rb"
+			],
+			[
+				"paymentcon",
+				"app/controllers/api/v1/payments_controller.rb"
+			],
+			[
+				"recharge",
+				"app/models/recharge.rb"
+			],
+			[
+				"wallettransa",
+				"app/models/wallet_transaction.rb"
+			],
+			[
+				"bussess",
+				"app/controllers/api/v1/bus_sessions_controller.rb"
+			],
+			[
+				"worker",
+				"app/workers/schedule_trips_worker.rb"
+			],
+			[
+				"authentc",
+				"app/controllers/concerns/authenticable.rb"
+			],
+			[
+				"busescontr",
+				"app/controllers/api/v1/buses_controller.rb"
+			]
+		],
+		"width": 0.0
+	},
+	"select_project":
+	{
+		"height": 0.0,
+		"last_filter": "",
+		"selected_items":
+		[
+		],
+		"width": 0.0
+	},
+	"select_symbol":
+	{
+		"height": 87.0,
+		"last_filter": "",
+		"selected_items":
+		[
+			[
+				"",
+				"bar1"
+			]
+		],
+		"width": 392.0
+	},
+	"selected_group": 0,
+	"settings":
+	{
+	},
+	"show_minimap": false,
+	"show_open_files": false,
+	"show_tabs": true,
+	"side_bar_visible": true,
+	"side_bar_width": 251.0,
+	"status_bar_visible": true,
+	"template_settings":
+	{
+	}
+}

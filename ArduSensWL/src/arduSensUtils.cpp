@@ -1,47 +1,8 @@
 #include <Arduino.h>
-/*
- * измеритель температуры + 4 контакта на замыкание
- * - температурных датчиков ds1820 может быть любое количество
- *  шлет только изменение опрос 30сек
- *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте
- *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/value=val раз в 30 сек при изменении
- *   ArduStatHHHH/light=val раз в 0.1 сек освещенность
- * - контакты опрашивает раз 100мсек
- *   ArduStatHHHH/latch-1=val раз в 0.1 сек при изменении
- *   ArduStatHHHH/latch-4=val раз в 0.1 сек при изменении
- *  шлет только изменения
- * - раз в 5 секунд шлет keeralive
- *    ArduStatHHHH/INFO/alive=cnt раз в 5
- *    ArduStatHHHH/INFO/count=val - один раз при старте
- * - все сточки закрываются контрольной суммой через :
- */
-// Include the libraries we need
-#include <Arduino.h>
-#include <OneWire.h>
-#include <DallasTemperature.h>
 #include <Bounce2.h>
 #include "ardudev.h"
 #include "arduSensUtils.h"
 
-
-// время на дребезг контактов
-#define TIME_TO_RELAX 5
-
-#define LOG_MESSAGE HOST_ADDR "log={\"type\":\"device_connected\",\"message\":\""
-#define LOG_MESSAGE_END "\"}"
-
-#define ADDR_STR HOST_ADDR SENSOR_NAME DEVICE_NO
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-OneWire oneWire(ONE_WIRE_BUS);
-
-Bounce s_input_pin[IN_PIN_COUNT];
-
-// Pass our oneWire reference to Dallas Temperature.
-DallasTemperature sensors(&oneWire);
-
-// arrays to hold device addresses
-uint8_t s_therm_count = 0;
-DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 
 char s_buf[MAX_OUT_BUFF];
 ////////////////////////////////////////////////////////
