@@ -5,7 +5,7 @@
 #define FOTO_SENSOR A1
 // чило сканируемых pin начиная с PIN3-PIN7
 #define IN_PIN_START 5
-#define IN_PIN_COUNT 4
+#define IN_PIN_COUNT 7
  
 #define TEMPERATURE_PRECISION 9
 #define MAX_DS1820_COUNT 2
