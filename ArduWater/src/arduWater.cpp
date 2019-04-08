@@ -5,19 +5,24 @@
 #include <TM1637Display.h>
 
 #include "ardudev.h"
+#define NO_TEMP
 #include "arduSensUtils.h"
+/// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
+/// TODO сделать управление командами команды не ко мне форвардить
+/// TODO занести в NVRAM значение для воды, 
+/// TODO открыть закрыть кран
 
 
 // Module connection pins (Digital Pins)
-#define DISPLAY_CLK 4
 #define DISPLAY_DIO 3
+#define DISPLAY_CLK 4
 
 // выход со счетчика
 #define WATER_COUNTER_PIN 5
 // показать/убрать показания на дисплее
 #define DISPLAY_BUTTON_PIN 6
 // кнопка открыть/закрыть воду
-#define OPEN_WATER_BUTTON_PIN 7 
+#define OPEN_WATER_BUTTON_PIN 2 
 // кран открыт
 #define IS_TAP_OPEN 9
 // кран закрыт
@@ -28,14 +33,12 @@
 #define CLOSE_TAP_CMD 12
 
 // бочка полная
-#define IS_BURREL_FULL A7
+#define IS_BURREL_FULL 8
 // бочка пустая
-#define IS_BURREL_EMPTY A6
+#define IS_BURREL_EMPTY 7
 // PIN  A4(SDA),A5(SCL) - I2C - display
-// вода на полу - LED протечка
-#define IS_FLOOR_WET A2
-// LED кран закрыт
-#define WATER_PRESSURE A1 //the YELLOW pin of the Sensor is connected with A2 of Arduino/Catduino
+//the YELLOW pin of the Sensor is connected with A2 of Arduino/Catduino
+#define WATER_PRESSURE A1 
 
 // адреса в eeprom
 #define EERPOM_ADDR_COUNT 0
@@ -96,7 +99,7 @@ void   doTestWater(){
       s_displayMode ^= true;
   }
   if(checkButtonChanged(openTapClick)) {
-    if(isTapOpen.value) {
+    if(isTapOpen.read()) {
       digitalWrite(OPEN_TAP_CMD, HIGH);    
       digitalWrite(CLOSE_TAP_CMD, LOW);    
     } else  {
@@ -110,7 +113,6 @@ void   doTestWater(){
   isButtonChanged(isBarrelFull, "barrel_full");
   isButtonChanged(isTapClosed, "tap_closed");
   isButtonChanged(isTapOpen, "tap_open");
-  isButtonChanged(isFloorWet, "wet_floor");
 }
 
 /*macro definition of sensor*/
@@ -169,7 +171,6 @@ void setup(void)
   sendDeviceConfig("/barrel_full");
   sendDeviceConfig("/tap_closed");
   sendDeviceConfig("/tap_open");
-  sendDeviceConfig("/wet_floor");
 }
 
 /*

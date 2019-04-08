@@ -18,7 +18,9 @@
 // Include the libraries we need
 #include <Arduino.h>
 #include <OneWire.h>
+#ifndef NO_TEMP
 #include <DallasTemperature.h>
+#endif
 #include <Bounce2.h>
 #include "ardudev.h"
 #include "arduSensUtils.h"
@@ -35,14 +37,14 @@ OneWire oneWire(ONE_WIRE_BUS);
 
 Bounce s_input_pin[IN_PIN_COUNT];
 
+char s_buf[MAX_OUT_BUFF];
+#ifndef NO_TEMP
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
 // arrays to hold device addresses
 uint8_t s_therm_count = 0;
 DeviceAddress s_thermometer[MAX_DS1820_COUNT];
-
-char s_buf[MAX_OUT_BUFF];
 ////////////////////////////////////////////////////////
 // Assign address manually. The addresses below will beed to be changed
 // to valid device addresses on your bus. Device address can be retrieved
@@ -56,6 +58,7 @@ const char *getAddrString(DeviceAddress &dev)
   _buf[16] = 0;
   return _buf;
 }
+#endif
 
 /// сформировать пакет что устройство живо
 void doAlive()
@@ -100,7 +103,7 @@ void   doTestContacts(){
       }  
     }
 }
-
+#ifndef NO_TEMP
 /// послать в шину изменение в температуре
 bool doSendTemp()
 {
@@ -142,6 +145,7 @@ bool doSendTemp()
   }
   return updated;
 }
+#endif
 
 //------------------------------------
 void setupArduSens(void)
@@ -156,6 +160,7 @@ void setupArduSens(void)
   }
 // locate devices on the bus
   // Start up the library
+#ifndef NO_TEMP  
   sensors.begin();
   s_therm_count = sensors.getDeviceCount();
   if(s_therm_count == 0)
@@ -172,4 +177,5 @@ void setupArduSens(void)
       sendToServer(s_buf, true);
     }
   }
+  #endif
 }

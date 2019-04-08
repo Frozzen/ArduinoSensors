@@ -12,3 +12,4 @@
 
 #define USE_SERIAL
 #define DO_MSG_RATE 5000
+#define TAP_TIMEOUT 10000
