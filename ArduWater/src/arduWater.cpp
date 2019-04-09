@@ -20,15 +20,15 @@
 // выход со счетчика
 #define WATER_COUNTER_PIN 5
 // показать/убрать показания на дисплее
-#define DISPLAY_BUTTON_PIN 6
+#define BTN_DISPLAY 6
 // кнопка открыть/закрыть воду
-#define OPEN_WATER_BUTTON_PIN 2 
+#define BTN_OPEN_WATER 2 
 // кран открыт
 #define IS_TAP_OPEN 9
 // кран закрыт
 #define IS_TAP_CLOSE 10
 // закрыть кран
-#define OPEN_TAP_CMD 11
+#define OPEN_TAP_CMD 2
 // открыть кран
 #define CLOSE_TAP_CMD 12
 
@@ -52,14 +52,13 @@ RtcDS1307<TwoWire> Rtc(Wire);
 TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 extern Bounce s_input_pin[IN_PIN_COUNT];
 
-Bounce &waterClick = s_input_pin[WATER_COUNTER_PIN-5],                // счетчик воды
-       &displayClick = s_input_pin[DISPLAY_BUTTON_PIN-5],           // кнопка показать значения
-       &openTapClick = s_input_pin[OPEN_WATER_BUTTON_PIN-5],
-       &isTapOpen = s_input_pin[IS_TAP_OPEN-5],
-       &isTapClosed = s_input_pin[IS_TAP_CLOSE-5],
-       &isBarrelFull = s_input_pin[IS_BURREL_FULL-5],
-       &isBarrelEmpty = s_input_pin[IS_BURREL_EMPTY-5],
-       &isFloorWet = s_input_pin[IS_FLOOR_WET-5];
+Bounce waterClick,                // счетчик воды
+       displayClick,           // кнопка показать значения
+       openTapClick,    // кнопка открыть воду
+       isBarrelFull,
+       isBarrelEmpty,
+       isTapOpen,
+       isTapClosed;
 
 // значение счетчика воды в 10 литрах
 uint32_t s_water_count = 0, s_water_count_rtc;
@@ -69,6 +68,17 @@ bool s_displayMode = true;
 uint16_t s_time_cnt = 0;
 
 ////////////////////////////////////////////////////////
+void sendToServer(const char *r, bool now)
+{
+char buf[4];
+  Serial.print(r);
+  uint8_t sum = 0;
+  for(const char *str = r; *str; ++str)
+    sum += *str;
+  sum = 0xff - sum;
+  snprintf(buf, sizeof(buf), ";%02x", sum);
+  Serial.println(buf);
+}
 
 extern bool checkButtonChanged(Bounce &bounce);
 void isButtonChanged(Bounce &bounce, const char *title)
@@ -88,23 +98,28 @@ enum eTapStates {
 } s_fsm_tap_state;
 uint32_t s_fsm_timeout = 0;
 //------------------------------------------------------
-/// послать в шину изменения в контакотах
-void   doTestWater(){
+/// послать в шину изменения в контактах
+void   doTestWater() {
+
   if(checkButtonChanged(waterClick)) {
     ++s_water_count;
-    snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%d", s_water_count);
+    snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%ld", s_water_count);
     sendToServer(s_buf);
   }
+
+  // переключить экранчик
   if(checkButtonChanged(displayClick)) {
       s_displayMode ^= true;
   }
+
+  // запустить FSM на изменение ветниля
   if(checkButtonChanged(openTapClick)) {
-    if(isTapOpen.read()) {
+    if(!isTapOpen.read()) {
       digitalWrite(OPEN_TAP_CMD, HIGH);    
       digitalWrite(CLOSE_TAP_CMD, LOW);    
     } else  {
-      digitalWrite(CLOSE_TAP_CMD, HIGH);    
       digitalWrite(OPEN_TAP_CMD, LOW);    
+      digitalWrite(CLOSE_TAP_CMD, HIGH);    
     }
     s_fsm_tap_state = eTapWorking;
     s_fsm_timeout = millis();
@@ -148,13 +163,23 @@ void sendDeviceConfig(const char *dev)
     sendToServer(s_buf);
 }
 
+extern void iniInputPin(Bounce &bounce, uint8_t pin);
 //------------------------------------
 void setup(void)
 {
   display.clear();
   display.setBrightness(0x0f);
   Serial.begin(38400);
-  setupArduSens();
+
+  iniInputPin(openTapClick, BTN_OPEN_WATER);
+  iniInputPin(waterClick, WATER_COUNTER_PIN);
+  iniInputPin(displayClick, BTN_DISPLAY);
+  iniInputPin(isBarrelFull, IS_BURREL_FULL);
+  iniInputPin(isBarrelEmpty, IS_BURREL_EMPTY);
+  iniInputPin(isBarrelFull, IS_BURREL_FULL);
+  iniInputPin(isBarrelEmpty, IS_BURREL_EMPTY);
+  iniInputPin(isTapOpen, IS_TAP_OPEN);
+  iniInputPin(isTapClosed, IS_TAP_CLOSE);
   
   digitalWrite(OPEN_TAP_CMD, LOW);
   digitalWrite(CLOSE_TAP_CMD, LOW);
@@ -178,16 +203,13 @@ void setup(void)
 */
 void loop(void)
 {
-  // контакты посылаем 10 раз в сек
-  doTestContacts();
   // обновляем дисплей 10 раз в сек
   doDisplayValue();
   doTestWater();
 
   // раз в 1 минуту послать alive или температуру
   if((s_time_cnt % DO_MSG_RATE) == 0) {
-    if(!doSendTemp())
-      doAlive();    
+    doAlive();    
     // write in eeprom
     if(s_water_count_rtc != s_water_count) {
       Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count_rtc));

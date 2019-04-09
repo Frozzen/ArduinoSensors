@@ -91,6 +91,7 @@ bool checkButtonChanged(Bounce &bounce)
   return false;
 }
 
+#ifndef NO_TEMP
 //------------------------------------------------------
 /// послать в шину изменения в контакотах
 void   doTestContacts(){
@@ -103,7 +104,6 @@ void   doTestContacts(){
       }  
     }
 }
-#ifndef NO_TEMP
 /// послать в шину изменение в температуре
 bool doSendTemp()
 {
