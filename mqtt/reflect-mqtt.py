@@ -13,10 +13,11 @@ import paho.mqtt.client as mqtt
 
 import configparser, sys, time
 import syslog
-
 __Connected = False
 
 reflect = {}
+watch = {}
+watch_last_value = {}
 
 def  main_subscribe(client):
     global  reflect
@@ -34,16 +35,38 @@ def __on_connect(client, userdata, flags, rc):
         print("Connection failed", rc, flags)
 
 def __on_message(client, userdata, msg):
-    global reflect
+    global reflect, watch, watch_last_value
     if msg.topic in reflect:
         data = msg.payload.decode("utf-8")
-        topic_ = reflect[msg.topic]
-        tpc = topic_.split('/')[-1]
-        if tpc == 'ENERGY':
-            js = json.loads(data)
-            data = js['ENERGY']['Current']
-            topic_ += "/Current"
-        msg_info = client.publish(topic_, data.decode('utf-8'), retain=True)
+        for refl_topic in reflect[msg.topic].split(','):
+            tpc = refl_topic.split('/')[-1]
+            if tpc == 'ENERGY':
+                js = json.loads(data)
+                data = js['ENERGY']['Current']
+                refl_topic += "/Current"
+                msg_info = client.publish(refl_topic, str(data).decode('utf-8'), retain=True)
+                # смотрим изменение тока
+                if refl_topic in watch:
+                    f_current = data
+                    if refl_topic in watch_last_value:
+                        current_changes = abs(f_current - watch_last_value[refl_topic])
+                    else:
+                        current_changes = abs(f_current)
+                    if current_changes > float(watch[refl_topic]):
+                        rtopic = watch['report'].decode('utf-8')
+                        client.publish(rtopic, str(current_changes).decode('utf-8'), retain=True)
+                        watch_last_value[refl_topic] = f_current
+            elif tpc == 'SENSOR':
+                js = json.loads(data)
+                for k, v in js.iteritems():
+                    if 'DS18B20' in k:
+                        vid = v['Id']
+                        data = v['Temperature']
+                        t = refl_topic + "/temp-"  + vid
+                        client.publish(t, data, retain=True)
+                return
+            else:
+                msg_info = client.publish(refl_topic, data.decode('utf-8'), retain=True)
 
 def __on_disconnect(client, userdata, flags, rc):
     global __Connected  # Use global variable
@@ -56,12 +79,13 @@ def __on_subscribe(client, userdata, flags, rc):
 
 
 def main(argv):
-    global __Connected, reflect  # Use global variable
+    global __Connected, reflect, watch
     syslog.syslog(syslog.LOG_NOTICE, "reflect-mqtt on started")
     config = configparser.RawConfigParser()
     config.optionxform = str
     config.read('mqtt-frwd.ini')
     reflect = dict(config.items('reflect'))
+    watch = dict(config.items('watch-changes'))
 
     client = mqtt.Client(clean_session=True)  # , userdata=None, protocol=MQTTv311, transport=”tcp”)
     client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
