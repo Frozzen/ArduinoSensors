@@ -23,6 +23,7 @@ DEBUG = False
 ADDR_FROM = 0x1
 SEND_CMD = 0x1
 
+
 #################################################################
 def read_line_serial(ser, my_addr=':01'):
     """
@@ -149,15 +150,16 @@ class FrwdMQTT(MyMQTT):
 
     ##########################################
     def main_loop(self, ser):
-    """
-    основной цикл приложения
 
-    устойчивость по отпаданию COM и MQTT
-    запустить по таймеру печать bus/msg_cnt
+        """
+        основной цикл приложения
 
-    :param ser:
-    :return:
-    """
+        устойчивость по отпаданию COM и MQTT
+        запустить по таймеру печать bus/msg_cnt
+
+        :param ser:
+        :return:
+        """
         while True:
             self.read_data(ser)
 
@@ -167,7 +169,7 @@ def main(argv):
 
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("-v", "--verbose", action="store_true",
-                    help="increase output verbosity")
+                        help="increase output verbosity")
     parser.add_argument('serial')
     opts = parser.parse_args()
     DEBUG = opts.verbose
