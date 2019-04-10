@@ -149,15 +149,15 @@ class FrwdMQTT(MyMQTT):
 
     ##########################################
     def main_loop(self, ser):
-    """
-    основной цикл приложения
+        """
+        основной цикл приложения
 
-    устойчивость по отпаданию COM и MQTT
-    запустить по таймеру печать bus/msg_cnt
+        устойчивость по отпаданию COM и MQTT
+        запустить по таймеру печать bus/msg_cnt
 
-    :param ser:
-    :return:
-    """
+        :param ser:
+        :return:
+        """
         while True:
             self.read_data(ser)
 

@@ -11,7 +11,7 @@ class MyMQTT(object):
         self.config = configparser.RawConfigParser()
         self.config.optionxform = str
         self.config.read('mqtt-frwd.ini')
-        self.client = mqtt.Client(clean_session=True, userdata=None, protocol=mqtt.MQTTv311, transport='tcp')
+        self.client = mqtt.Client(clean_session=True, userdata=self, protocol=mqtt.MQTTv311, transport='tcp')
         self.client.username_pw_set(username=self.config['MQTT']['user'], password=self.config['MQTT']['pass'])
 
     def connect(self):
