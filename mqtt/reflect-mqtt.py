@@ -36,15 +36,25 @@ def __on_connect(client, userdata, flags, rc):
         print("Connection failed", rc, flags)
 
 def __on_message(client, userdata, msg):
+    """
+    получаем сообщение
+
+    :param client:
+    :param userdata:
+    :param msg:
+    :return:
+    """
     global reflect, watch, watch_last_value
     topic = msg.topic.lower()
-    if topic in self.domotizc:
-        tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (domotizc[topic], val.strip())
+    if topic in domotizc:
+        tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (domotizc[topic], msg.payload)
         client.publish("domoticz/in", tval.decode('utf-8'))
-    if msg.topic in reflect:
+    elif msg.topic in reflect:
         data = msg.payload.decode("utf-8")
+        # возможно оправить копии на несколько топиков
         for refl_topic in reflect[msg.topic].split(','):
             tpc = refl_topic.split('/')[-1]
+            # декодируем ток от sonoff
             if tpc == 'ENERGY':
                 js = json.loads(data)
                 data = js['ENERGY']['Current']
@@ -61,6 +71,7 @@ def __on_message(client, userdata, msg):
                         rtopic = watch['report'].decode('utf-8')
                         client.publish(rtopic, str(current_changes).decode('utf-8'), retain=True)
                         watch_last_value[refl_topic] = f_current
+            # достаем несколько температур из сенсора
             elif tpc == 'SENSOR':
                 js = json.loads(data)
                 for k, v in js.iteritems():
@@ -69,7 +80,6 @@ def __on_message(client, userdata, msg):
                         data = v['Temperature']
                         t = refl_topic + "/temp-"  + vid
                         client.publish(t, data, retain=True)
-                return
             else:
                 msg_info = client.publish(refl_topic, data.decode('utf-8'), retain=True)
 

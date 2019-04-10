@@ -81,7 +81,7 @@ def on_connect(client, userdata, flags, rc):
 
 class FrwdMQTT(MyMQTT):
     def __init__(self):
-        super(FrwdMQTT, self).__init__()
+        super().__init__()
         self.dump_msg_cnt = False
         self.msg_cnt = self.bad_cs_cnt = self.not_for_me_cnt = self.bad_data_cnt = 0
         self.TOPIC_START = ''
