@@ -18,7 +18,7 @@ from mymqtt import MyMQTT
 
 class DomotizcMQTT(MyMQTT):
     def __init__(self):
-        super().__init__()
+        super(DomotizcMQTT, self).__init__()
         self.domotizc = dict(self.config.items('Domotizc'))
         self.connected = False
 
@@ -33,9 +33,9 @@ class DomotizcMQTT(MyMQTT):
                 print("Connection failed", rc, flags)
 
         def __on_message(client, userdata, msg):
-            topic = msg.topic.lower()
+            topic = msg.topic
             if topic in userdata.domotizc:
-                tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (userdata.domotizc[topic], msg.payload)
+                tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (userdata.domotizc[topic], msg.payload.decode("utf-8"))
                 client.publish("domoticz/in", tval)
 
         def __on_disconnect(client, userdata, flags, rc):
