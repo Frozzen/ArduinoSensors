@@ -36,7 +36,7 @@ class DomotizcMQTT(MyMQTT):
             topic = msg.topic
             if topic in userdata.domotizc:
                 tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (userdata.domotizc[topic], msg.payload.decode("utf-8"))
-                client.publish("domoticz/in", tval)
+                client.publish(u"domoticz/in", tval)
 
         def __on_disconnect(client, userdata, flags, rc):
             userdata.onnected = False
