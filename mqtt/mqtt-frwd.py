@@ -87,7 +87,6 @@ class FrwdMQTT(MyMQTT):
         self.TOPIC_START = ''
         self.domitizc = {}
         self.TOPIC_START = self.config['MQTT']['topic_head']
-        self.domotizc = dict(self.config.items('Domotizc'))
 
     ###################################
     def read_data(self, ser):
@@ -125,10 +124,6 @@ class FrwdMQTT(MyMQTT):
 
             self.client.publish('stat/' + self.TOPIC_START + topic, val.decode('utf-8'), retain=True)
             topic = topic.lower()
-            if topic in self.domotizc:
-                tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (self.domotizc[topic], val.strip())
-                self.client.publish("domoticz/in", tval.decode('utf-8'))
-                self.dump_msg_cnt = True
             self.msg_cnt += 1
             return
         self.dump_msg_cnt = True
