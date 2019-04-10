@@ -44,7 +44,7 @@ def __on_message(client, userdata, msg):
                 js = json.loads(data)
                 data = js['ENERGY']['Current']
                 refl_topic += "/Current"
-                msg_info = client.publish(refl_topic, str(data).decode('utf-8'), retain=True)
+                msg_info = client.publish(refl_topic, data, retain=True)
                 # смотрим изменение тока
                 if refl_topic in watch:
                     f_current = data
@@ -54,7 +54,7 @@ def __on_message(client, userdata, msg):
                         current_changes = abs(f_current)
                     if current_changes > float(watch[refl_topic]):
                         rtopic = watch['report'].decode('utf-8')
-                        client.publish(rtopic, str(current_changes).decode('utf-8'), retain=True)
+                        client.publish(rtopic, str(current_changes), retain=True)
                         watch_last_value[refl_topic] = f_current
             elif tpc == 'SENSOR':
                 js = json.loads(data)
