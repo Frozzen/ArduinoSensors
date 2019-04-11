@@ -6,7 +6,7 @@
 #include "ardudev.h"
 #include "arduSensUtils.h"
 
-// счетчик keepalive
+// счетчик keepalive 
 uint16_t s_time_cnt = 0;
 
 SoftwareSerial altSerial(ALT_RS232_RX,ALT_RS232_TX);
@@ -17,10 +17,28 @@ void setup(void)
   Serial.begin(38400);
   Serial.println("ArduSensWL");
 #endif
+  
 #ifdef USE_ALT_SERIAL
   altSerial.begin(ALT_SERIAL_RATE);
   altSerial.println("ArduSensWL");
 #endif
+  pinMode(JDY_40_SET, OUTPUT);
+#ifdef INIT_JDY_40
+  pinMode(JDY_40_SET, OUTPUT);
+  digitalWrite(JDY_40_SET, LOW);
+  delayMicroseconds(5000);
+  altSerial.println("AT+BAUD"); Serial.print(altSerial.readString());
+  altSerial.println("AT+RFID"); Serial.print(altSerial.readString());
+  altSerial.println("AT+DVID"); Serial.print(altSerial.readString());
+  altSerial.println("AT+RFC"); Serial.print(altSerial.readString());
+  altSerial.println("AT+POWE"); Serial.print(altSerial.readString());
+  altSerial.println("AT+CLSS"); Serial.print(altSerial.readString());
+  altSerial.println("AT+BAUD"); Serial.print(altSerial.readString());
+  altSerial.println("AT+BAUD4"); Serial.print(altSerial.readString());
+  altSerial.println("AT+BAUD"); Serial.print(altSerial.readString());
+  while(1);
+#endif
+  digitalWrite(JDY_40_SET, HIGH);
   setupArduSens();
 }
 
