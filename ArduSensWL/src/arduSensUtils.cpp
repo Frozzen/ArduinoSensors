@@ -1,10 +1,50 @@
 #include <Arduino.h>
+/*
+ * измеритель температуры + 4 контакта на замыкание
+ * - температурных датчиков ds1820 может быть любое количество
+ *  шлет только изменение опрос 30сек
+ *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/INFO/resolution=val - один раз при старте
+ *   ArduStatHHHH/DS1820-XXXXXXXXXXXXXXX/value=val раз в 30 сек при изменении
+ *   ArduStatHHHH/light=val раз в 0.1 сек освещенность
+ * - контакты опрашивает раз 100мсек
+ *   ArduStatHHHH/latch-1=val раз в 0.1 сек при изменении
+ *   ArduStatHHHH/latch-4=val раз в 0.1 сек при изменении
+ *  шлет только изменения
+ * - раз в 5 секунд шлет keeralive
+ *    ArduStatHHHH/INFO/alive=cnt раз в 5
+ *    ArduStatHHHH/INFO/count=val - один раз при старте
+ * - все сточки закрываются контрольной суммой через :
+ */
+// Include the libraries we need
+#include <Arduino.h>
+#include <OneWire.h>
+#ifndef NO_TEMP
+#include <DallasTemperature.h>
+#endif
 #include <Bounce2.h>
 #include "ardudev.h"
 #include "arduSensUtils.h"
 
 
+// время на дребезг контактов
+#define TIME_TO_RELAX 5
+
+#define LOG_MESSAGE HOST_ADDR "log={\"type\":\"device_connected\",\"message\":\""
+#define LOG_MESSAGE_END "\"}"
+
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(ONE_WIRE_BUS);
+
+Bounce s_input_pin[IN_PIN_COUNT];
+
 char s_buf[MAX_OUT_BUFF];
+#ifndef NO_TEMP
+// Pass our oneWire reference to Dallas Temperature.
+DallasTemperature sensors(&oneWire);
+
+// arrays to hold device addresses
+uint8_t s_therm_count = 0;
+DeviceAddress s_thermometer[MAX_DS1820_COUNT];
 ////////////////////////////////////////////////////////
 // Assign address manually. The addresses below will beed to be changed
 // to valid device addresses on your bus. Device address can be retrieved
@@ -18,6 +58,7 @@ const char *getAddrString(DeviceAddress &dev)
   _buf[16] = 0;
   return _buf;
 }
+#endif
 
 /// сформировать пакет что устройство живо
 void doAlive()
@@ -50,6 +91,7 @@ bool checkButtonChanged(Bounce &bounce)
   return false;
 }
 
+#ifndef NO_TEMP
 //------------------------------------------------------
 /// послать в шину изменения в контакотах
 void   doTestContacts(){
@@ -62,7 +104,6 @@ void   doTestContacts(){
       }  
     }
 }
-
 /// послать в шину изменение в температуре
 bool doSendTemp()
 {
@@ -104,6 +145,7 @@ bool doSendTemp()
   }
   return updated;
 }
+#endif
 
 //------------------------------------
 void setupArduSens(void)
@@ -118,6 +160,7 @@ void setupArduSens(void)
   }
 // locate devices on the bus
   // Start up the library
+#ifndef NO_TEMP  
   sensors.begin();
   s_therm_count = sensors.getDeviceCount();
   if(s_therm_count == 0)
@@ -134,4 +177,5 @@ void setupArduSens(void)
       sendToServer(s_buf, true);
     }
   }
+  #endif
 }
