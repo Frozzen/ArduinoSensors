@@ -18,6 +18,7 @@ __Connected = False
 reflect = {}
 watch = {}
 watch_last_value = {}
+domotizc = {}
 
 def  main_subscribe(client):
     global  reflect
@@ -35,11 +36,25 @@ def __on_connect(client, userdata, flags, rc):
         print("Connection failed", rc, flags)
 
 def __on_message(client, userdata, msg):
+    """
+    получаем сообщение
+
+    :param client:
+    :param userdata:
+    :param msg:
+    :return:
+    """
     global reflect, watch, watch_last_value
-    if msg.topic in reflect:
+    topic = msg.topic.lower()
+    if topic in domotizc:
+        tval = '{ "idx" : %s, "nvalue" : 0, "svalue": "%s" }' % (domotizc[topic], msg.payload)
+        client.publish("domoticz/in", tval.decode('utf-8'))
+    elif msg.topic in reflect:
         data = msg.payload.decode("utf-8")
+        # возможно оправить копии на несколько топиков
         for refl_topic in reflect[msg.topic].split(','):
             tpc = refl_topic.split('/')[-1]
+            # декодируем ток от sonoff
             if tpc == 'ENERGY':
                 js = json.loads(data)
                 data = js['ENERGY']['Current']
@@ -56,6 +71,7 @@ def __on_message(client, userdata, msg):
                         rtopic = watch['report'].decode('utf-8')
                         client.publish(rtopic, str(current_changes), retain=True)
                         watch_last_value[refl_topic] = f_current
+            # достаем несколько температур из сенсора
             elif tpc == 'SENSOR':
                 js = json.loads(data)
                 for k, v in js.iteritems():
@@ -64,7 +80,6 @@ def __on_message(client, userdata, msg):
                         data = v['Temperature']
                         t = refl_topic + "/temp-"  + vid
                         client.publish(t, data, retain=True)
-                return
             else:
                 msg_info = client.publish(refl_topic, data.decode('utf-8'), retain=True)
 
@@ -79,13 +94,14 @@ def __on_subscribe(client, userdata, flags, rc):
 
 
 def main(argv):
-    global __Connected, reflect, watch
+    global __Connected, reflect, watch, domotizc
     syslog.syslog(syslog.LOG_NOTICE, "reflect-mqtt on started")
     config = configparser.RawConfigParser()
     config.optionxform = str
     config.read('mqtt-frwd.ini')
     reflect = dict(config.items('reflect'))
     watch = dict(config.items('watch-changes'))
+    domotizc = dict(config.items('Domotizc'))
 
     client = mqtt.Client(clean_session=True)  # , userdata=None, protocol=MQTTv311, transport=”tcp”)
     client.username_pw_set(username=config['MQTT']['user'], password=config['MQTT']['pass'])
