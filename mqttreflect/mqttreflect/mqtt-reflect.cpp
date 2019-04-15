@@ -43,10 +43,11 @@
 #include <boost/log/trivial.hpp>
 //#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
-
 #include <mqtt/client.h>
+
 #include "config.hpp"
 #include "serial.hpp"
+
 #include "mqtt-reflect.hpp"
 
 using namespace std;
@@ -74,7 +75,7 @@ bool try_reconnect(mqtt::client& cli)
     return false;
 }
 
-void Handler::send_msg(CMQTTMessage &msg)
+void Handler::send_msg(mqtt::message &msg)
 {
     if(queue)
         queue->push_front(msg);
@@ -84,13 +85,13 @@ void Handler::send_msg(CMQTTMessage &msg)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-bool DecodeEnergyHandler::request(CMQTTMessage &m)
+bool DecodeEnergyHandler::request(mqtt::message & m)
 {
-    int ix = m.topic.rfind('/');
+    int ix = m.get_topic().rfind('/');
     if(ix != -1) {
-        string sens((m.topic.begin()+ix), m.topic.end());
+        string sens((m.get_topic().begin()+ix), m.get_topic().end());
         if(sens == "SENSOR") {
-            stringstream ss(m.payload);
+            stringstream ss(m.get_payload_str());
             boost::property_tree::ptree pt;
             boost::property_tree::read_json(ss, pt);
             return true;
@@ -119,18 +120,18 @@ vector<string> split(const string &s, const char delim)
         elems.push_back(move(item));
     return elems;
 }
-bool ReflectHandler::request(CMQTTMessage &m)
+bool ReflectHandler::request(mqtt::message & m)
 {
-    if(reflect.count(m.topic)) {
+    if(reflect.count(m.get_topic())) {
 #if 1
         vector<string> strs;
-        strs = split(reflect[m.topic], ',');
+        strs = split(reflect[m.get_topic()], ',');
         for(auto s : strs) {
-            CMQTTMessage mn(s, m.payload);
+            mqtt::message mn(s, m.get_payload_str());
             send_msg(mn);
         }
 #else
-        CMQTTMessage mn(reflect[m.topic], m.payload);
+        mqtt::message mn(reflect[m.topic], m.payload);
         send_msg(mn);
 #endif
         return true;
@@ -144,7 +145,7 @@ bool ReflectHandler::request(CMQTTMessage &m)
  * рекурсия раскручиваем - цепочки конверсии
  * @param msg
  */
-void ReflectHandler::send_msg(CMQTTMessage &msg)
+void ReflectHandler::send_msg(mqtt::message & msg)
 {
     Handler::send_msg(msg);
     request(msg);
@@ -160,15 +161,15 @@ void DomotizcHandler::set_reflect(Config *c)
     }
 }
 
-bool DomotizcHandler::request(CMQTTMessage &m)
+bool DomotizcHandler::request(mqtt::message & m)
 {
-    if(domotizc.count(m.topic) > 0) {
+    if(domotizc.count(m.get_topic()) > 0) {
         char buf[100];
         std::snprintf(buf, 100, "{ \"idx\" : %d, \"nvalue\" : 0, \"svalue\": \"%s\" }",
-                                                domotizc[m.topic], m.payload.c_str());
+                                                domotizc[m.get_topic()], m.get_payload_str().c_str());
         std::string tval = buf;
         cout << "domotizc:" << tval << endl;
-        CMQTTMessage m("domoticz/in", tval);
+        mqtt::message mm("domoticz/in", tval);
         send_msg(m);
         return true;
     }
@@ -226,11 +227,11 @@ int mqtt_loop(mqtt::client &cli)
                 else
                     break;
             }
-            CMQTTMessage mqtt(msg->get_topic(), msg->get_payload());
+            mqtt::message mqtt(msg->get_topic(), msg->get_payload());
             handler.request(mqtt);
             for(auto it : msg_to_send) {
                 const int mQOS = 0;
-                cli.publish(mqtt::message(it.topic, it.payload, mQOS, false));
+                cli.publish(mqtt::message(it.get_topic(), it.get_payload(), mQOS, false));
             }
             cout << msg->get_topic() << ": " << msg->to_string() << endl;
         }
@@ -245,6 +246,7 @@ int mqtt_loop(mqtt::client &cli)
         cerr << exc.what() << endl;
         return 1;
     }
+    return 0;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -288,7 +290,7 @@ int read_serial(const char *dev)
                 }
                 std::string topic(str.begin(), it);
                 std::string payload(it+1, str.end());
-                CMQTTMessage m(head + topic, payload);
+                mqtt::message & m(head + topic, payload);
                 msg_to_send.push_front(m);
             }
         } else if(n < 0)

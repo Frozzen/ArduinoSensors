@@ -1,19 +1,15 @@
 #ifndef MQTTREFLECT_HPP
 #define MQTTREFLECT_HPP
+#include <list>
+#include <mqtt/message.h>
 
-class CMQTTMessage {
-  public:
-    std::string topic, payload;
-    CMQTTMessage(std::string t, std::string p): topic{t}, payload{p} {}
-};
-
-typedef std::list<CMQTTMessage> CSendQueue;
+typedef std::list<mqtt::message> CSendQueue;
 
 class Handler {
     CSendQueue *queue;
    protected:
     Handler *next;
-    virtual void send_msg(CMQTTMessage &msg);
+    virtual void send_msg(mqtt::message & msg);
   public:
     Handler(CSendQueue *q): queue{q}, next{NULL}  {}
     Handler(): queue{NULL}, next{NULL} {}
@@ -22,7 +18,7 @@ class Handler {
      * @param m
      * @return false if not pass message to chain
      */
-    virtual bool request(CMQTTMessage &m) {
+    virtual bool request(mqtt::message & m) {
         if(next == NULL)
             return false;
         else
@@ -41,7 +37,7 @@ class DomotizcHandler : public Handler {
     std::map<std::string, int> domotizc;
 public:
     void set_reflect(Config *c);
-    bool request(CMQTTMessage &m);
+    bool request(mqtt::message &m);
     void pushNextHandler(Handler *nextInLine) = delete;
 };
 
@@ -53,8 +49,8 @@ class ReflectHandler : public Handler {
     std::map<std::string, std::string> reflect;
 public:
     void set_reflect(Config *c);
-    virtual void send_msg(CMQTTMessage &msg);
-    bool request(CMQTTMessage &m);
+    virtual void send_msg(mqtt::message &msg);
+    bool request(mqtt::message &m);
     void pushNextHandler(Handler *nextInLine) = delete;
 };
 
@@ -63,9 +59,9 @@ class DecodeEnergyHandler : public Handler {
 
     // Handler interface
 protected:
-    void send_msg(CMQTTMessage &msg);
+    void send_msg(mqtt::message &msg);
 
 public:
-    bool request(CMQTTMessage &m);
+    bool request(mqtt::message &m);
 };
 #endif // MQTTREFLECT_HPP
