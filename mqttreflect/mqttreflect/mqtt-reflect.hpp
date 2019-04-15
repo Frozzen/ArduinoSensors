@@ -4,7 +4,7 @@
 class CMQTTMessage {
   public:
     std::string topic, payload;
-    CMQTTMessage(std::string t, std::string p): topic(t), payload(p) {}
+    CMQTTMessage(std::string t, std::string p): topic{t}, payload{p} {}
 };
 
 typedef std::list<CMQTTMessage> CSendQueue;
@@ -15,8 +15,8 @@ class Handler {
     Handler *next;
     virtual void send_msg(CMQTTMessage &msg);
   public:
-    Handler(CSendQueue *q): queue(q), next(NULL)  {}
-    Handler(): queue(NULL), next(NULL) {}
+    Handler(CSendQueue *q): queue{q}, next{NULL}  {}
+    Handler(): queue{NULL}, next{NULL} {}
     /**
      * @brief request
      * @param m

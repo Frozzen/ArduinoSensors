@@ -16,7 +16,7 @@ using namespace std;
 string SerialException::msg;
 
 SerialException::SerialException(int e, string m) :
-    _errno(e)
+    _errno{e}
 {
     msg = m + strerror(_errno);
 }
