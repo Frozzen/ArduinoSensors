@@ -87,22 +87,44 @@ void Handler::send_msg(mqtt::message &msg)
 }
 
 /////////////////////////////////////////////////////////////////////////////
+void DecodeEnergyHandler::recursive_dump_json(int level, boost::property_tree::ptree &pt, const string &from)
+{
+    if (pt.empty()) {
+     }  else
+    {
+        for (ptree::iterator pos = pt.begin(); pos != pt.end();) {
+            std::string topic(from + "/"+pos->first);
+            if(pos->second.empty())
+                recursive_dump_json(++level, pos->second, topic);
+            else {
+                mqtt::message mn(topic, pos->second.data());
+                send_msg(mn);
+            }
+          ++pos;
+        }
+    }
+}
+
 bool DecodeEnergyHandler::request(mqtt::message & m)
 {
     int ix = m.get_topic().rfind('/');
     if(ix == -1)
         return false;
     string sens((m.get_topic().begin()+ix), m.get_topic().end());
-    if(valid_case.find(sens)) {
+    if(valid_case.find(sens) != valid_case.end()) {
         stringstream ss(m.get_payload_str());
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(ss, pt);
+        // traverse tree
+        recursive_dump_json(0, pt, m.get_topic());
     }
     return Handler::request(m);
 }
 
 void DecodeEnergyHandler::set_config(Config *c)
 {
+    // TODO посмотреть какие еще ключи надо смотреть
+    // TODO возможно сделать regexp
     valid_case = {"SENSOR", "ENERGY"};
 }
 

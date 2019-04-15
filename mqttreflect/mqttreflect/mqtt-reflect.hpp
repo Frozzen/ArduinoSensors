@@ -1,7 +1,9 @@
 #ifndef MQTTREFLECT_HPP
 #define MQTTREFLECT_HPP
 #include <list>
+#include <set>
 #include <mqtt/message.h>
+#include <boost/property_tree/ptree.hpp>
 
 typedef std::list<mqtt::message> CSendQueue;
 /**
@@ -68,7 +70,8 @@ public:
  * декрлируем JSON поля в значение подключи. определяем в ini файле какие ключи смотрим на JSON
  */
 class DecodeEnergyHandler : public Handler {
-    std::vector<std:string> valid_case;
+    std::set<std::string> valid_case;
+    void recursive_dump_json(int level, boost::property_tree::ptree &pt, const std::string &from);
 public:
     explicit DecodeEnergyHandler(Handler *h) : Handler(h) {}
     bool request(mqtt::message &m);
