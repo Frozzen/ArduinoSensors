@@ -4,17 +4,27 @@
 #include <mqtt/message.h>
 
 typedef std::list<mqtt::message> CSendQueue;
-
+/**
+ * @brief The Handler class
+ * интерфейс для переадресации выполнения
+ */
 class Handler {
-    CSendQueue *queue;
+   static CSendQueue queue;
    protected:
+   static Handler *top_handler;    // значит верхний обработчик
     Handler *next;
+    // TODO check payload - for sensible - our case is alphanum
     virtual void send_msg(mqtt::message & msg);
   public:
-    Handler(CSendQueue *q): queue{q}, next{NULL}  {}
-    Handler(): queue{NULL}, next{NULL} {}
+    Handler(): next{NULL} {
+        top_handler = NULL;
+    }
+    Handler(Handler *nextInLine): next{nextInLine} {
+        top_handler = nextInLine;
+    }
     /**
      * @brief request
+     * отправляем дальше сообщение на обработку
      * @param m
      * @return false if not pass message to chain
      */
@@ -24,44 +34,44 @@ class Handler {
         else
             return next->request(m);
     }
-    void pushNextHandler(Handler *nextInLine) {
-                next = nextInLine;
-            }
+    virtual void set_config(Config *) {}
 };
 
 /**
  * @brief The DomotizcHandler class
- * конверт простое значение в json
+ * конвертируем простое значение в json
+ * TODO не учитываем регистр topic
  */
 class DomotizcHandler : public Handler {
     std::map<std::string, int> domotizc;
 public:
-    void set_reflect(Config *c);
+    explicit DomotizcHandler(Handler *h) : Handler(h) {}
+    void set_config(Config *c);
     bool request(mqtt::message &m);
-    void pushNextHandler(Handler *nextInLine) = delete;
 };
 
 /**
  * @brief The ReflectHandler class
- * разворачиваем цепочки переадресации, может быть несколько адресатов
+ * разворачиваем цепочки переадресации, может быть несколько адресатов верхний обработчик
+ * TODO не учитываем регистр topic
  */
 class ReflectHandler : public Handler {
     std::map<std::string, std::string> reflect;
 public:
-    void set_reflect(Config *c);
-    virtual void send_msg(mqtt::message &msg);
+    explicit ReflectHandler(Handler *h) : Handler(h) {}
+    void set_config(Config *c);
     bool request(mqtt::message &m);
-    void pushNextHandler(Handler *nextInLine) = delete;
 };
 
+/**
+ * @brief The DecodeEnergyHandler class
+ * декрлируем JSON поля в значение подключи. определяем в ini файле какие ключи смотрим на JSON
+ */
 class DecodeEnergyHandler : public Handler {
-
-
-    // Handler interface
-protected:
-    void send_msg(mqtt::message &msg);
-
+    std::vector<std:string> valid_case;
 public:
+    explicit DecodeEnergyHandler(Handler *h) : Handler(h) {}
     bool request(mqtt::message &m);
+    void set_config(Config *c);
 };
 #endif // MQTTREFLECT_HPP

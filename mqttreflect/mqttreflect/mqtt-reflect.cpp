@@ -39,6 +39,7 @@
 #include <chrono>
 #include <map>
 #include <sstream>
+#include <locale>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/log/trivial.hpp>
 //#include <boost/algorithm/string.hpp>
@@ -50,14 +51,19 @@
 
 #include "mqtt-reflect.hpp"
 
+const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
 using namespace std::chrono;
+
+static std::locale loc;
 
 //const string SERVER_ADDRESS	{ "tcp://172.20.110.2:1883" };
 const string CLIENT_ID		{ "sync_consume_cpp" };
 const int QOS = 0;
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
+CSendQueue Handler::queue;
+Handler *Handler::top_handler = NULL;
 
 bool try_reconnect(mqtt::client& cli)
 {
@@ -77,32 +83,31 @@ bool try_reconnect(mqtt::client& cli)
 
 void Handler::send_msg(mqtt::message &msg)
 {
-    if(queue)
-        queue->push_front(msg);
-    else
-        if(next)
-            next->send_msg(msg);
+    queue.push_front(msg);
 }
 
 /////////////////////////////////////////////////////////////////////////////
 bool DecodeEnergyHandler::request(mqtt::message & m)
 {
     int ix = m.get_topic().rfind('/');
-    if(ix != -1) {
-        string sens((m.get_topic().begin()+ix), m.get_topic().end());
-        if(sens == "SENSOR") {
-            stringstream ss(m.get_payload_str());
-            boost::property_tree::ptree pt;
-            boost::property_tree::read_json(ss, pt);
-            return true;
-        }
+    if(ix == -1)
+        return false;
+    string sens((m.get_topic().begin()+ix), m.get_topic().end());
+    if(valid_case.find(sens)) {
+        stringstream ss(m.get_payload_str());
+        boost::property_tree::ptree pt;
+        boost::property_tree::read_json(ss, pt);
     }
-    Handler::request(m);
-    return false;
+    return Handler::request(m);
+}
+
+void DecodeEnergyHandler::set_config(Config *c)
+{
+    valid_case = {"SENSOR", "ENERGY"};
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void ReflectHandler::set_reflect(Config *c)
+void ReflectHandler::set_config(Config *c)
 {
     IniSection ini = c->getSection("reflect");
     for(auto p : ini) {
@@ -111,6 +116,12 @@ void ReflectHandler::set_reflect(Config *c)
     }
 }
 
+/**
+ * @brief split
+ * @param s
+ * @param delim
+ * @return
+ */
 vector<string> split(const string &s, const char delim)
 {
     stringstream ss(s);
@@ -120,81 +131,98 @@ vector<string> split(const string &s, const char delim)
         elems.push_back(move(item));
     return elems;
 }
+
+/**
+ * @brief ReflectHandler::request
+ * отражаем и размножаем сообщение.
+ * требуется новая обработка порожденных сообщений
+ *
+ *
+ * @param m
+ * @return
+ */
 bool ReflectHandler::request(mqtt::message & m)
 {
     if(reflect.count(m.get_topic())) {
-#if 1
         vector<string> strs;
         strs = split(reflect[m.get_topic()], ',');
         for(auto s : strs) {
             mqtt::message mn(s, m.get_payload_str());
             send_msg(mn);
+            // ограничить число новых сообщений и число циклов decorator
+            static int stack_count = 0;
+            stack_count++;
+            if(stack_count > MAX_REFLECT_DEPTH) {
+                cerr << "reflect loop:" << m.get_topic() << endl;
+                stack_count = 0;
+                break;
+            }
+            top_handler->request(mn);
+            stack_count--;
         }
-#else
-        mqtt::message mn(reflect[m.topic], m.payload);
-        send_msg(mn);
-#endif
-        return true;
     }
-    Handler::request(m);
-    return false;
-}
-
-/**
- * @brief ReflectHandler::send_msg
- * рекурсия раскручиваем - цепочки конверсии
- * @param msg
- */
-void ReflectHandler::send_msg(mqtt::message & msg)
-{
-    Handler::send_msg(msg);
-    request(msg);
+    return Handler::request(m);
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void DomotizcHandler::set_reflect(Config *c)
+/// \brief DomotizcHandler::set_config
+/// \param c
+///
+void DomotizcHandler::set_config(Config *c)
 {
     IniSection ini = c->getSection("Domotizc");
     for(auto p : ini) {
+        string topic = std::tolower(p.first, loc);
         domotizc[p.first] = std::atoi(p.second.c_str());
         cout << "domo+:" << p.first << '-' << p.second << endl;
     }
 }
 
+/**
+ * @brief DomotizcHandler::request
+ * перекодируем сообщение для domotizc
+ *
+ * никакой дальнейшей обработки этих сообщений не нужно
+ * @param m
+ * @return
+ */
 bool DomotizcHandler::request(mqtt::message & m)
 {
     if(domotizc.count(m.get_topic()) > 0) {
         char buf[100];
+        string topic = std::tolower(m.get_topic(), loc);
+        // TODO проверить что содержимое печатное
+        string payload = m.get_payload_str();
         std::snprintf(buf, 100, "{ \"idx\" : %d, \"nvalue\" : 0, \"svalue\": \"%s\" }",
-                                                domotizc[m.get_topic()], m.get_payload_str().c_str());
+                                                domotizc[topic], payload.c_str());
         std::string tval = buf;
         cout << "domotizc:" << tval << endl;
         mqtt::message mm("domoticz/in", tval);
-        send_msg(m);
-        return true;
+        send_msg(mm);
     }
-    Handler::request(m);
-    return false;
+    return Handler::request(m);
 }
 
 CSendQueue msg_to_send;
 
 /////////////////////////////////////////////////////////////////////////////
-
+/**
+ * @brief mqtt_loop
+ * @param cli
+ * @return
+ */
 int mqtt_loop(mqtt::client &cli)
 {
     Config *cfg = Config::getInstance();
     const vector<string> TOPICS { "stat/#", "tele/#" };
     const vector<int> QOS { 0, 0 };
-    Handler handler(&msg_to_send);
+    Handler handler;
 
-    DomotizcHandler domotizc;
-    domotizc.set_reflect(cfg);
-    handler.pushNextHandler(&domotizc);
+    DomotizcHandler domotizc(&handler);
+    domotizc.set_config(cfg);
 
-    ReflectHandler reflect;
-    reflect.set_reflect(cfg);
-    handler.pushNextHandler(&reflect);
+    ReflectHandler reflect(&handler);
+    reflect.set_config(cfg);
 
     mqtt::connect_options connOpts(cfg->getOpt("MQTT.user"), cfg->getOpt("MQTT.pass"));
     connOpts.set_keep_alive_interval(20);
@@ -210,7 +238,7 @@ int mqtt_loop(mqtt::client &cli)
 
         while (true) {
             auto msg = cli.consume_message();
-
+            // восстанавливаем соединение
             if (!msg) {
                 if (!cli.is_connected()) {
                     cout << "Lost connection. Attempting reconnect" << endl;
