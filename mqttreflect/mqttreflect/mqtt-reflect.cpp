@@ -46,7 +46,7 @@
 
 #include <mqtt/client.h>
 #include "config.hpp"
-#include "rs232.h"
+#include "serial.hpp"
 #include "mqtt-reflect.hpp"
 
 using namespace std;
@@ -248,7 +248,7 @@ int mqtt_loop(mqtt::client &cli)
 }
 
 /////////////////////////////////////////////////////////////////////////////
-
+#if 0
 static volatile bool rs232_looping = true;
 int read_serial(const char *dev)
 {
@@ -297,7 +297,7 @@ int read_serial(const char *dev)
       usleep(100000);  /* sleep for 100 milliSeconds */
     }
 }
-
+#endif
 /////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char* argv[])
@@ -307,10 +307,12 @@ int main(int argc, char* argv[])
 
     mqtt::client cli(cfg->getOpt("MQTT.server"), CLIENT_ID);
 
-    thread t1(read_serial, "ttyUSB0");
     mqtt_loop(cli);
+#if 0
+    thread t1(read_serial, "ttyUSB0");
     rs232_looping = false;
     t1.join();
+#endif
     return 0;
 }
 

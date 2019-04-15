@@ -1,59 +1,50 @@
+#include <iostream>
+
 #include <stdio.h>      // standard input / output functions
 #include <stdlib.h>
 #include <string.h>     // string function definitions
 #include <unistd.h>     // UNIX standard function definitions
 #include <fcntl.h>      // File control definitions
 #include <errno.h>      // Error number definitions
-#include <termios.h>    // POSIX terminal control definitions
 
 #include <exception>
 #include <string>
+#include "serial.hpp"
+
 using namespace std;
 
-class SerialException : public std::exception
-{
-    int _errno;
-    static string msg;
-public:
-    SerialException(int e, string m);
-
-    // exception interface
-public:
-    const char *what() const noexcept;
-};
 string SerialException::msg;
 
 SerialException::SerialException(int e, string m) :
     _errno(e)
 {
-    msg = m;
-    msg += strerror(_errno);
+    msg = m + strerror(_errno);
 }
 
 
 const char *SerialException::what() const noexcept {
     return msg.c_str();
 }
+SerialIO::~SerialIO()
+{   if(handle)
+        ::close(handle);
+}
 
-class SerialIO
-{
-    int handle;
-public:
-    SerialIO() : handle(0) {}
-      ~SerialIO() { close(handle); }
-    void open(string dev = "/dev/ttyUSB0", int baud = B9600);
-    string read();
-    void write(string);
-};
-
-void SerialIO::open(string dev, int baud)
+/**
+ * @brief SerialIO::open
+ * @param dev
+ * @param baud
+ * @return
+ */
+int SerialIO::open(string dev, int baud)
 {
     /* Open File Descriptor */
-    handle = ::open( dev.c_str(), O_RDWR| O_NONBLOCK | O_NDELAY );
+    handle = ::open( dev.c_str(), O_RDWR| O_NONBLOCK /*| O_NDELAY*/ );
 
     /* Error Handling */
     if ( handle < 0 )     {
-        throw SerialException(errno, "erroropening "+dev);
+        return errno;
+        //throw SerialException(errno, "erroropening "+dev);
     }
 
     struct termios tty;
@@ -62,7 +53,8 @@ void SerialIO::open(string dev, int baud)
 
     /* Error Handling */
     if ( tcgetattr ( handle, &tty ) != 0 ) {
-       throw SerialException(errno, "Error  from tcgetattr:");
+        return errno;
+       //throw SerialException(errno, "Error  from tcgetattr:");
     }
 
     /* Save old tty parameters */
@@ -78,6 +70,10 @@ void SerialIO::open(string dev, int baud)
     tty.c_cflag     &=  ~CSIZE;
     tty.c_cflag     |=  CS8;
 
+    tty.c_iflag &= ~INPCK;
+    tty.c_lflag &= ~(ICANON | ECHO | ECHOE | ISIG);
+    tty.c_oflag &= ~OPOST;
+
     tty.c_cflag     &=  ~CRTSCTS;           // no flow control
     tty.c_cc[VMIN]   =  1;                  // read doesn't block
     tty.c_cc[VTIME]  =  5;                  // 0.5 seconds read timeout
@@ -89,8 +85,10 @@ void SerialIO::open(string dev, int baud)
     /* Flush Port, then applies attributes */
     tcflush( handle, TCIFLUSH );
     if ( tcsetattr ( handle, TCSANOW, &tty ) != 0) {
-       throw SerialException(errno, "Error from tcflush:");
+        return errno;
+       //throw SerialException(errno, "Error from tcflush:");
     }
+    return 0;
 }
 
 void SerialIO::write(string str)
@@ -103,6 +101,16 @@ void SerialIO::write(string str)
     }
 }
 
+string SerialIO::last_error_string()
+{
+    return strerror(errno);
+}
+/**
+  /usr/lib/python3/dist-packages/serial/serialposix.py", line 509, in read при пропадании устройства
+
+ * @brief SerialIO::read
+ * @return
+ */
 string SerialIO::read()
 {
     string response;
@@ -110,10 +118,18 @@ string SerialIO::read()
     char ch;
     do {
         int n = ::read( handle, &ch, 1 );
+        cout << "++" << n << "++";
         if (n < 0) {
-            throw exception();
-        }
-        response += ch;
+/*            if(::eof(handle))
+                throw SerialException(errno, "device reports readiness to read but returned no data "
+                                             "(device disconnected or multiple access on port?)");*/
+            if (EAGAIN != errno && errno != EALREADY &&
+                     errno != EWOULDBLOCK && errno != EINPROGRESS &&
+                     errno != EINTR)
+                throw SerialException(errno, "read:");
+        } else
+            response += ch;
+        usleep(10000);
     } while( ch != '\r');
     return response;
 }
