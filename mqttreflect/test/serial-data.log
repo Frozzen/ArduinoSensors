@@ -1,0 +1,24 @@
+ArduSensWL
+:01log={"type":"device_connected","message":"ArduStat02/light"};43
+:01log={"type":"device_connected","message":"ArduStat02/latch-0"};f2
+:01log={"type":"device_connected","message":"ArduStat02/latch-1"};f1
+:01log={"type":"device_connected","message":"ArduStat02/latch-2"};f0
+:01log={"type":"device_connected","message":"ArduStat02/latch-3"};ef
+:01ArduStat02/light=15.5;8d
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.6;8c
+:01 ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.5;8d
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.5;8d
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.7;8b
+:01Atat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.7;8b
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01AuStat02/light=15.7;8b
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.7;8b
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
+:01ArduStat02/light=15.6;8c
+:01ArduStat02/DS1820-28ffff45ff0c0257/temp=21.5 ;7c
