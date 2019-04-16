@@ -2,11 +2,11 @@ TEMPLATE = app
 CONFIG += console c++17
 CONFIG -= app_bundle
 CONFIG -= qt
-LIBS += -L/home/vovva/local/lib
-INCLUDEPATH += /home/vovva/local/include ../common
+LIBS += -L/home/devel/local/lib
+INCLUDEPATH += /home/devel/local/include ../common
 
 LIBS += -lpaho-mqttpp3 -lpaho-mqtt3a -lboost_system -lboost_thread -lpthread
-LIBS += -L../common -lcommon
+LIBS += -L../common -L. -lcommon
 
 SOURCES +=  mqtt-reflect.cpp
 
