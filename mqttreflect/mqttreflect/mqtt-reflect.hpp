@@ -6,7 +6,7 @@
 #include <mqtt/message.h>
 #include <boost/property_tree/ptree.hpp>
 
-using CSendQueue = std::list<mqtt::message>;
+using CSendQueue = std::list<mqtt::const_message_ptr>;
 /**
  * @brief The Handler class
  * интерфейс для переадресации выполнения
@@ -17,14 +17,14 @@ class Handler {
     Handler() { }
   public:
     // check payload - for sensible - our case is alphanum
-    void send_msg(mqtt::message msg);
+    void send_msg(mqtt::const_message_ptr msg);
     /**
      * @brief request
      * отправляем дальше сообщение на обработку
      * @param m
      * @return false if not pass message to chain
      */
-    virtual bool request(mqtt::message m) = 0;
+    virtual bool request(mqtt::const_message_ptr m) = 0;
 };
 
 /**
@@ -37,7 +37,7 @@ class DomotizcHandler : public Handler {
 protected:
 public:
     std::map<std::string, int> domotizc;
-    bool request(mqtt::message m);
+    bool request(mqtt::const_message_ptr m);
 };
 
 /**
@@ -50,7 +50,7 @@ class ReflectHandler : public Handler {
 protected:
 public:
     std::map<std::string, std::string> reflect;
-    bool request(mqtt::message m);
+    bool request(mqtt::const_message_ptr m);
 };
 
 /**
@@ -62,7 +62,7 @@ class DecodeJsonHandler : public Handler {
 protected:
 public:
     std::set<std::string> valid_case;
-    bool request(mqtt::message m);
+    bool request(mqtt::const_message_ptr m);
     friend class HandlerFactory;
 };
 
@@ -81,11 +81,7 @@ public:
      * @param m
      * @return
      */
-    static bool request(mqtt::message m) {
-        for(auto &h : handler_list)
-            h->request(m);
-        return true;
-    }
+    static bool request(mqtt::const_message_ptr m);
 };
 
 

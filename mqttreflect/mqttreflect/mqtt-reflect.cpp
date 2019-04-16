@@ -45,12 +45,24 @@ bool try_reconnect(mqtt::client& cli)
     }
     return false;
 }
-
-void Handler::send_msg(mqtt::message msg)
+bool is_alnum(const std::string &str)
 {
-    for(auto x : msg.get_payload_str())
-        if(!(bool)std::isalnum(x))
-            return;
+    for(auto x : str)
+        if(!std::isprint(x))
+            return false;
+    return true;
+}
+
+bool HandlerFactory::request(mqtt::const_message_ptr m) {
+    if(!is_alnum(m->get_payload_str()))
+        return false;
+    for(auto &h : handler_list)
+        h->request(m);
+    return true;
+}
+
+void Handler::send_msg(mqtt::const_message_ptr msg)
+{
     HandlerFactory::mqtt_mag_queue.push_front(msg);
 }
 
@@ -65,25 +77,25 @@ void DecodeJsonHandler::recursive_dump_json(int level, boost::property_tree::ptr
             if(pos->second.empty())
                 recursive_dump_json(++level, pos->second, topic);
             else {
-                send_msg(mqtt::message(topic, pos->second.data()));
+                send_msg(std::make_shared<mqtt::message>(topic, pos->second.data()));
             }
           ++pos;
         }
     }
 }
 
-bool DecodeJsonHandler::request(mqtt::message  m)
+bool DecodeJsonHandler::request(mqtt::const_message_ptr  m)
 {
-    int ix = m.get_topic().rfind('/');
+    int ix = m->get_topic().rfind('/');
     if(ix == -1)
         return false;
-    string sens((m.get_topic().begin()+ix), m.get_topic().end());
+    string sens((m->get_topic().begin()+ix), m->get_topic().end());
     if(valid_case.find(sens) != valid_case.end()) {
-        stringstream ss(m.get_payload_str());
+        stringstream ss(m->get_payload_str());
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(ss, pt);
         // traverse tree
-        recursive_dump_json(0, pt, m.get_topic());
+        recursive_dump_json(0, pt, m->get_topic());
     }
     return true;
 }
@@ -131,20 +143,20 @@ vector<string> split(const string &s, const char delim)
  * @param m
  * @return
  */
-bool ReflectHandler::request(mqtt::message  m)
+bool ReflectHandler::request(mqtt::const_message_ptr  m)
 {
-    if(reflect.count(m.get_topic())) {
+    string topic = boost::algorithm::to_lower_copy(m->get_topic());
+    if(reflect.count(topic)) {
         vector<string> strs;
-        string topic = boost::algorithm::to_lower_copy(m.get_topic());
         strs = split(reflect[topic], ',');
         for(auto s : strs) {
-            auto mn = mqtt::message(s, m.get_payload_str());
+            auto mn = std::make_shared<mqtt::message>(s, m->get_payload_str());
             send_msg(mn);
             // ограничить число новых сообщений и число циклов decorator
             static int stack_count = 0;
             stack_count++;
             if(stack_count > MAX_REFLECT_DEPTH) {
-                cerr << "reflect loop:" << m.get_topic() << endl;
+                cerr << "reflect loop:" << m->get_topic() << endl;
                 stack_count = 0;
                 break;
             }
@@ -177,18 +189,18 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> h)
  * @param m
  * @return
  */
-bool DomotizcHandler::request(mqtt::message m)
+bool DomotizcHandler::request(mqtt::const_message_ptr m)
 {
-    if(domotizc.count(m.get_topic()) > 0) {
+    string topic = boost::algorithm::to_lower_copy(m->get_topic());
+    if(domotizc.count(topic) > 0) {
         char buf[100];
-        string topic = boost::algorithm::to_lower_copy(m.get_topic());
         // TODO проверить что содержимое печатное
-        string payload = m.get_payload_str();
+        string payload = m->get_payload_str();
         std::snprintf(buf, 100, "{ \"idx\" : %d, \"nvalue\" : 0, \"svalue\": \"%s\" }",
                                                 domotizc[topic], payload.c_str());
         std::string tval = buf;
         cout << "domotizc:" << tval << endl;
-        send_msg(mqtt::message("domoticz/in", tval));
+        send_msg(std::make_shared<mqtt::message>("domoticz/in", tval));
     }
     return true;
 }
@@ -237,12 +249,12 @@ int mqtt_loop(mqtt::client &cli)
                 else
                     break;
             }
-            HandlerFactory::request(mqtt::message(msg->get_topic(), msg->get_payload()));
-            for(auto it : HandlerFactory::mqtt_mag_queue) {
-                const int mQOS = 0;
-                cli.publish(mqtt::message(it.get_topic(), it.get_payload(), mQOS, false));
-            }
             cout << msg->get_topic() << ": " << msg->to_string() << endl;
+            HandlerFactory::request(msg);
+            for(auto m : HandlerFactory::mqtt_mag_queue) {
+                const int mQOS = 0;
+                cli.publish(std::make_shared<mqtt::message>(m->get_topic(), m->get_payload(), mQOS, false));
+            }
         }
 
         // Disconnect
@@ -339,6 +351,7 @@ void HandlerFactory::makeAll(Config *cfg)
     domotizc = std::make_shared<DomotizcHandler>();
     set_config(cfg, domotizc);
     handler_list.push_front(domotizc);
+    return;
 
     reflect = std::make_shared<ReflectHandler>();
     set_config(cfg, reflect);
