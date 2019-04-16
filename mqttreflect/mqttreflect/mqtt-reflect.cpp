@@ -50,6 +50,9 @@ bool try_reconnect(mqtt::client& cli)
 
 void Handler::send_msg(mqtt::message_ptr msg)
 {
+    for(auto x : msg->get_payload_str())
+        if(!(bool)std::isalnum(x))
+            return;
     queue.push_front(msg);
 }
 
@@ -315,6 +318,7 @@ int read_serial(const char *dev)
 
 int main(int argc, char* argv[])
 {
+    std::setlocale(LC_ALL, "ru_RU.UTF-8");
     Config *cfg = Config::getInstance();
     cfg->open("mqttfrwd.ini");
 
