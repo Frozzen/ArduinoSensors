@@ -2,6 +2,8 @@
 #define CONFIG_HPP
 #include <mutex>
 #include <map>
+#include <memory>
+
 #include <boost/property_tree/ptree.hpp>
 
 typedef boost::property_tree::basic_ptree<std::string, std::string> ptree;
@@ -17,7 +19,7 @@ public:
     std::string getOpt(const char*key) const {
         return m_config.get<std::string>(key);
     }
-    IniSection getSection(const char *sect);
+    std::shared_ptr<IniSection> getSection(const char *sect);
 private:
     static std::mutex s_mtx;
     Config(const char *n) { std::cout << "Config::Config"<< n << std::endl; }

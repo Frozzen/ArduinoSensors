@@ -31,8 +31,6 @@ void Config::open(const char* ini_file)
     std::lock_guard<std::mutex> lock(s_mtx);
     property_tree::ini_parser::read_ini(ini_file, m_config);
     m_filename = ini_file;
-    /*cout << config.get<std::string>("MQTT.server") << endl;
-*/
 }
 
 /**
@@ -41,12 +39,12 @@ void Config::open(const char* ini_file)
  * @param sect
  * @return
  */
-IniSection    Config::getSection(const char *sect)
+std::shared_ptr<IniSection>    Config::getSection(const char *sect)
 {
     std::map<std::string, std::string> res;
 
     for (auto p : m_config.get_child(sect))
         res[p.first] = p.second.data();
-    return res;
+    return std::make_shared<IniSection>(res);
 }
 

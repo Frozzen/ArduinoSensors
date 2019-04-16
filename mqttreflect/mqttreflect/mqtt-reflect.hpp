@@ -2,41 +2,37 @@
 #define MQTTREFLECT_HPP
 #include <list>
 #include <set>
+#include <memory>
 #include <mqtt/message.h>
 #include <boost/property_tree/ptree.hpp>
 
-typedef std::list<mqtt::message> CSendQueue;
+using CSendQueue = std::list<std::shared_ptr<mqtt::message>>;
 /**
  * @brief The Handler class
  * интерфейс для переадресации выполнения
  */
 class Handler {
-   static CSendQueue queue;
-   protected:
-   static Handler *top_handler;    // значит верхний обработчик
-    Handler *next;
-    // TODO check payload - for sensible - our case is alphanum
-    virtual void send_msg(mqtt::message & msg);
+    friend class HandlerFactory;
+  protected:
+    Handler(std::shared_ptr<Handler> nextInLine) { nextInLine->next = next;  next = nextInLine; }
   public:
-    Handler(): next{NULL} {
-        top_handler = NULL;
-    }
-    Handler(Handler *nextInLine): next{nextInLine} {
-        top_handler = nextInLine;
-    }
+    Handler(): next{NULL} {    }
+    static CSendQueue queue;
+    std::shared_ptr<Handler> next;
+    // TODO check payload - for sensible - our case is alphanum
+    void send_msg(mqtt::message_ptr msg);
     /**
      * @brief request
      * отправляем дальше сообщение на обработку
      * @param m
      * @return false if not pass message to chain
      */
-    virtual bool request(mqtt::message & m) {
+    virtual bool request(mqtt::message_ptr m) {
         if(next == NULL)
             return false;
         else
             return next->request(m);
     }
-    virtual void set_config(Config *) {}
 };
 
 /**
@@ -45,11 +41,12 @@ class Handler {
  * TODO не учитываем регистр topic
  */
 class DomotizcHandler : public Handler {
-    std::map<std::string, int> domotizc;
+    friend class HandlerFactory;
+protected:
 public:
-    explicit DomotizcHandler(Handler *h) : Handler(h) {}
-    void set_config(Config *c);
-    bool request(mqtt::message &m);
+    explicit DomotizcHandler(std::shared_ptr<Handler> h) : Handler(h) {}
+    std::map<std::string, int> domotizc;
+    bool request(mqtt::message_ptr m);
 };
 
 /**
@@ -58,23 +55,45 @@ public:
  * TODO не учитываем регистр topic
  */
 class ReflectHandler : public Handler {
-    std::map<std::string, std::string> reflect;
+    friend class HandlerFactory;
+protected:
 public:
-    explicit ReflectHandler(Handler *h) : Handler(h) {}
-    void set_config(Config *c);
-    bool request(mqtt::message &m);
+    std::map<std::string, std::string> reflect;
+    explicit ReflectHandler(std::shared_ptr<Handler> h) : Handler(h) {}
+    bool request(mqtt::message_ptr m);
 };
 
 /**
  * @brief The DecodeEnergyHandler class
  * декрлируем JSON поля в значение подключи. определяем в ini файле какие ключи смотрим на JSON
  */
-class DecodeEnergyHandler : public Handler {
-    std::set<std::string> valid_case;
+class DecodeJsonHandler : public Handler {
     void recursive_dump_json(int level, boost::property_tree::ptree &pt, const std::string &from);
+protected:
 public:
-    explicit DecodeEnergyHandler(Handler *h) : Handler(h) {}
-    bool request(mqtt::message &m);
-    void set_config(Config *c);
+    explicit DecodeJsonHandler(std::shared_ptr<Handler> h) : Handler(h) {}
+    std::set<std::string> valid_case;
+    bool request(mqtt::message_ptr m);
+    friend class HandlerFactory;
 };
+
+class HandlerFactory {
+    static std::shared_ptr<Handler> top_handler;
+    static void set_config(Config *c, std::shared_ptr<DecodeJsonHandler> h);
+    static void set_config(Config *c, std::shared_ptr<ReflectHandler> h);
+    static void set_config(Config *c, std::shared_ptr<DomotizcHandler> h);
+public:
+    static std::shared_ptr<Handler> makeAll(Config *cfg);
+    /**
+     * @brief request_again
+     * послать сообщение в цепь обработчиков снова
+     * @param m
+     * @return
+     */
+    static bool request_again(mqtt::message_ptr m) {
+        return top_handler->request(m);
+    }
+};
+
+
 #endif // MQTTREFLECT_HPP
