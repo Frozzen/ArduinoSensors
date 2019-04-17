@@ -14,7 +14,7 @@ public:
 
     // exception interface
 public:
-    const char *what() const noexcept;
+    const char *what() const noexcept override;
 };
 
 class SerialIO

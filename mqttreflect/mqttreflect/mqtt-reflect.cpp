@@ -42,20 +42,36 @@ bool try_reconnect(mqtt::client &cli) {
     return false;
 }
 
-bool is_alnum(const std::string &str) {
+/**
+ * проверить что значение payload - допустимое
+ * TODO пока что не пропускает русские буквы
+ * TODO проверить на (null) - не должно пропускать
+ *
+ * @param str
+ * @return true допустимо
+ */
+bool is_valid_payload(const std::string &str) {
     for (auto x : str)
         if (!std::isprint(x) && x != '\n')
             return false;
     return true;
 }
 
+/**
+ * отправить сообщение всем обработчикам
+ *
+ * список обработчиков лежить в @var HandlerFactory::handler_list
+ * @param m
+ * @return
+ */
 bool HandlerFactory::request(mqtt::const_message_ptr m) {
     // проверить что содержимое - печатное
-    if (!is_alnum(m->get_payload_str()))
+    if (!is_valid_payload(m->get_payload_str()))
         return false;
 
     for (auto &h : handler_list)
-        h->request(m);
+        if (!h->request(m))
+            return false;
     return true;
 }
 
@@ -108,7 +124,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     string head = c->getOpt("MQTT.topic_head");
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
-        h->reflect[head + t] = boost::algorithm::to_lower_copy(p.second);
+        h->reflect[head + t] = head + boost::algorithm::to_lower_copy(p.second);
         cout << "reflect+:" << p.first << '-' << p.second << endl;
     }
 }
@@ -143,10 +159,11 @@ bool ReflectHandler::request(mqtt::const_message_ptr m) {
     string topic = boost::algorithm::to_lower_copy(m->get_topic());
     if (reflect.count(topic)) {
         vector<string> strs;
+        cout << "relf:" << topic << "::";
         strs = split(reflect[topic], ',');
+        string payload = m->get_payload();
         for (auto &s : strs) {
-            auto mn1 = mqtt::message::create(s, s);
-            string payload = m->get_payload();
+            cout << ">" << s << "< ";
             auto mn = mqtt::message::create(s, payload, 0, true);
             send_msg(mn);
             // ограничить число новых сообщений и число циклов decorator
@@ -160,6 +177,7 @@ bool ReflectHandler::request(mqtt::const_message_ptr m) {
             HandlerFactory::request(mn);
             stack_count--;
         }
+        cout << "=>" << payload << endl;
     }
     return true;
 }
@@ -234,7 +252,7 @@ int mqtt_loop() {
         cout << "OK\n" << endl;
 
         // Consume messages
-
+        uint16_t cnt = 0;
         while (true) {
             auto msg = cli.consume_message();
             // восстанавливаем соединение
@@ -253,11 +271,17 @@ int mqtt_loop() {
                     break;
             }
             cout << msg->get_topic() << ": " << msg->to_string() << endl;
+            // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             HandlerFactory::request(msg);
             for (auto &m : HandlerFactory::mqtt_mag_queue) {
                 const int mQOS = 0;
                 cli.publish(std::make_shared<mqtt::message>(m->get_topic(), m->get_payload(), mQOS, false));
             }
+            HandlerFactory::mqtt_mag_queue.clear();
+#ifndef NDEBUG
+            if (cnt++ > 5)
+                break;
+#endif
         }
 
         // Disconnect
@@ -351,11 +375,11 @@ void HandlerFactory::makeAll(Config *cfg) {
     domotizc = std::make_shared<DomotizcHandler>();
     set_config(cfg, domotizc);
     handler_list.push_front(domotizc);
-    return;
 
     reflect = std::make_shared<ReflectHandler>();
     set_config(cfg, reflect);
     handler_list.push_front(reflect);
+    return;
 
     json = std::make_shared<DecodeJsonHandler>();
     set_config(cfg, json);

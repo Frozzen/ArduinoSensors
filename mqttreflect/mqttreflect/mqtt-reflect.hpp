@@ -14,7 +14,7 @@ using CSendQueue = std::list<mqtt::const_message_ptr>;
 class Handler {
     friend class HandlerFactory;
   protected:
-    Handler() { }
+    Handler() = default;
   public:
     // check payload - for sensible - our case is alphanum
     void send_msg(mqtt::const_message_ptr msg);
@@ -37,7 +37,8 @@ class DomotizcHandler : public Handler {
 protected:
 public:
     std::map<std::string, int> domotizc;
-    bool request(mqtt::const_message_ptr m);
+
+    bool request(mqtt::const_message_ptr m) override;
 };
 
 /**
@@ -50,7 +51,8 @@ class ReflectHandler : public Handler {
 protected:
 public:
     std::map<std::string, std::string> reflect;
-    bool request(mqtt::const_message_ptr m);
+
+    bool request(mqtt::const_message_ptr m) override;
 };
 
 /**
@@ -62,7 +64,8 @@ class DecodeJsonHandler : public Handler {
 protected:
 public:
     std::set<std::string> valid_case;
-    bool request(mqtt::const_message_ptr m);
+
+    bool request(mqtt::const_message_ptr m) override;
     friend class HandlerFactory;
 };
 
