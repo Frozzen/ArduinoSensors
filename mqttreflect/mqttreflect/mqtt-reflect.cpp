@@ -23,74 +23,69 @@ const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
 using namespace std::chrono;
 
-//const string SERVER_ADDRESS	{ "tcp://172.20.110.2:1883" };
-const string CLIENT_ID		{ "sync_consume_cpp" };
-const int QOS = 0;
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
 CSendQueue HandlerFactory::mqtt_mag_queue;
 
-bool try_reconnect(mqtt::client& cli)
-{
+bool try_reconnect(mqtt::client &cli) {
     constexpr int N_ATTEMPT = 30;
 
-    for (int i=0; i<N_ATTEMPT && !cli.is_connected(); ++i) {
+    for (int i = 0; i < N_ATTEMPT && !cli.is_connected(); ++i) {
         try {
             cli.reconnect();
             return true;
         }
-        catch (const mqtt::exception&) {
+        catch (const mqtt::exception &) {
             this_thread::sleep_for(seconds(1));
         }
     }
     return false;
 }
-bool is_alnum(const std::string &str)
-{
-    for(auto x : str)
-        if(!std::isprint(x))
+
+bool is_alnum(const std::string &str) {
+    for (auto x : str)
+        if (!std::isprint(x) && x != '\n')
             return false;
     return true;
 }
 
 bool HandlerFactory::request(mqtt::const_message_ptr m) {
-    if(!is_alnum(m->get_payload_str()))
+    // проверить что содержимое - печатное
+    if (!is_alnum(m->get_payload_str()))
         return false;
-    for(auto &h : handler_list)
+
+    for (auto &h : handler_list)
         h->request(m);
     return true;
 }
 
-void Handler::send_msg(mqtt::const_message_ptr msg)
-{
+void Handler::send_msg(mqtt::const_message_ptr msg) {
     HandlerFactory::mqtt_mag_queue.push_front(msg);
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void DecodeJsonHandler::recursive_dump_json(int level, boost::property_tree::ptree &pt, const string &from)
-{
+void DecodeJsonHandler::recursive_dump_json(int level, boost::property_tree::ptree &pt, const string &from) {
     if (pt.empty()) {
-     }  else
-    {
+    } else {
         for (ptree::iterator pos = pt.begin(); pos != pt.end();) {
             std::string topic(from + "/" + pos->first);
-            if(pos->second.empty())
+            if (pos->second.empty())
                 recursive_dump_json(++level, pos->second, topic);
             else {
-                send_msg(std::make_shared<mqtt::message>(topic, pos->second.data()));
+                auto mm = std::make_shared<const mqtt::message>(topic, pos->second.data());
+                send_msg(mm);
             }
-          ++pos;
+            ++pos;
         }
     }
 }
 
-bool DecodeJsonHandler::request(mqtt::const_message_ptr  m)
-{
+bool DecodeJsonHandler::request(mqtt::const_message_ptr m) {
     int ix = m->get_topic().rfind('/');
-    if(ix == -1)
+    if (ix == -1)
         return false;
-    string sens((m->get_topic().begin()+ix), m->get_topic().end());
-    if(valid_case.find(sens) != valid_case.end()) {
+    string sens((m->get_topic().begin() + ix), m->get_topic().end());
+    if (valid_case.find(sens) != valid_case.end()) {
         stringstream ss(m->get_payload_str());
         boost::property_tree::ptree pt;
         boost::property_tree::read_json(ss, pt);
@@ -100,20 +95,20 @@ bool DecodeJsonHandler::request(mqtt::const_message_ptr  m)
     return true;
 }
 
-void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> h)
-{
+void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
+    string head = c->getOpt("MQTT.topic_head");
     // TODO посмотреть какие еще ключи надо смотреть
     // TODO возможно сделать regexp
     h->valid_case = {"SENSOR", "ENERGY"};
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> h)
-{
+void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("reflect");
-    for(auto p : *ini) {
+    string head = c->getOpt("MQTT.topic_head");
+    for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
-        h->reflect[t] = boost::algorithm::to_lower_copy(p.second);
+        h->reflect[head + t] = boost::algorithm::to_lower_copy(p.second);
         cout << "reflect+:" << p.first << '-' << p.second << endl;
     }
 }
@@ -124,13 +119,14 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> h)
  * @param delim
  * @return
  */
-vector<string> split(const string &s, const char delim)
-{
+vector<string> split(const string &s, const char delim) {
     stringstream ss(s);
     string item;
     vector<string> elems;
-    while(getline(ss, item, delim))
+    while (getline(ss, item, delim)) {
+        item.erase(std::remove(item.begin(), item.end(), '\n'), item.end());
         elems.push_back(move(item));
+    }
     return elems;
 }
 
@@ -143,19 +139,20 @@ vector<string> split(const string &s, const char delim)
  * @param m
  * @return
  */
-bool ReflectHandler::request(mqtt::const_message_ptr  m)
-{
+bool ReflectHandler::request(mqtt::const_message_ptr m) {
     string topic = boost::algorithm::to_lower_copy(m->get_topic());
-    if(reflect.count(topic)) {
+    if (reflect.count(topic)) {
         vector<string> strs;
         strs = split(reflect[topic], ',');
-        for(auto s : strs) {
-            auto mn = std::make_shared<mqtt::message>(s, m->get_payload_str());
+        for (auto &s : strs) {
+            auto mn1 = mqtt::message::create(s, s);
+            string payload = m->get_payload();
+            auto mn = mqtt::message::create(s, payload, 0, true);
             send_msg(mn);
             // ограничить число новых сообщений и число циклов decorator
             static int stack_count = 0;
             stack_count++;
-            if(stack_count > MAX_REFLECT_DEPTH) {
+            if (stack_count > MAX_REFLECT_DEPTH) {
                 cerr << "reflect loop:" << m->get_topic() << endl;
                 stack_count = 0;
                 break;
@@ -171,12 +168,13 @@ bool ReflectHandler::request(mqtt::const_message_ptr  m)
 /// \brief DomotizcHandler::set_config
 /// \param c
 ///
-void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> h)
-{
+void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("Domotizc");
-    for(auto p : *ini) {
+    string head = c->getOpt("MQTT.topic_head");
+    for (auto p : *ini) {
         string topic = boost::algorithm::to_lower_copy(p.first);
-        h->domotizc[topic] = std::atoi(p.second.c_str());
+        char *pend;
+        h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
         cout << "domo+:" << p.first << '-' << p.second << endl;
     }
 }
@@ -189,15 +187,13 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> h)
  * @param m
  * @return
  */
-bool DomotizcHandler::request(mqtt::const_message_ptr m)
-{
+bool DomotizcHandler::request(mqtt::const_message_ptr m) {
     string topic = boost::algorithm::to_lower_copy(m->get_topic());
-    if(domotizc.count(topic) > 0) {
+    if (domotizc.count(topic) > 0) {
         char buf[100];
-        // TODO проверить что содержимое печатное
         string payload = m->get_payload_str();
-        std::snprintf(buf, 100, "{ \"idx\" : %d, \"nvalue\" : 0, \"svalue\": \"%s\" }",
-                                                domotizc[topic], payload.c_str());
+        std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
+                      domotizc[topic], payload.c_str());
         std::string tval = buf;
         cout << "domotizc:" << tval << endl;
         send_msg(std::make_shared<mqtt::message>("domoticz/in", tval));
@@ -211,13 +207,22 @@ bool DomotizcHandler::request(mqtt::const_message_ptr m)
  * @param cli
  * @return
  */
-int mqtt_loop(mqtt::client &cli)
-{
+int mqtt_loop() {
     Config *cfg = Config::getInstance();
-    const vector<string> TOPICS { "stat/#", "tele/#" };
-    const vector<int> QOS { 0, 0 };
+    vector<string> TOPICS{"stat/#", "tele/#", "rs485/#"};
+    const vector<int> QOS{0, 0, 0};
     HandlerFactory::makeAll(cfg);
+    string head = cfg->getOpt("MQTT.topic_head");
+    if (!head.empty()) {
+        for (auto ix = 0; ix < TOPICS.size(); ++ix) {
+            TOPICS[ix] = head + TOPICS[ix];
+        }
+        //std::transform(TOPICS.begin(), TOPICS.end(),TOPICS.begin(),  [head](string s) -> string { return head + s; });
+    }
 
+    const string CLIENT_ID{"sync_consume_cpp"};
+
+    mqtt::client cli(cfg->getOpt("MQTT.server"), CLIENT_ID);
     mqtt::connect_options connOpts(cfg->getOpt("MQTT.user"), cfg->getOpt("MQTT.pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
@@ -240,18 +245,16 @@ int mqtt_loop(mqtt::client &cli)
                         cli.subscribe(TOPICS, QOS);
                         cout << "Reconnected" << endl;
                         continue;
-                    }
-                    else {
+                    } else {
                         cout << "Reconnect failed." << endl;
                         break;
                     }
-                }
-                else
+                } else
                     break;
             }
             cout << msg->get_topic() << ": " << msg->to_string() << endl;
             HandlerFactory::request(msg);
-            for(auto m : HandlerFactory::mqtt_mag_queue) {
+            for (auto &m : HandlerFactory::mqtt_mag_queue) {
                 const int mQOS = 0;
                 cli.publish(std::make_shared<mqtt::message>(m->get_topic(), m->get_payload(), mQOS, false));
             }
@@ -263,7 +266,7 @@ int mqtt_loop(mqtt::client &cli)
         cli.disconnect();
         cout << "OK" << endl;
     }
-    catch (const mqtt::exception& exc) {
+    catch (const mqtt::exception &exc) {
         cerr << exc.what() << endl;
         return 1;
     }
@@ -323,15 +326,12 @@ int read_serial(const char *dev)
 #endif
 /////////////////////////////////////////////////////////////////////////////
 
-int main(int argc, char* argv[])
-{
+int main(int argc, char *argv[]) {
     std::setlocale(LC_ALL, "ru_RU.UTF-8");
     Config *cfg = Config::getInstance();
     cfg->open("mqttfrwd.ini");
 
-    mqtt::client cli(cfg->getOpt("MQTT.server"), CLIENT_ID);
-
-    mqtt_loop(cli);
+    mqtt_loop();
 #if 0
     thread t1(read_serial, "ttyUSB0");
     rs232_looping = false;
@@ -342,8 +342,8 @@ int main(int argc, char* argv[])
 
 /////////////////////////////////////////////////////////////////////////////
 std::list<std::shared_ptr<Handler>> HandlerFactory::handler_list;
-void HandlerFactory::makeAll(Config *cfg)
-{
+
+void HandlerFactory::makeAll(Config *cfg) {
     std::shared_ptr<DomotizcHandler> domotizc;
     std::shared_ptr<ReflectHandler> reflect;
     std::shared_ptr<DecodeJsonHandler> json;

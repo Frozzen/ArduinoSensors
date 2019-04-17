@@ -67,9 +67,11 @@ public:
 };
 
 class HandlerFactory {
-    static void set_config(Config *c, std::shared_ptr<DecodeJsonHandler> h);
-    static void set_config(Config *c, std::shared_ptr<ReflectHandler> h);
-    static void set_config(Config *c, std::shared_ptr<DomotizcHandler> h);
+    static void set_config(Config *c, std::shared_ptr<DecodeJsonHandler> &h);
+
+    static void set_config(Config *c, std::shared_ptr<ReflectHandler> &h);
+
+    static void set_config(Config *c, std::shared_ptr<DomotizcHandler> &h);
 
     static std::list<std::shared_ptr<Handler>> handler_list;
 public:
