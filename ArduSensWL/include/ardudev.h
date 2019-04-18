@@ -13,18 +13,23 @@
 #define USE_SERIAL
 #define USE_ALT_SERIAL
 // serial rate
-#define ALT_SERIAL_RATE 19200
-#if 0
+//#define INIT_JDY_40
+/*
+AT+BAUD
+AT+RFID
+AT+DVID
+AT+RFC
+AT+POWE
+AT+CLSS
+*/
+ 
+// AT+BAUD4
+#define ALT_SERIAL_RATE 9600
 // set jdy40 config
 #define JDY_40_SET 7
-#endif
 // SoftSerial pin
 #define ALT_RS232_RX 8
 #define ALT_RS232_TX 9
 
 // нужно изменять между образцами - чтобы было поменьше коллизий
-<<<<<<< HEAD
-#define DO_MSG_RATE 10
-=======
-#define DO_MSG_RATE 100
->>>>>>> сделал почаще вывод для отладки
+#define DO_MSG_RATE 1000

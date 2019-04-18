@@ -13,35 +13,6 @@
 /// открыть закрыть кран
 
 
-// Module connection pins (Digital Pins)
-#define DISPLAY_DIO 3
-#define DISPLAY_CLK 4
-
-// выход со счетчика
-#define WATER_COUNTER_PIN 5
-// показать/убрать показания на дисплее
-#define BTN_DISPLAY 6
-// кнопка открыть/закрыть воду
-#define BTN_OPEN_WATER 2 
-// кран открыт
-#define IS_TAP_OPEN 9
-// кран закрыт
-#define IS_TAP_CLOSE 10
-// закрыть кран
-#define OPEN_TAP_CMD 2
-// открыть кран
-#define CLOSE_TAP_CMD 12
-
-// бочка полная
-#define IS_BURREL_FULL 8
-// бочка пустая
-#define IS_BURREL_EMPTY 7
-// PIN  A4(SDA),A5(SCL) - I2C - display
-//the YELLOW pin of the Sensor is connected with A2 of Arduino/Catduino
-#define WATER_PRESSURE A1 
-
-// адреса в eeprom
-#define EERPOM_ADDR_COUNT 0
 
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"

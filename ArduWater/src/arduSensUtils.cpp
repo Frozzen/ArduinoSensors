@@ -32,13 +32,13 @@
 #define LOG_MESSAGE HOST_ADDR "log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
 
-// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
-OneWire oneWire(ONE_WIRE_BUS);
 
 Bounce s_input_pin[IN_PIN_COUNT];
 
 char s_buf[MAX_OUT_BUFF];
 #ifndef NO_TEMP
+// Setup a oneWire instance to communicate with any OneWire devices (not just Maxim/Dallas temperature ICs)
+OneWire oneWire(ONE_WIRE_BUS);
 // Pass our oneWire reference to Dallas Temperature.
 DallasTemperature sensors(&oneWire);
 
@@ -142,11 +142,18 @@ bool doSendTemp()
       getAddrString(s_thermometer[ix]), str_temp);
     sendToServer(s_buf);
     updated = true;
-  }
+  }*/
   return updated;
 }
 #endif
-
+/*
+uint8_t recode_pin[] = {BTN_OPEN_WATER ,
+ WATER_COUNTER_PIN ,
+ BTN_DISPLAY     ,
+ IS_BURREL_EMPTY ,
+ IS_BURREL_FULL  ,
+ IS_TAP_OPEN,     
+ IS_TAP_CLOSE};
 //------------------------------------
 void setupArduSens(void)
 {
@@ -154,7 +161,7 @@ void setupArduSens(void)
   sendToServer(s_buf, true);
  
    for(uint8_t ix = 0; ix < IN_PIN_COUNT; ++ix) {
-    iniInputPin(s_input_pin[ix], IN_PIN_START+ix); 
+    iniInputPin(s_input_pin[ix], recode_pin[ix]); 
     snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO "/latch-%d" LOG_MESSAGE_END, ix);
     sendToServer(s_buf, true);
   }
@@ -179,3 +186,4 @@ void setupArduSens(void)
   }
   #endif
 }
+*/
