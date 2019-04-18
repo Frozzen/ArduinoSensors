@@ -290,7 +290,7 @@ int mqtt_loop() {
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     const int mQOS = 0;
-                    cli.publish(std::make_shared<mqtt::message>(m.topic, m.payload, mQOS, false));
+                    cli.publish(m.topic, m.payload.c_str(), m.payload.size());
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
             }
