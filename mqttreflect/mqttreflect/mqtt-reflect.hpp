@@ -6,7 +6,13 @@
 #include <mqtt/message.h>
 #include <boost/property_tree/ptree.hpp>
 
-using CSendQueue = std::list<mqtt::const_message_ptr>;
+struct SendMessge {
+    std::string topic, payload;
+
+    SendMessge(std::string t, std::string p) : topic{t}, payload{p} {}
+};
+
+using CSendQueue = std::list<SendMessge>;
 /**
  * @brief The Handler class
  * интерфейс для переадресации выполнения
@@ -17,14 +23,14 @@ class Handler {
     Handler() = default;
   public:
     // check payload - for sensible - our case is alphanum
-    void send_msg(mqtt::const_message_ptr msg);
+    void send_msg(const SendMessge &msg);
     /**
      * @brief request
      * отправляем дальше сообщение на обработку
      * @param m
      * @return false if not pass message to chain
      */
-    virtual bool request(mqtt::const_message_ptr m) = 0;
+    virtual bool request(const SendMessge &m) = 0;
 };
 
 /**
@@ -38,7 +44,7 @@ protected:
 public:
     std::unordered_map<std::string, int> domotizc;
 
-    bool request(mqtt::const_message_ptr m) override;
+    bool request(const SendMessge &m) override;
 };
 
 /**
@@ -52,7 +58,7 @@ protected:
 public:
     std::unordered_map<std::string, std::string> reflect;
 
-    bool request(mqtt::const_message_ptr m) override;
+    bool request(const SendMessge &m) override;
 };
 
 /**
@@ -60,12 +66,12 @@ public:
  * декрлируем JSON поля в значение подключи. определяем в ini файле какие ключи смотрим на JSON
  */
 class DecodeJsonHandler : public Handler {
-    void recursive_dump_json(int level, boost::property_tree::ptree &pt, const std::string &from);
+    void recursive_dump_json(int level, const boost::property_tree::ptree &pt, const std::string &from);
 protected:
 public:
     std::set<std::string> valid_case;
 
-    bool request(mqtt::const_message_ptr m) override;
+    bool request(const SendMessge &m) override;
     friend class HandlerFactory;
 };
 
@@ -86,7 +92,7 @@ public:
      * @param m
      * @return
      */
-    static bool request(mqtt::const_message_ptr m);
+    static bool request(const SendMessge &m);
 };
 
 

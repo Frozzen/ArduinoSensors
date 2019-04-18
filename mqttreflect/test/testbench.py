@@ -15,7 +15,7 @@ def main(argv):
         data = []
         for ln in f:
             data.append(ln.rstrip().split(' '))
-    for i in range(10000):
+    for i in range(1000):
         for topic, payload in data:
             client.publish('testing/' + topic, payload, retain=False)
             # print(topic, payload)
