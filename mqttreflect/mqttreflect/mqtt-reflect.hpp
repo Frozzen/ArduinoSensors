@@ -36,7 +36,7 @@ class Handler {
 /**
  * @brief The DomotizcHandler class
  * конвертируем простое значение в json
- * TODO не учитываем регистр topic
+ * не учитываем регистр topic
  */
 class DomotizcHandler : public Handler {
     friend class HandlerFactory;
@@ -50,7 +50,7 @@ public:
 /**
  * @brief The ReflectHandler class
  * разворачиваем цепочки переадресации, может быть несколько адресатов верхний обработчик
- * TODO не учитываем регистр topic
+ * не учитываем регистр topic
  */
 class ReflectHandler : public Handler {
     friend class HandlerFactory;
@@ -66,7 +66,6 @@ public:
  * декрлируем JSON поля в значение подключи. определяем в ini файле какие ключи смотрим на JSON
  */
 class DecodeJsonHandler : public Handler {
-    void recursive_dump_json(int level, const boost::property_tree::ptree &pt, const std::string &from);
 protected:
 public:
     std::set<std::string> valid_case;
@@ -75,6 +74,9 @@ public:
     friend class HandlerFactory;
 };
 
+/**
+ * создаем обработчики и конфигурируем их
+ */
 class HandlerFactory {
     static void set_config(Config *c, std::shared_ptr<DecodeJsonHandler> &h);
 
@@ -85,7 +87,9 @@ class HandlerFactory {
     static std::list<std::shared_ptr<Handler>> handler_list;
 public:
     static CSendQueue mqtt_mag_queue;
+
     static void makeAll(Config *cfg);
+
     /**
      * @brief request_again
      * послать сообщение в цепь обработчиков снова
