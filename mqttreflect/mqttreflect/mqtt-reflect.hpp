@@ -36,7 +36,7 @@ class DomotizcHandler : public Handler {
     friend class HandlerFactory;
 protected:
 public:
-    std::map<std::string, int> domotizc;
+    std::unordered_map<std::string, int> domotizc;
 
     bool request(mqtt::const_message_ptr m) override;
 };
@@ -50,7 +50,7 @@ class ReflectHandler : public Handler {
     friend class HandlerFactory;
 protected:
 public:
-    std::map<std::string, std::string> reflect;
+    std::unordered_map<std::string, std::string> reflect;
 
     bool request(mqtt::const_message_ptr m) override;
 };

@@ -65,10 +65,6 @@ bool is_valid_payload(const std::string &str) {
  * @return
  */
 bool HandlerFactory::request(mqtt::const_message_ptr m) {
-    // проверить что содержимое - печатное
-    if (!is_valid_payload(m->get_payload_str()))
-        return false;
-
     for (auto &h : handler_list)
         if (!h->request(m))
             return false;
@@ -125,7 +121,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
         h->reflect[head + t] = head + boost::algorithm::to_lower_copy(p.second);
-        cout << "reflect+:" << p.first << '-' << p.second << endl;
+        ////cout << "reflect+:" << p.first << '-' << p.second << endl;
     }
 }
 
@@ -136,14 +132,16 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
  * @return
  */
 vector<string> split(const string &s, const char delim) {
-    stringstream ss(s);
-    string item;
-    vector<string> elems;
-    while (getline(ss, item, delim)) {
-        item.erase(std::remove(item.begin(), item.end(), '\n'), item.end());
-        elems.push_back(move(item));
+    std::vector<std::string> output;
+    std::string::size_type prev_pos = 0, pos = 0;
+    while ((pos = s.find(delim, pos)) != std::string::npos) {
+        std::string substring(s.substr(prev_pos, pos - prev_pos));
+        output.push_back(substring);
+        prev_pos = ++pos;
     }
-    return elems;
+    output.push_back(s.substr(prev_pos, pos - prev_pos)); // Last word
+
+    return output;
 }
 
 /**
@@ -156,14 +154,15 @@ vector<string> split(const string &s, const char delim) {
  * @return
  */
 bool ReflectHandler::request(mqtt::const_message_ptr m) {
-    string topic = boost::algorithm::to_lower_copy(m->get_topic());
+    string topic(m->get_topic());
+    std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
     if (reflect.count(topic)) {
         vector<string> strs;
-        cout << "relf:" << topic << "::";
+        //cout << "relf:" << topic << "::";
         strs = split(reflect[topic], ',');
         string payload = m->get_payload();
         for (auto &s : strs) {
-            cout << ">" << s << "< ";
+            //cout << ">" << s << "< ";
             auto mn = mqtt::message::create(s, payload, 0, true);
             send_msg(mn);
             // ограничить число новых сообщений и число циклов decorator
@@ -177,7 +176,7 @@ bool ReflectHandler::request(mqtt::const_message_ptr m) {
             HandlerFactory::request(mn);
             stack_count--;
         }
-        cout << "=>" << payload << endl;
+        //cout << "=>" << payload << endl;
     }
     return true;
 }
@@ -193,7 +192,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
         string topic = boost::algorithm::to_lower_copy(p.first);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        cout << "domo+:" << p.first << '-' << p.second << endl;
+        //cout << "domo+:" << p.first << '-' << p.second << endl;
     }
 }
 
@@ -206,14 +205,15 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
  * @return
  */
 bool DomotizcHandler::request(mqtt::const_message_ptr m) {
-    string topic = boost::algorithm::to_lower_copy(m->get_topic());
+    string topic(m->get_topic());
+    std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
     if (domotizc.count(topic) > 0) {
         char buf[100];
         string payload = m->get_payload_str();
         std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
                       domotizc[topic], payload.c_str());
         std::string tval = buf;
-        cout << "domotizc:" << tval << endl;
+        //cout << "domotizc:" << tval << endl;
         send_msg(std::make_shared<mqtt::message>("domoticz/in", tval));
     }
     return true;
@@ -246,10 +246,10 @@ int mqtt_loop() {
     connOpts.set_clean_session(true);
 
     try {
-        cout << "Connecting to the MQTT server..." << flush;
+        //cout << "Connecting to the MQTT server..." << flush;
         cli.connect(connOpts);
         cli.subscribe(TOPICS, QOS);
-        cout << "OK\n" << endl;
+        //cout << "OK\n" << endl;
 
         // Consume messages
         uint16_t cnt = 0;
@@ -258,37 +258,40 @@ int mqtt_loop() {
             // восстанавливаем соединение
             if (!msg) {
                 if (!cli.is_connected()) {
-                    cout << "Lost connection. Attempting reconnect" << endl;
+                    //cout << "Lost connection. Attempting reconnect" << endl;
                     if (try_reconnect(cli)) {
                         cli.subscribe(TOPICS, QOS);
-                        cout << "Reconnected" << endl;
+                        //cout << "Reconnected" << endl;
                         continue;
                     } else {
-                        cout << "Reconnect failed." << endl;
+                        //cout << "Reconnect failed." << endl;
                         break;
                     }
                 } else
                     break;
             }
-            cout << msg->get_topic() << ": " << msg->to_string() << endl;
+            //cout << msg->get_topic() << ": " << msg->to_string() << endl;
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
-            HandlerFactory::request(msg);
-            for (auto &m : HandlerFactory::mqtt_mag_queue) {
-                const int mQOS = 0;
-                cli.publish(std::make_shared<mqtt::message>(m->get_topic(), m->get_payload(), mQOS, false));
+            // проверить что содержимое - печатное
+            if (!is_valid_payload(msg->get_payload_str())) {
+                HandlerFactory::request(msg);
+                for (auto &m : HandlerFactory::mqtt_mag_queue) {
+                    const int mQOS = 0;
+                    cli.publish(std::make_shared<mqtt::message>(m->get_topic(), m->get_payload(), mQOS, false));
+                }
+                HandlerFactory::mqtt_mag_queue.clear();
             }
-            HandlerFactory::mqtt_mag_queue.clear();
 #ifndef NDEBUG
-            if (cnt++ > 5)
+            if (cnt++ > 8000)
                 break;
 #endif
         }
 
         // Disconnect
 
-        cout << "\nDisconnecting from the MQTT server..." << flush;
+        //cout << "\nDisconnecting from the MQTT server..." << flush;
         cli.disconnect();
-        cout << "OK" << endl;
+        //cout << "OK" << endl;
     }
     catch (const mqtt::exception &exc) {
         cerr << exc.what() << endl;
@@ -327,13 +330,13 @@ int read_serial(const char *dev)
             for(auto it = ix_start; it < ix_end - 4; ++it)
                { cs += *it;  }
             if((cs & 0xff) != csorg)
-                ;// cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
+                ;// //cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
             else {
                 std::string str(ix_start+3, ix_end-4);
                 auto it = boost::find(str, '=');
-                cout << " rs:" << str << " end:" << *it << endl;
+                //cout << " rs:" << str << " end:" << *it << endl;
                 if(it == str.end()) {
-                    cout << "***com!:" <<  str << endl;
+                    //cout << "***com!:" <<  str << endl;
                     continue;
                 }
                 std::string topic(str.begin(), it);

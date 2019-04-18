@@ -12,11 +12,14 @@ def main(argv):
     client.loop_stop()
 
     with open(argv[1], 'rt') as f:
+        data = []
         for ln in f:
-            topic, payload = ln.rstrip().split(' ')
+            data.append(ln.rstrip().split(' '))
+    for i in range(10000):
+        for topic, payload in data:
             client.publish('testing/' + topic, payload, retain=False)
-            print(topic, payload)
-            time.sleep(0.05)
+            # print(topic, payload)
+            time.sleep(0.001)
 
     client.disconnect()
 
