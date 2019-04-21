@@ -7,29 +7,38 @@
 #include "ardudev.h"
 #define NO_TEMP
 #include "arduSensUtils.h"
-/// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
-/// TODO сделать управление командами команды не ко мне форвардить
 /// TODO занести в NVRAM значение для воды, 
-/// открыть закрыть кран
+/// TODO занести в NVRAM текущее время
+/// TODO открыть закрыть кран раз в 2 недели ночью
 
+enum eTapStates {
+  eTapNone,
+  eTapWorking,
+  eTapStop, 
+  eTapOpen, 
+  eTapClose
+} s_fsm_tap_state;
+uint32_t s_fsm_timeout = 0;
 
 
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
 
-// Setup  instancees to communicate with devices
+#define s_automatic_open_enabled 1
+
+// Setup  instancees to communicate with devices I2C
 RtcDS1307<TwoWire> Rtc(Wire);
 
 TM1637Display display(DISPLAY_CLK, DISPLAY_DIO);
 extern Bounce s_input_pin[IN_PIN_COUNT];
 
-Bounce waterClick,                // счетчик воды
-       displayClick,           // кнопка показать значения
-       openTapClick,    // кнопка открыть воду
-       isBarrelFull,
-       isBarrelEmpty,
-       isTapOpen,
-       isTapClosed;
+Bounce  btn_open_water,    // кнопка открыть воду
+        water_cnt,                // счетчик воды
+        btn_display,           // кнопка показать значения        
+        water_is_empty,
+        water_is_full,
+        isTapOpen,
+        isTapClosed;
 
 // значение счетчика воды в 10 литрах
 uint32_t s_water_count = 0, s_water_count_rtc;
@@ -52,58 +61,52 @@ char buf[4];
 }
 
 extern bool checkButtonChanged(Bounce &bounce);
-void isButtonChanged(Bounce &bounce, const char *title)
+bool isButtonChanged(Bounce &bounce, const char *title)
 {
   boolean changed = bounce.update(); 
   if ( changed ) {
       uint8_t value = bounce.read();
       snprintf(s_buf, sizeof(s_buf), ADDR_STR "%s=%d", title, value);
       sendToServer(s_buf);
-    }  
+    }
+    return changed;  
 }
 
-enum eTapStates {
-  eTapNone,
-  eTapWorking,
-  eTapStop
-} s_fsm_tap_state;
-uint32_t s_fsm_timeout = 0;
 //------------------------------------------------------
 /// послать в шину изменения в контактах
 void   doTestWater() {
 
-  if(checkButtonChanged(waterClick)) {
+  if(checkButtonChanged(water_cnt)) {
     ++s_water_count;
     snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%ld", s_water_count);
     sendToServer(s_buf);
   }
 
   // переключить экранчик
-  if(checkButtonChanged(displayClick)) {
+  if(checkButtonChanged(btn_display)) {
       s_displayMode ^= true;
   }
 
   // запустить FSM на изменение ветниля
-  if(checkButtonChanged(openTapClick)) {
-    if(!isTapOpen.read()) {
-      digitalWrite(OPEN_TAP_CMD, HIGH);    
-      digitalWrite(CLOSE_TAP_CMD, LOW);    
-    } else  {
-      digitalWrite(OPEN_TAP_CMD, LOW);    
-      digitalWrite(CLOSE_TAP_CMD, HIGH);    
-    }
-    s_fsm_tap_state = eTapWorking;
-    s_fsm_timeout = millis();
+  if(checkButtonChanged(btn_open_water)) {
+    s_fsm_tap_state = isTapOpen.read() ? eTapClose : eTapOpen;
   }
-  isButtonChanged(isBarrelEmpty, "barrel_empty");
-  isButtonChanged(isBarrelFull, "barrel_full");
+  // при появлении 1цы дать команду открыть кран - водзможно сделать блокировку этого
+  if(isButtonChanged(water_is_empty, "barrel_empty"))
+    s_fsm_tap_state = water_is_empty.read() && s_automatic_open_enabled ? eTapOpen;
+  // при появлении 1цы дать команду закрыть кран
+  if(isButtonChanged(water_is_full, "barrel_full"))
+    s_fsm_tap_state = water_is_full.read() ? eTapClose;
   isButtonChanged(isTapClosed, "tap_closed");
   isButtonChanged(isTapOpen, "tap_open");
 }
 
-/*macro definition of sensor*/
-// Использовал программу, которую предоставил продавец. Заметил, что в покое он показывает отрицательное значение, 
-// равное -3.35 кПа. я не могу понять, с чем связана данная цифра.
+/**
+ * отправить на хоста давление
+ * Использовал программу, которую предоставил продавец. 
+ * Заметил, что в покое он показывает отрицательное значение, 
+ * равное -3.35 кПа. я не могу понять, с чем связана данная цифра.
+*/
 void doWaterPressure()
 {
 
@@ -142,16 +145,17 @@ void setup(void)
   display.setBrightness(0x0f);
   Serial.begin(38400);
 
-  iniInputPin(openTapClick, BTN_OPEN_WATER);
-  iniInputPin(waterClick, WATER_COUNTER_PIN);
-  iniInputPin(displayClick, BTN_DISPLAY);
-  iniInputPin(isBarrelFull, IS_BURREL_FULL);
-  iniInputPin(isBarrelEmpty, IS_BURREL_EMPTY);
-  iniInputPin(isBarrelFull, IS_BURREL_FULL);
-  iniInputPin(isBarrelEmpty, IS_BURREL_EMPTY);
+  iniInputPin(btn_open_water, BTN_OPEN_WATER);
+  iniInputPin(water_cnt, WATER_COUNTER_PIN);
+  iniInputPin(btn_display, BTN_DISPLAY);
+  iniInputPin(water_is_full, IS_BURREL_FULL);
+  iniInputPin(water_is_empty, IS_BURREL_EMPTY);
   iniInputPin(isTapOpen, IS_TAP_OPEN);
   iniInputPin(isTapClosed, IS_TAP_CLOSE);
   
+  pinMode(OPEN_TAP_CMD, OUT);
+  pinMode(CLOSE_TAP_CMD, OUT);
+  pinMode(WATER_PRESSURE, INPUT);
   digitalWrite(OPEN_TAP_CMD, LOW);
   digitalWrite(CLOSE_TAP_CMD, LOW);
   digitalWrite(WATER_PRESSURE, HIGH);
@@ -167,6 +171,9 @@ void setup(void)
   sendDeviceConfig("/barrel_full");
   sendDeviceConfig("/tap_closed");
   sendDeviceConfig("/tap_open");
+
+  snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%ld", s_water_count);
+  sendToServer(s_buf);
 }
 
 /*
@@ -180,7 +187,7 @@ void loop(void)
 
   // раз в 1 минуту послать alive или температуру
   if((s_time_cnt % DO_MSG_RATE) == 0) {
-    doAlive();    
+    doWaterPressure();
     // write in eeprom
     if(s_water_count_rtc != s_water_count) {
       Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count_rtc));
@@ -199,11 +206,34 @@ void loop(void)
     case eTapStop:
       digitalWrite(OPEN_TAP_CMD, LOW);
       digitalWrite(CLOSE_TAP_CMD, LOW);      
+      s_fsm_tap_state = eTapNone;
       break;
     case eTapNone:
     default:
+    // команды открытия закрытия крана - работают только если предидущая работа завершена
+    case eTapClose:
+      if(s_fsm_tap_state != eTapNone)
+        break;
+      digitalWrite(OPEN_TAP_CMD, LOW);
+      digitalWrite(CLOSE_TAP_CMD, HIGH);      
+      s_fsm_timeout = millis();
+      s_fsm_tap_state = eTapWorking;
+      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=0");
+      sendToServer(s_buf);
       break;
+    case eTapOpen:
+      if(s_fsm_tap_state != eTapNone)
+        break;
+      digitalWrite(OPEN_TAP_CMD, HIGH);
+      digitalWrite(CLOSE_TAP_CMD, LOW);      
+      s_fsm_timeout = millis();
+      s_fsm_tap_state = eTapWorking;
+      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=1");
+      sendToServer(s_buf);
+      break;    
   }
+  /// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
+  /// TODO сделать управление командами команды не ко мне форвардить
   delay(100);
   s_time_cnt++;
 }
