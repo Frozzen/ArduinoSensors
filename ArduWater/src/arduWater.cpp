@@ -20,7 +20,29 @@ enum eTapStates {
 } s_fsm_tap_state;
 uint32_t s_fsm_timeout = 0;
 
+/// настроили кнопки которые нажимают
+void iniInputPin(Bounce &bounce, uint8_t pin)
+{
+  pinMode(pin, INPUT); 
+  digitalWrite(pin, HIGH);
+  bounce.attach(pin); // Настраиваем Bouncer
+  bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
+}
 
+/// проверили что кнопку отпустили
+bool checkButtonChanged(Bounce &bounce)
+{
+  boolean changed = bounce.update(); 
+  int value = HIGH;
+  if ( changed ) {
+      value = bounce.read();
+      // Если значение датчика стало ЗАМКНУТО
+      if ( value == LOW) {
+        return true;
+      }
+    }  
+  return false;
+}
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
 
