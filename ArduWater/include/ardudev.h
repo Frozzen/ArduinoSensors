@@ -1,3 +1,9 @@
+
+#define MAX_OUT_BUFF 100
+#define HOST_ADDR ":01"
+#define ADDR_STR HOST_ADDR SENSOR_NAME DEVICE_NO
+extern char s_buf[MAX_OUT_BUFF];  
+
 #define SENSOR_NAME "ArduWater"
 #define DEVICE_NO "03"
 #define IN_PIN_COUNT 7

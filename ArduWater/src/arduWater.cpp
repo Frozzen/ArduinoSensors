@@ -5,12 +5,11 @@
 #include <TM1637Display.h>
 
 #include "ardudev.h"
-#define NO_TEMP
-#include "arduSensUtils.h"
 /// TODO занести в NVRAM значение для воды, 
 /// TODO занести в NVRAM текущее время
 /// TODO открыть закрыть кран раз в 2 недели ночью
 
+#define TIME_TO_RELAX 5
 enum eTapStates {
   eTapNone,
   eTapWorking,
@@ -70,7 +69,7 @@ bool s_displayMode = true;
 uint16_t s_time_cnt = 0;
 
 ////////////////////////////////////////////////////////
-void sendToServer(const char *r, bool now)
+void sendToServer(const char *r)
 {
 char buf[4];
   Serial.print(r);
@@ -114,11 +113,12 @@ void   doTestWater() {
     s_fsm_tap_state = isTapOpen.read() ? eTapClose : eTapOpen;
   }
   // при появлении 1цы дать команду открыть кран - водзможно сделать блокировку этого
-  if(isButtonChanged(water_is_empty, "barrel_empty"))
-    s_fsm_tap_state = water_is_empty.read() && s_automatic_open_enabled ? eTapOpen;
+  if(isButtonChanged(water_is_empty, "barrel_empty") && 
+    water_is_empty.read() && s_automatic_open_enabled)
+      s_fsm_tap_state =  eTapOpen;
   // при появлении 1цы дать команду закрыть кран
-  if(isButtonChanged(water_is_full, "barrel_full"))
-    s_fsm_tap_state = water_is_full.read() ? eTapClose;
+  if(isButtonChanged(water_is_full, "barrel_full") && water_is_full.read())
+    s_fsm_tap_state = eTapClose;
   isButtonChanged(isTapClosed, "tap_closed");
   isButtonChanged(isTapOpen, "tap_open");
 }
@@ -153,6 +153,8 @@ void doDisplayValue()
     display.clear();
 }
 
+char s_buf[MAX_OUT_BUFF];
+
 void sendDeviceConfig(const char *dev)
 {
     snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO "%s" LOG_MESSAGE_END, dev);
@@ -175,8 +177,8 @@ void setup(void)
   iniInputPin(isTapOpen, IS_TAP_OPEN);
   iniInputPin(isTapClosed, IS_TAP_CLOSE);
   
-  pinMode(OPEN_TAP_CMD, OUT);
-  pinMode(CLOSE_TAP_CMD, OUT);
+  pinMode(OPEN_TAP_CMD, OUTPUT);
+  pinMode(CLOSE_TAP_CMD, OUTPUT);
   pinMode(WATER_PRESSURE, INPUT);
   digitalWrite(OPEN_TAP_CMD, LOW);
   digitalWrite(CLOSE_TAP_CMD, LOW);
