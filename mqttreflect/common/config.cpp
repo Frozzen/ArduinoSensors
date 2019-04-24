@@ -2,20 +2,34 @@
 
   */
 #include <iostream>
+#include <fstream>
+#include <sstream>
+#include <memory>
+#include <mutex>
+
+#include <rapidjson/document.h>     // rapidjson's DOM-style API
 #include <boost/range/algorithm/find.hpp>
-#include <boost/property_tree/ini_parser.hpp>
+#include <rapidjson/filereadstream.h>
 #include "config.hpp"
 
 using namespace std;
-using namespace boost;
+using namespace rapidjson;
+
+static std::mutex s_mtx;
+Document s_document;
+
+/**
+ * key = "MQTT.server" напрмер
+ */
+std::string Config::getOpt(const char *key) const {
+    return s_document[key].GetString();
+}
 
 
-std::mutex Config::s_mtx;
 
 Config *Config::getInstance()
 {
-    std::mutex mtx;
-    std::lock_guard<std::mutex> lock(mtx);
+    std::lock_guard<std::mutex> lock(s_mtx);
     static Config s_cfg("");
     return &s_cfg;
 }
@@ -27,10 +41,12 @@ Config *Config::getInstance()
  */
 void Config::open(const char* ini_file)
 {
-    cout << " Config::open" << endl;
     std::lock_guard<std::mutex> lock(s_mtx);
-    property_tree::ini_parser::read_ini(ini_file, m_config);
-    m_filename = ini_file;
+    FILE *fp = fopen(ini_file, "rb"); // non-Windows use "r"
+    char readBuffer[65536];
+    FileReadStream is(fp, readBuffer, sizeof(readBuffer));
+    s_document.ParseStream(is);
+    //  throw std::runtime_error( string("json error:") + ini_file );
 }
 
 /**
@@ -39,12 +55,19 @@ void Config::open(const char* ini_file)
  * @param sect
  * @return
  */
-std::shared_ptr<IniSection>    Config::getSection(const char *sect)
+std::unique_ptr<IniSection> Config::getSection(const char *sect)
 {
     std::map<std::string, std::string> res;
+    auto section = s_document[sect].GetObject();
+    auto iterator = section.MemberBegin();
+    if (iterator == section.MemberEnd()) {
+        std::stringstream error;
+        error << "ERROR: \"" << sect << "\" missing from config file!";
+        throw std::runtime_error(error.str());
+    }
 
-    for (auto p : m_config.get_child(sect))
-        res[p.first] = p.second.data();
-    return std::make_shared<IniSection>(res);
+    for (auto p = section.MemberBegin(); p != section.MemberEnd(); ++p)
+        res[p->name.GetString()] = p->value.GetString();
+    return std::make_unique<IniSection>(res);
 }
 
