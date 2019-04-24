@@ -110,17 +110,24 @@ void   doTestWater() {
 
   // запустить FSM на изменение ветниля
   if(checkButtonChanged(btn_open_water)) {
-    s_fsm_tap_state = isTapOpen.read() ? eTapClose : eTapOpen;
+    static bool s_last = false;
+    bool open = isTapOpen.read();
+    Serial.print("open water ");    Serial.println(open);
+    s_fsm_tap_state = s_last ? eTapClose : eTapOpen;
+    s_last ^= 1;
   }
+#if 0
   // при появлении 1цы дать команду открыть кран - водзможно сделать блокировку этого
-  if(isButtonChanged(water_is_empty, "barrel_empty") && 
-    water_is_empty.read() && s_automatic_open_enabled)
+  if(isButtonChanged(water_is_empty, "barrel_empty") 
+    &&  water_is_empty.read() && s_automatic_open_enabled
+    )
       s_fsm_tap_state =  eTapOpen;
   // при появлении 1цы дать команду закрыть кран
   if(isButtonChanged(water_is_full, "barrel_full") && water_is_full.read())
     s_fsm_tap_state = eTapClose;
   isButtonChanged(isTapClosed, "tap_closed");
   isButtonChanged(isTapOpen, "tap_open");
+#endif
 }
 
 /**
@@ -180,8 +187,8 @@ void setup(void)
   pinMode(OPEN_TAP_CMD, OUTPUT);
   pinMode(CLOSE_TAP_CMD, OUTPUT);
   pinMode(WATER_PRESSURE, INPUT);
-  digitalWrite(OPEN_TAP_CMD, LOW);
-  digitalWrite(CLOSE_TAP_CMD, LOW);
+  digitalWrite(OPEN_TAP_CMD, HIGH);
+  digitalWrite(CLOSE_TAP_CMD, HIGH);
   digitalWrite(WATER_PRESSURE, HIGH);
   
   Rtc.Begin();
@@ -195,6 +202,8 @@ void setup(void)
   sendDeviceConfig("/barrel_full");
   sendDeviceConfig("/tap_closed");
   sendDeviceConfig("/tap_open");
+  Serial.print("open:"); Serial.print(isTapOpen.read());
+  Serial.print(" close:"); Serial.println(isTapClosed.read());
 
   snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%ld", s_water_count);
   sendToServer(s_buf);
@@ -228,28 +237,26 @@ void loop(void)
       }
       break;
     case eTapStop:
-      digitalWrite(OPEN_TAP_CMD, LOW);
-      digitalWrite(CLOSE_TAP_CMD, LOW);      
+      digitalWrite(OPEN_TAP_CMD, HIGH);
+      digitalWrite(CLOSE_TAP_CMD, HIGH);      
       s_fsm_tap_state = eTapNone;
+      Serial.print(" stop tap ");
       break;
     case eTapNone:
     default:
+      break;
     // команды открытия закрытия крана - работают только если предидущая работа завершена
     case eTapClose:
-      if(s_fsm_tap_state != eTapNone)
-        break;
-      digitalWrite(OPEN_TAP_CMD, LOW);
-      digitalWrite(CLOSE_TAP_CMD, HIGH);      
+      digitalWrite(OPEN_TAP_CMD, HIGH);
+      digitalWrite(CLOSE_TAP_CMD, LOW);      
       s_fsm_timeout = millis();
       s_fsm_tap_state = eTapWorking;
       snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=0");
       sendToServer(s_buf);
       break;
     case eTapOpen:
-      if(s_fsm_tap_state != eTapNone)
-        break;
-      digitalWrite(OPEN_TAP_CMD, HIGH);
-      digitalWrite(CLOSE_TAP_CMD, LOW);      
+      digitalWrite(OPEN_TAP_CMD, LOW);
+      digitalWrite(CLOSE_TAP_CMD, HIGH);      
       s_fsm_timeout = millis();
       s_fsm_tap_state = eTapWorking;
       snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=1");
