@@ -7,8 +7,9 @@
 #include "ardudev.h"
 /// TODO cmd занести в NVRAM значение для воды из serial, 
 /// TODO cmd занести в NVRAM текущее время  из serial
-/// TODO открыть закрыть кран раз в 2 недели ночью
 
+/// открыть закрыть кран раз в 2 недели ночью
+#define DAYS_REFRESHING_TAP 14
 #define TIME_TO_RELAX 5
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
@@ -307,11 +308,14 @@ class CRefreshTapFSM : public ICallback
     snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_refresh=%d", rval);
     sendToServer(s_buf);
   }
+  /**
+   * проверить надо ли поварачивать кран
+   */
   void check() {
       // TODO сравнить время открывания и текущее
       RtcDateTime cur = Rtc.GetDateTime();
-      cur -= 3600L*24*14;
-      if(cur < s_epromm.last_water_tap_time)
+      cur -= 3600L*24*DAYS_REFRESHING_TAP;
+      if(cur > s_epromm.last_water_tap_time)
         change();
   }
 } s_refresh_fsm;
