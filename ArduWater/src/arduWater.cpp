@@ -5,43 +5,11 @@
 #include <TM1637Display.h>
 
 #include "ardudev.h"
-/// TODO занести в NVRAM значение для воды, 
-/// TODO занести в NVRAM текущее время
+/// TODO cmd занести в NVRAM значение для воды из serial, 
+/// TODO cmd занести в NVRAM текущее время  из serial
 /// TODO открыть закрыть кран раз в 2 недели ночью
 
 #define TIME_TO_RELAX 5
-enum eTapStates {
-  eTapNone,
-  eTapWorking,
-  eTapStop, 
-  eTapOpen, 
-  eTapClose
-} s_fsm_tap_state;
-uint32_t s_fsm_timeout = 0;
-
-/// настроили кнопки которые нажимают
-void iniInputPin(Bounce &bounce, uint8_t pin)
-{
-  pinMode(pin, INPUT); 
-  digitalWrite(pin, HIGH);
-  bounce.attach(pin); // Настраиваем Bouncer
-  bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
-}
-
-/// проверили что кнопку отпустили
-bool checkButtonChanged(Bounce &bounce)
-{
-  boolean changed = bounce.update(); 
-  int value = HIGH;
-  if ( changed ) {
-      value = bounce.read();
-      // Если значение датчика стало ЗАМКНУТО
-      if ( value == LOW) {
-        return true;
-      }
-    }  
-  return false;
-}
 #define LOG_MESSAGE ":01log={\"type\":\"device_connected\",\"message\":\""
 #define LOG_MESSAGE_END "\"}"
 
@@ -68,6 +36,34 @@ bool s_displayMode = true;
 // счетчик времени - для задержанных операций
 uint16_t s_time_cnt = 0;
 
+char s_buf[MAX_OUT_BUFF];
+
+
+void updateTapDateEPROM();
+/// настроили кнопки которые нажимают
+void iniInputPin(Bounce &bounce, uint8_t pin)
+{
+  pinMode(pin, INPUT); 
+  digitalWrite(pin, HIGH);
+  bounce.attach(pin); // Настраиваем Bouncer
+  bounce.interval(TIME_TO_RELAX); // и прописываем ему интервал дребезга
+}
+
+/// проверили что кнопку отпустили
+bool checkButtonChanged(Bounce &bounce)
+{
+  boolean changed = bounce.update(); 
+  int value = HIGH;
+  if ( changed ) {
+      value = bounce.read();
+      // Если значение датчика стало ЗАМКНУТО
+      if ( value == LOW) {
+        return true;
+      }
+    }  
+  return false;
+}
+
 ////////////////////////////////////////////////////////
 void sendToServer(const char *r)
 {
@@ -81,7 +77,6 @@ char buf[4];
   Serial.println(buf);
 }
 
-extern bool checkButtonChanged(Bounce &bounce);
 bool isButtonChanged(Bounce &bounce, const char *title)
 {
   boolean changed = bounce.update(); 
@@ -92,6 +87,200 @@ bool isButtonChanged(Bounce &bounce, const char *title)
     }
     return changed;  
 }
+
+void sendDeviceConfig(const char *dev)
+{
+    snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO "%s" LOG_MESSAGE_END, dev);
+    sendToServer(s_buf);
+}
+
+struct ICallback {
+  virtual void done(uint8_t error) {
+  }
+};
+/////////////////////////////////////////////////////////
+/**
+ * fsm для закрывания крана
+ */
+class CTapFSM {
+  enum eTapStates {
+    eTapNone = 100,
+    eTapOpening,
+    eTapClosing,
+    eTapStop
+  };
+  int s_fsm_tap_state = eTapNone;
+  public:
+
+  enum eStates {
+    eTapOpen, 
+    eTapClose
+  };
+  uint32_t s_fsm_timeout = 0;
+  // состояния ошибок
+  enum eError {
+    eOk,
+    eError
+  } m_error;
+
+  ICallback *m_callback = nullptr;
+
+  void change(eStates s, struct ICallback *c) {
+      s_fsm_tap_state = s;
+      updateTapDateEPROM();
+      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=%d", s);
+      sendToServer(s_buf);
+      m_callback = c;
+      m_error = eOk;
+  };
+
+  void init() {
+    iniInputPin(isTapOpen, IS_TAP_OPEN);
+    iniInputPin(isTapClosed, IS_TAP_CLOSE);
+    
+    pinMode(OPEN_TAP_CMD, OUTPUT);
+    pinMode(CLOSE_TAP_CMD, OUTPUT);
+    pinMode(WATER_PRESSURE, INPUT);
+    digitalWrite(OPEN_TAP_CMD, HIGH);
+    digitalWrite(CLOSE_TAP_CMD, HIGH);   
+    if(getRealState() == eUndef)      
+      change(water_is_full.read()?  eTapOpen : eTapClose);
+  }
+
+  enum eRealState {
+    eUndef = 0,   // промежуточное
+    eOpened = 0x1,
+    eClosed = 0x2,
+    eBroken = 0x4 // поломано или оборваны провода
+  };
+
+  /**
+   * вернуть состояние кранов
+   */
+  static eRealState getRealState() {
+    uint8_t close = !isTapClosed.read();
+    snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_closed=%d", close);
+    sendToServer(s_buf);
+    uint8_t open = !isTapOpen.read();
+    snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_open=%d", open);
+    sendToServer(s_buf);
+
+    uint8_t state = (open ? eOpened : 0) | (close ? eClosed:0);
+    return state == (eOpened | eClosed) ? eBroken : (eRealState)state;
+  }
+  /**
+   * собственно рабочй цикл fsm
+   */
+  void loop() {
+  switch (s_fsm_tap_state)
+    {
+    case eTapOpening: {
+      uint32_t delay = millis() - s_fsm_timeout;
+      // проверить состояние открыто 
+      if(!isTapOpen.read() || delay > TAP_TIMEOUT)
+        // должно быть состояние открыто - иначе ошибка
+        if(!isTapOpen.read())
+          m_error = eError;
+        s_fsm_tap_state = eTapStop;
+        if(m_callback != nullptr)
+          m_callback->done(m_error);
+      }
+      break;
+
+    case eTapClosing: {
+      uint32_t delay = millis() - s_fsm_timeout;
+      //  TODO проверить состояние закрыто
+      if(!isTapClosed.read() || delay > TAP_TIMEOUT)
+        //  должно быть состояние закрыто - иначе ошибка
+        if(!isTapClosed.read())
+          m_error = eError;
+        s_fsm_tap_state = eTapStop;
+        if(m_callback != nullptr)
+          m_callback->done(m_error);
+      }
+      break;
+
+    case eTapStop:
+      digitalWrite(OPEN_TAP_CMD, HIGH);
+      digitalWrite(CLOSE_TAP_CMD, HIGH);      
+      s_fsm_tap_state = eTapNone;
+      break;
+
+    // команды открытия закрытия крана - работают только если предидущая работа завершена
+    case eTapClose:
+      digitalWrite(OPEN_TAP_CMD, HIGH);
+      digitalWrite(CLOSE_TAP_CMD, LOW);      
+      s_fsm_timeout = millis();
+      s_fsm_tap_state = eTapClosing;
+      break;
+
+    case eTapOpen:
+      digitalWrite(OPEN_TAP_CMD, LOW);
+      digitalWrite(CLOSE_TAP_CMD, HIGH);      
+      s_fsm_timeout = millis();
+      s_fsm_tap_state = eTapOpening;
+      break;    
+    case eTapNone:
+    default:
+      break;
+    }
+  }
+} s_tap_fsm;
+
+/**
+ * fsm для открывания и закрывания крана раз в неделю
+ * заносим в eprom последнюю дату освежения
+ */ 
+class CRefreshTapFSM {
+  enum eState {
+    eNone,
+    eOpen,
+    eClose,
+    eTapOpening,
+    eTapOpened,
+    eTapClosing
+  } s_fsm_state;
+  public:
+  // состояния ошибок
+  enum eError {
+    eOk,
+    eStall  // кран закис    
+  } m_error;
+  uint32_t s_fsm_timeout = 0;
+
+  // провернуть
+  void change() {
+      s_fsm_state = eOpen;
+      updateTapDateEPROM();
+  }
+  void loop() {
+    switch(s_fsm_state) {
+    case eOpen:
+      s_fsm_timeout = millis();
+      s_fsm_state = eTapOpening;
+      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/tap_refresh=0");
+      sendToServer(s_buf);
+      break;    
+    case eTapOpened:
+      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/tap_refresh=1");
+      sendToServer(s_buf);
+      break;    
+    case eClose:
+      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/tap_refresh=2");
+      sendToServer(s_buf);
+      break;    
+
+    case eNone:
+    default:
+      break;
+    }
+  }
+  void check() {
+      // TODO сравнить время открывания и текущее
+      s_tap_fsm.change(CTapFSM::eTapOpen);
+  }
+} s_refresh_fsm;
+
 
 //------------------------------------------------------
 /// послать в шину изменения в контактах
@@ -111,16 +300,16 @@ void   doTestWater() {
   // запустить FSM на изменение ветниля
   if(checkButtonChanged(btn_open_water)) {
     bool open = !isTapClosed.read();
-    s_fsm_tap_state = open ?eTapOpen: eTapClose;
+    s_tap_fsm.change(open ? CTapFSM::eTapOpen: CTapFSM::eTapClose);
   }
 
   // при появлении 1цы дать команду открыть кран - водзможно сделать блокировку этого
   if(isButtonChanged(water_is_empty, "/barrel_empty") &&
     !isTapClosed.read() &&  !water_is_empty.read() && s_automatic_open_enabled)
-      s_fsm_tap_state =  eTapOpen;
+      s_tap_fsm.change(CTapFSM::eTapOpen);
   // при появлении 1цы дать команду закрыть кран
   if(isButtonChanged(water_is_full, "/barrel_full") && !water_is_full.read())
-    s_fsm_tap_state = eTapClose;
+    s_tap_fsm.change(CTapFSM::eTapClose);
 
   isButtonChanged(isTapClosed, "/tap_closed");
   isButtonChanged(isTapOpen, "/tap_open");
@@ -156,15 +345,6 @@ void doDisplayValue()
     display.clear();
 }
 
-char s_buf[MAX_OUT_BUFF];
-
-void sendDeviceConfig(const char *dev)
-{
-    snprintf(s_buf, sizeof(s_buf), LOG_MESSAGE SENSOR_NAME DEVICE_NO "%s" LOG_MESSAGE_END, dev);
-    sendToServer(s_buf);
-}
-
-extern void iniInputPin(Bounce &bounce, uint8_t pin);
 //------------------------------------
 void setup(void)
 {
@@ -177,14 +357,6 @@ void setup(void)
   iniInputPin(btn_display, BTN_DISPLAY);
   iniInputPin(water_is_full, IS_BURREL_FULL);
   iniInputPin(water_is_empty, IS_BURREL_EMPTY);
-  iniInputPin(isTapOpen, IS_TAP_OPEN);
-  iniInputPin(isTapClosed, IS_TAP_CLOSE);
-  
-  pinMode(OPEN_TAP_CMD, OUTPUT);
-  pinMode(CLOSE_TAP_CMD, OUTPUT);
-  pinMode(WATER_PRESSURE, INPUT);
-  digitalWrite(OPEN_TAP_CMD, HIGH);
-  digitalWrite(CLOSE_TAP_CMD, HIGH);
   digitalWrite(WATER_PRESSURE, HIGH);
   
   Rtc.Begin();
@@ -198,12 +370,7 @@ void setup(void)
   sendDeviceConfig("/barrel_full");
   sendDeviceConfig("/tap_closed");
   sendDeviceConfig("/tap_open");
-  int val = !isTapClosed.read();
-  snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_closed=%d", val);
-  sendToServer(s_buf);
-  val = !isTapOpen.read();
-  snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_open=%d", val);
-  sendToServer(s_buf);
+  s_tap_fsm.init();
 
   snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%ld", s_water_count);
   sendToServer(s_buf);
@@ -226,42 +393,9 @@ void loop(void)
       Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count_rtc));
       s_water_count_rtc = s_water_count;
     }
+    s_refresh_fsm.check();
   }
-  // FSM для открытия и закрытия крана
-  switch (s_fsm_tap_state)
-  {
-    case eTapWorking: {
-      uint32_t delay = millis() - s_fsm_timeout;
-      if(delay > TAP_TIMEOUT)
-        s_fsm_tap_state = eTapStop;
-      }
-      break;
-    case eTapStop:
-      digitalWrite(OPEN_TAP_CMD, HIGH);
-      digitalWrite(CLOSE_TAP_CMD, HIGH);      
-      s_fsm_tap_state = eTapNone;
-      break;
-    case eTapNone:
-    default:
-      break;
-    // команды открытия закрытия крана - работают только если предидущая работа завершена
-    case eTapClose:
-      digitalWrite(OPEN_TAP_CMD, HIGH);
-      digitalWrite(CLOSE_TAP_CMD, LOW);      
-      s_fsm_timeout = millis();
-      s_fsm_tap_state = eTapWorking;
-      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=0");
-      sendToServer(s_buf);
-      break;
-    case eTapOpen:
-      digitalWrite(OPEN_TAP_CMD, LOW);
-      digitalWrite(CLOSE_TAP_CMD, HIGH);      
-      s_fsm_timeout = millis();
-      s_fsm_tap_state = eTapWorking;
-      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=1");
-      sendToServer(s_buf);
-      break;    
-  }
+  s_tap_fsm.loop();
   /// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
   /// TODO сделать управление командами команды не ко мне форвардить
   delay(100);
