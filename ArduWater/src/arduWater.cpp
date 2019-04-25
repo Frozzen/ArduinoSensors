@@ -39,8 +39,6 @@ struct sEPROMConfig {
 uint32_t s_water_count;
 // показывать на дисплее счетчик
 bool s_displayMode = true;
-// счетчик времени - для задержанных операций
-uint16_t s_time_cnt = 0;
 
 char s_buf[MAX_OUT_BUFF];
 
@@ -196,7 +194,7 @@ class CTapFSM {
 
     case eTapClosing: {
       uint32_t delay = millis() - s_fsm_timeout;
-      //  TODO проверить состояние закрыто
+      //  проверить состояние закрыто
       if(!isTapClosed.read() || delay > TAP_TIMEOUT)
         //  должно быть состояние закрыто - иначе ошибка
         if(!isTapClosed.read())
@@ -243,19 +241,14 @@ class CRefreshTapFSM : public ICallback
 {
   enum eState {
     eNone,
-    eOpening,
-    eClosing
+    eOpening, // это не собственно открытие а фаза 1
+    eClosing  // фаза 2
   } s_fsm_state;
   public:
-  // состояния ошибок
-  enum eError {
-    eOk,
-    eStall  // кран закис    
-  } m_error;
 
   // провернуть
   void change() {
-      s_fsm_state = eOpening;      
+      s_fsm_state = eOpening;    
   }
 
   // callback - по завершению операции
@@ -271,8 +264,9 @@ class CRefreshTapFSM : public ICallback
         }
         break;
       case eClosing:
-        if(error != 0)
+        if(error != 0) {
           s_tap_fsm.getRealState();        
+        }
         s_fsm_state = eNone;
         break;  
       default:
@@ -312,7 +306,7 @@ class CRefreshTapFSM : public ICallback
    * проверить надо ли поварачивать кран
    */
   void check() {
-      // TODO сравнить время открывания и текущее
+      // сравнить время открывания и текущее
       RtcDateTime cur = Rtc.GetDateTime();
       cur -= 3600L*24*DAYS_REFRESHING_TAP;
       if(cur > s_epromm.last_water_tap_time)
@@ -320,6 +314,9 @@ class CRefreshTapFSM : public ICallback
   }
 } s_refresh_fsm;
 
+/**
+ *  обновляем время когда двигали кран
+ */
 void updateTapDateEPROM()
 {
   s_epromm.last_water_tap_time = Rtc.GetDateTime();
@@ -402,7 +399,7 @@ void setup(void)
   iniInputPin(btn_display, BTN_DISPLAY);
   iniInputPin(water_is_full, IS_BURREL_FULL);
   iniInputPin(water_is_empty, IS_BURREL_EMPTY);
-  digitalWrite(WATER_PRESSURE, HIGH);
+  digitalWrite(WATER_PRESSURE, HIGH); // pullup
   
   Rtc.Begin();
   // never assume the Rtc was last configured by you, so
@@ -428,12 +425,14 @@ void setup(void)
 */
 void loop(void)
 {
+  static uint32_t s_last_loop;
+  uint32_t delay = millis() - s_last_loop;
   // обновляем дисплей 10 раз в сек
   doDisplayValue();
   doTestWater();
 
-  // раз в 1 минуту послать alive или температуру
-  if((s_time_cnt % DO_MSG_RATE) == 0) {
+  // раз в 50 sec послать давление
+  if(delay > DO_MSG_RATE) {
     doWaterPressure();
     // write in eeprom
     if(s_epromm.water_count_rtc != s_water_count) {
@@ -441,11 +440,28 @@ void loop(void)
       Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, (uint8_t)sizeof(s_epromm));
     }
     s_refresh_fsm.check();
+    s_last_loop = millis();
   }
   s_tap_fsm.loop();
   s_refresh_fsm.loop();
   /// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
   /// TODO сделать управление командами команды не ко мне форвардить
-  delay(100);
-  s_time_cnt++;
 }
+#if 0
+class ForwardSerial
+{
+SoftwareSerial altSerial(8, 9);
+char buffer[2][MAX_OUT_BUFF];
+  void loop(void)
+  {
+    // todo получить строку, проверить мне ли, переправить дальше
+    // выделить строку для себя от отправить в исполнение
+    if(altSerial.available()) {
+      char c = altSerial.read();
+    }
+    if(Serial.available()) {
+      char c = altSerial.read();
+    }
+  }
+};
+#endif
