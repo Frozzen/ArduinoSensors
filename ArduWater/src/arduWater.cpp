@@ -182,7 +182,7 @@ class CTapFSM {
     case eTapOpening: {
       uint32_t delay = millis() - s_fsm_timeout;
       // проверить состояние открыто 
-      if(!isTapOpen.read() || delay > TAP_TIMEOUT)
+      if(!isTapOpen.read() || delay > TAP_TIMEOUT) {
         // должно быть состояние открыто - иначе ошибка
         if(!isTapOpen.read())
           m_error = eError;
@@ -190,12 +190,15 @@ class CTapFSM {
         if(m_callback != nullptr)
           m_callback->done(m_error);
       }
+    }
       break;
 
     case eTapClosing: {
       uint32_t delay = millis() - s_fsm_timeout;
+        Serial.print('<');
       //  проверить состояние закрыто
-      if(!isTapClosed.read() || delay > TAP_TIMEOUT)
+      if(!isTapClosed.read() || delay > TAP_TIMEOUT) {
+        Serial.print(" closing! ");
         //  должно быть состояние закрыто - иначе ошибка
         if(!isTapClosed.read())
           m_error = eError;
@@ -203,11 +206,12 @@ class CTapFSM {
         if(m_callback != nullptr)
           m_callback->done(m_error);
       }
+    }
       break;
 
     case eTapStop:
       digitalWrite(OPEN_TAP_CMD, HIGH);
-      digitalWrite(CLOSE_TAP_CMD, HIGH);      
+      digitalWrite(CLOSE_TAP_CMD, HIGH);    
       s_fsm_tap_state = eTapNone;
       break;
 
@@ -217,6 +221,7 @@ class CTapFSM {
       digitalWrite(CLOSE_TAP_CMD, LOW);      
       s_fsm_timeout = millis();
       s_fsm_tap_state = eTapClosing;
+        Serial.print(" close ");
       break;
 
     case eTapOpen:
@@ -256,17 +261,13 @@ class CRefreshTapFSM : public ICallback
     switch (s_fsm_state)
     {
       case eOpening:
-        if(error == 0)
-          s_fsm_state = eClosing;
-        else {
+        if(error != 0)
           s_tap_fsm.getRealState();        
-          s_fsm_state = eNone;
-        }
+        s_fsm_state = eClosing;
         break;
       case eClosing:
-        if(error != 0) {
+        if(error != 0) 
           s_tap_fsm.getRealState();        
-        }
         s_fsm_state = eNone;
         break;  
       default:
@@ -296,9 +297,11 @@ class CRefreshTapFSM : public ICallback
       s_tap_fsm.change(CTapFSM::eTapClose, this);
     else if(state == CTapFSM::eClosed)
       s_tap_fsm.change(CTapFSM::eTapOpen, this);
-    else 
+    else {
       // послали ошибку
       rval = 3;
+      s_fsm_state = eNone;
+    }
     snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_refresh=%d", rval);
     sendToServer(s_buf);
   }
