@@ -30,7 +30,12 @@ Bounce  btn_open_water,    // кнопка открыть воду
         isTapClosed;
 
 // значение счетчика воды в 10 литрах
-uint32_t s_water_count = 0, s_water_count_rtc;
+struct sEPROMConfig {
+  uint32_t water_count_rtc = 0; // показания счетчика
+  RtcDateTime last_water_tap_time;
+} s_epromm;
+
+uint32_t s_water_count;
 // показывать на дисплее счетчик
 bool s_displayMode = true;
 // счетчик времени - для задержанных операций
@@ -125,7 +130,7 @@ class CTapFSM {
 
   ICallback *m_callback = nullptr;
 
-  void change(eStates s, struct ICallback *c) {
+  void change(eStates s, struct ICallback *c = nullptr) {
       s_fsm_tap_state = s;
       updateTapDateEPROM();
       snprintf(s_buf, sizeof(s_buf), ADDR_STR "/wtapcnmd=%d", s);
@@ -145,6 +150,7 @@ class CTapFSM {
     digitalWrite(CLOSE_TAP_CMD, HIGH);   
     if(getRealState() == eUndef)      
       change(water_is_full.read()?  eTapOpen : eTapClose);
+    m_error = eOk;
   }
 
   enum eRealState {
@@ -230,15 +236,14 @@ class CTapFSM {
 /**
  * fsm для открывания и закрывания крана раз в неделю
  * заносим в eprom последнюю дату освежения
+ * не отслеживаю здесь таймауты - callback
  */ 
-class CRefreshTapFSM {
+class CRefreshTapFSM : public ICallback
+{
   enum eState {
     eNone,
-    eOpen,
-    eClose,
-    eTapOpening,
-    eTapOpened,
-    eTapClosing
+    eOpening,
+    eClosing
   } s_fsm_state;
   public:
   // состояния ошибок
@@ -246,40 +251,76 @@ class CRefreshTapFSM {
     eOk,
     eStall  // кран закис    
   } m_error;
-  uint32_t s_fsm_timeout = 0;
 
   // провернуть
   void change() {
-      s_fsm_state = eOpen;
-      updateTapDateEPROM();
+      s_fsm_state = eOpening;      
   }
-  void loop() {
-    switch(s_fsm_state) {
-    case eOpen:
-      s_fsm_timeout = millis();
-      s_fsm_state = eTapOpening;
-      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/tap_refresh=0");
-      sendToServer(s_buf);
-      break;    
-    case eTapOpened:
-      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/tap_refresh=1");
-      sendToServer(s_buf);
-      break;    
-    case eClose:
-      snprintf(s_buf, sizeof(s_buf), ADDR_STR "/tap_refresh=2");
-      sendToServer(s_buf);
-      break;    
 
+  // callback - по завершению операции
+  virtual void done(uint8_t error) override {
+    switch (s_fsm_state)
+    {
+      case eOpening:
+        if(error == 0)
+          s_fsm_state = eClosing;
+        else {
+          s_tap_fsm.getRealState();        
+          s_fsm_state = eNone;
+        }
+        break;
+      case eClosing:
+        if(error != 0)
+          s_tap_fsm.getRealState();        
+        s_fsm_state = eNone;
+        break;  
+      default:
+        break;
+    }
+  }
+
+  void init() {
+      s_fsm_state = eNone;
+  }
+
+  void loop() {
+    uint16_t rval = 0;
+    switch(s_fsm_state) {
+    case eOpening: 
+      rval = 0;
+      break;    
+    case eClosing:
+      rval = 1;
+      break;    
     case eNone:
     default:
-      break;
+      return;
     }
+    CTapFSM::eRealState state = s_tap_fsm.getRealState();
+    if(state == CTapFSM::eOpened)
+      s_tap_fsm.change(CTapFSM::eTapClose, this);
+    else if(state == CTapFSM::eClosed)
+      s_tap_fsm.change(CTapFSM::eTapOpen, this);
+    else 
+      // послали ошибку
+      rval = 3;
+    snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/tap_refresh=%d", rval);
+    sendToServer(s_buf);
   }
   void check() {
       // TODO сравнить время открывания и текущее
-      s_tap_fsm.change(CTapFSM::eTapOpen);
+      RtcDateTime cur = Rtc.GetDateTime();
+      cur -= 3600L*24*14;
+      if(cur < s_epromm.last_water_tap_time)
+        change();
   }
 } s_refresh_fsm;
+
+void updateTapDateEPROM()
+{
+  s_epromm.last_water_tap_time = Rtc.GetDateTime();
+  Rtc.SetMemory(0, (uint8_t*)&s_epromm, sizeof(s_epromm));
+}
 
 
 //------------------------------------------------------
@@ -363,14 +404,16 @@ void setup(void)
   // never assume the Rtc was last configured by you, so
   // just clear them to your needed s_time_cnt
   Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
-  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count_rtc, (uint8_t)sizeof(s_water_count_rtc));
-  s_water_count = s_water_count_rtc;
+  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, sizeof(s_epromm));
+  s_water_count = s_epromm.water_count_rtc;
   sendDeviceConfig("/water");
   sendDeviceConfig("/barrel_empty");
   sendDeviceConfig("/barrel_full");
   sendDeviceConfig("/tap_closed");
   sendDeviceConfig("/tap_open");
+
   s_tap_fsm.init();
+  s_refresh_fsm.init();
 
   snprintf(s_buf, sizeof(s_buf),  ADDR_STR "/water=%ld", s_water_count);
   sendToServer(s_buf);
@@ -389,13 +432,14 @@ void loop(void)
   if((s_time_cnt % DO_MSG_RATE) == 0) {
     doWaterPressure();
     // write in eeprom
-    if(s_water_count_rtc != s_water_count) {
-      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_water_count, (uint8_t)sizeof(s_water_count_rtc));
-      s_water_count_rtc = s_water_count;
+    if(s_epromm.water_count_rtc != s_water_count) {
+      s_epromm.water_count_rtc = s_water_count;
+      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, (uint8_t)sizeof(s_epromm));
     }
     s_refresh_fsm.check();
   }
   s_tap_fsm.loop();
+  s_refresh_fsm.loop();
   /// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
   /// TODO сделать управление командами команды не ко мне форвардить
   delay(100);

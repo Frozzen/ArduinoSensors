@@ -58,6 +58,9 @@ Thumbs.db
 *.opensdf
 *.vcxproj
 *vcxproj.*
+venv/*
+build*/*
+cmake*/*
 
 # MinGW generated files
 *.Debug
@@ -71,6 +74,4 @@ Thumbs.db
 *.dll
 *.exe
 
-build*/*
-cmake*/*
-venv/*
+cmame*/*
