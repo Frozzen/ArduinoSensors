@@ -195,10 +195,8 @@ class CTapFSM {
 
     case eTapClosing: {
       uint32_t delay = millis() - s_fsm_timeout;
-        Serial.print('<');
       //  проверить состояние закрыто
       if(!isTapClosed.read() || delay > TAP_TIMEOUT) {
-        Serial.print(" closing! ");
         //  должно быть состояние закрыто - иначе ошибка
         if(!isTapClosed.read())
           m_error = eError;
@@ -221,7 +219,6 @@ class CTapFSM {
       digitalWrite(CLOSE_TAP_CMD, LOW);      
       s_fsm_timeout = millis();
       s_fsm_tap_state = eTapClosing;
-        Serial.print(" close ");
       break;
 
     case eTapOpen:
@@ -410,6 +407,7 @@ void setup(void)
   Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
   Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, sizeof(s_epromm));
   s_water_count = s_epromm.water_count_rtc;
+  // TODO вывести текущее время, вывести время последнего поворота
   sendDeviceConfig("/water");
   sendDeviceConfig("/barrel_empty");
   sendDeviceConfig("/barrel_full");

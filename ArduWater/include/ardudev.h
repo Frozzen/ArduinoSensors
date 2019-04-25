@@ -40,5 +40,5 @@ extern char s_buf[MAX_OUT_BUFF];
 #define EERPOM_ADDR_COUNT 0
 
 #define USE_SERIAL
-#define DO_MSG_RATE 5000
+#define DO_MSG_RATE 50000
 #define TAP_TIMEOUT 10000
