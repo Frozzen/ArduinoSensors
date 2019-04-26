@@ -25,7 +25,7 @@ using namespace std::chrono;
 
 
 using json = nlohmann::json;
-
+// TODO сделать отправление из ключа MQTT в LOG сообщения
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
 CSendQueue HandlerFactory::mqtt_mag_queue;
