@@ -5,8 +5,6 @@
 #include <TM1637Display.h>
 
 #include "ardudev.h"
-/// TODO cmd занести в NVRAM значение для воды из serial, 
-/// TODO cmd занести в NVRAM текущее время  из serial
 
 /// открыть закрыть кран раз в 2 недели ночью
 #define DAYS_REFRESHING_TAP (3600L*24*14)
@@ -64,6 +62,20 @@ public:
   {
     snprintf(s_buf, sizeof(s_buf), fmt, t...);
     sendToServer();
+  }
+  void sendDate(const char *str, RtcDateTime &d)
+  {
+    char datestring[20]; 
+    snprintf_P(datestring, 
+        sizeof(datestring),
+        PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+        d.Month(), 
+        d.Day(),
+        d.Year(),
+        d.Hour(),
+        d.Minute(),
+        d.Second() );
+    send_srv(ADDR_STR "/%s=%s", str, datestring);
   }
   void sendDeviceConfig(const char *dev)
   {
@@ -222,6 +234,8 @@ class CTapFSM {
 
   /**
    * собственно рабочй цикл fsm
+  // послать ошибку серверу если по коменде датчики не 
+  //      показали изменения - кран закис или неисправность
    */
   void loop() {
     switch (m_fsm_tap_state) {
@@ -231,8 +245,10 @@ class CTapFSM {
         m_opened = !isTapOpen.read();
         if(m_opened || delay > TAP_TIMEOUT) {
           // должно быть состояние открыто - иначе ошибка
-          if(!m_opened)
+          if(!m_opened) {
             m_error = eErrorOpen;
+            s_comm.send_srv(ADDR_STR "/tap_error=%d", m_error);
+          }
           m_tap_state = eTapOpen;
           m_fsm_tap_state = eTapStop;
           if(m_callback != nullptr) {
@@ -248,8 +264,10 @@ class CTapFSM {
         m_closed = !isTapClosed.read();
         if(m_closed || delay > TAP_TIMEOUT) {
           //  должно быть состояние закрыто - иначе ошибка
-          if(!m_closed)
+          if(!m_closed) {
             m_error = eErrorClose;
+            s_comm.send_srv(ADDR_STR "/tap_error=%d", m_error);
+          }
           m_tap_state = eTapClose;
           m_fsm_tap_state = eTapStop;
           if(m_callback != nullptr)
@@ -277,8 +295,6 @@ class CTapFSM {
  * fsm для открывания и закрывания крана раз в неделю
  * заносим в eprom последнюю дату освежения
  * не отслеживаю здесь таймауты - callback
- * TODO послать ошибку серверу если по обоим переворотам датчики не 
- *      показали изменения - кран закис илинеисправность
  */ 
 class CRefreshTapFSM : public ICallback
 {
@@ -350,8 +366,6 @@ class Burrel : public ICallback {
   public:
   bool m_full, m_empty;
 
-  // TODO послать ошибку серверу если по коменде датчики не 
-  //      показали изменения - кран закис или неисправность
   virtual void done(uint8_t error) override 
   {
 
@@ -396,8 +410,6 @@ void   doTestWater() {
       s_displayMode ^= true;
   }
 
-  // TODO послать ошибку серверу если по коменде датчики не 
-  //      показали изменения - кран закис или неисправность
   // запустить FSM на изменение ветниля
   if(checkButtonChanged(btn_open_water)) {
     s_tap_fsm.change(s_tap_fsm.m_tap_state == CTapFSM::eTapClose ? 
@@ -461,7 +473,13 @@ void setup(void)
   Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
   Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, sizeof(s_epromm));
   s_water_count = s_epromm.water_count_rtc;
-  // TODO вывести текущее время, вывести время последнего поворота
+  s_comm.send_srv( ADDR_STR "/water=%ld", s_water_count);
+
+  // вывести текущее время, вывести время последнего поворота
+  RtcDateTime now = Rtc.GetDateTime();
+  s_comm.sendDate("rtc_time", now);
+  s_comm.sendDate("refresh_time", s_epromm.last_water_tap_time);
+
   s_comm.sendDeviceConfig("/water");
   s_comm.sendDeviceConfig("/barrel_empty");
   s_comm.sendDeviceConfig("/barrel_full");
@@ -470,8 +488,6 @@ void setup(void)
 
   s_tap_fsm.init();
   s_refresh_fsm.init();
-
-  s_comm.send_srv( ADDR_STR "/water=%ld", s_water_count);
 }
 
 /*
@@ -498,6 +514,8 @@ void loop(void)
   }
   s_tap_fsm.loop();
   /// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
+  /// TODO cmd занести в NVRAM значение для воды из serial, 
+  /// TODO cmd занести в NVRAM текущее время  из serial
   /// TODO сделать управление командами команды не ко мне форвардить
 }
 #if 0
@@ -507,7 +525,7 @@ SoftwareSerial altSerial(8, 9);
 char buffer[2][MAX_OUT_BUFF];
   void loop(void)
   {
-    // todo получить строку, проверить мне ли, переправить дальше
+    // TODO получить строку, проверить мне ли, переправить дальше
     // выделить строку для себя от отправить в исполнение
     if(altSerial.available()) {
       char c = altSerial.read();
