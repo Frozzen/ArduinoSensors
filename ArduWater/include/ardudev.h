@@ -5,7 +5,15 @@
 extern char s_buf[MAX_OUT_BUFF];  
 
 #define SENSOR_NAME "ArduWater"
+// команды с хоста
 #define DEVICE_NO "03"
+// установить время ":" DEVICE_NO SET_TIME "JUL 27 2019;23:00:00" 
+#define SET_TIME "01"
+// установить счетчик воды ":" DEVICE_NO SET_WATER "0000001000" 
+#define SET_WATER "02"
+// управление краном воды ":" DEVICE_NO SET_TAP "0" / "1" 
+#define SET_TAP "03"
+
 #define IN_PIN_COUNT 7
 #define NO_TEMP
 

@@ -3,6 +3,7 @@
 #include <Bounce2.h>
 #include <RtcDS1307.h>
 #include <TM1637Display.h>
+#include <SoftwareSerial.h>
 
 #include "ardudev.h"
 
@@ -13,6 +14,8 @@
 #define LOG_MESSAGE_END "\"}"
 
 #define s_automatic_open_enabled 1
+
+SoftwareSerial altSerial(8, 9);
 
 // Setup  instancees to communicate with devices I2C
 RtcDS1307<TwoWire> Rtc(Wire);
@@ -37,6 +40,7 @@ struct sEPROMConfig {
 uint32_t s_water_count;
 // показывать на дисплее счетчик
 bool s_displayMode = true;
+
 
 //------------------------------------------------------------
 class SerialComm {
@@ -380,6 +384,71 @@ class Burrel  {
         s_comm.send_srv(ADDR_STR "/burrel_error=1");
   }
 } s_burrel;
+
+//------------------------------------------------------------
+class ForwardSerial
+{
+char buffer[MAX_OUT_BUFF];
+uint8_t wr_ix;
+public:
+  void init()
+  {
+    altSerial.begin(38400);
+    buffer[0] = '\0';
+    wr_ix =  0;
+  }
+
+  void string_ready(char *cmd) {
+    if(strcmp(cmd, ":" DEVICE_NO SET_TIME) == 0) {
+      char *sep = strchr(cmd+5, ';');
+      if(sep == 0)
+        return;
+      *sep = '\0';
+      // Example of __DATE__ string: "Jul 27 2012"
+      // Example of __TIME__ string: "21:06:19"
+      // DateTime(__DATE__, __TIME__)
+      Rtc.SetDateTime(RtcDateTime(cmd+5, sep+1));
+    } else if(strcmp(cmd, ":" DEVICE_NO SET_WATER) == 0) {
+      sscanf(cmd+5, "%ld", &s_water_count);
+      s_epromm.water_count_rtc = s_water_count;
+      Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, (uint8_t)sizeof(s_epromm));
+    } else if(strcmp(cmd, ":" DEVICE_NO SET_TAP) == 0) { 
+      if(cmd[5] == '0')
+        s_tap_fsm.change(CTapFSM::eTapClose); 
+      else if(cmd[5] == '1') 
+        s_tap_fsm.change(CTapFSM::eTapOpen);
+    }
+  }
+
+  void loop(void)
+  {
+    // TODO получить строку, проверить мне ли, переправить дальше
+    // выделить строку для себя от отправить в исполнение
+    if(altSerial.available()) {
+      char c = altSerial.read();
+      Serial.print(c);
+    }
+    if(Serial.available()) {
+      char c = Serial.read();
+      if(c == ':' && wr_ix != 0) {
+        buffer[wr_ix] = '\0';
+        if(strcmp(buffer, ":" DEVICE_NO) == 0)  {
+          string_ready(buffer);
+        } else {
+          altSerial.print(buffer);
+        }
+        wr_ix = 0;
+        buffer[wr_ix++] = c; 
+      }
+      buffer[wr_ix++] = c;    
+      if(wr_ix >= MAX_OUT_BUFF) {
+          altSerial.print(buffer);
+          wr_ix = 0;
+      }
+    }
+  }
+} s_frwd;
+
 /**
  *  обновляем время когда двигали кран
  */
@@ -446,6 +515,7 @@ void setup(void)
   display.clear();
   display.setBrightness(0x0f);
   s_comm.init();
+  s_frwd.init();
   
   iniInputPin(btn_open_water, BTN_OPEN_WATER);
   iniInputPin(water_cnt, WATER_COUNTER_PIN);
@@ -501,26 +571,9 @@ void loop(void)
     s_last_loop = millis();
   }
   s_tap_fsm.loop();
-  /// TODO сделать цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
+  /// цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
+  s_frwd.loop();
   /// TODO cmd занести в NVRAM значение для воды из serial, 
   /// TODO cmd занести в NVRAM текущее время  из serial
   /// TODO сделать управление командами команды не ко мне форвардить
 }
-#if 0
-class ForwardSerial
-{
-SoftwareSerial altSerial(8, 9);
-char buffer[2][MAX_OUT_BUFF];
-  void loop(void)
-  {
-    // TODO получить строку, проверить мне ли, переправить дальше
-    // выделить строку для себя от отправить в исполнение
-    if(altSerial.available()) {
-      char c = altSerial.read();
-    }
-    if(Serial.available()) {
-      char c = altSerial.read();
-    }
-  }
-};
-#endif
