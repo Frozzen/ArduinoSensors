@@ -387,6 +387,9 @@ class Burrel  {
 } s_burrel;
 
 //------------------------------------------------------------
+///  cmd занести в NVRAM значение для воды из serial, 
+///  cmd занести в NVRAM текущее время  из serial
+///  сделать управление командами команды не ко мне форвардить
 class ForwardSerial
 {
 char buffer[MAX_OUT_BUFF];
@@ -621,7 +624,4 @@ void loop(void)
   s_tap_fsm.loop();
   /// цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
   s_frwd.loop();
-  /// TODO cmd занести в NVRAM значение для воды из serial, 
-  /// TODO cmd занести в NVRAM текущее время  из serial
-  /// TODO сделать управление командами команды не ко мне форвардить
 }
