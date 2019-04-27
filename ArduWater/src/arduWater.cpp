@@ -1,6 +1,6 @@
 #include <Arduino.h>
-#include <Wire.h>
 #include <Bounce2.h>
+#include <Wire.h>
 #include <RtcDS1307.h>
 #include <TM1637Display.h>
 #include <SoftwareSerial.h>
@@ -357,6 +357,8 @@ class CRefreshTapFSM : public ICallback
    * проверить надо ли поварачивать кран
    */
   void check() {
+    if  (!Rtc.IsDateTimeValid()) 
+      return;      
       // сравнить время открывания и текущее
       RtcDateTime cur = Rtc.GetDateTime();
       cur -= DAYS_REFRESHING_TAP;
@@ -398,22 +400,16 @@ public:
   }
 
   void string_ready(char *cmd) {
-    Serial.print("Commnd:"); Serial.println(cmd);
     if(strncmp(cmd, ":" DEVICE_NO SET_TIME, 5) == 0) {
-      char *sep = strchr(cmd+5, ';');
-      if(sep == 0)
-        return;
-      *sep = '\0';
-      // Example of __DATE__ string: "Jul 27 2012"
-      // Example of __TIME__ string: "21:06:19"
-      // DateTime(__DATE__, __TIME__)
-      Rtc.SetDateTime(RtcDateTime(cmd+5, sep+1));
-      Serial.print("set time:"); Serial.print(cmd+5); Serial.println(sep+1);
+      uint16_t Y, M, D, h, m, s;
+      // 04/27/2019 16:55:55
+      sscanf(cmd+5, "%02u/%02u/%04u %02u:%02u:%02u", &M, &D, &Y, &h, &m, &s);
+      Rtc.SetDateTime(RtcDateTime(Y, M, D, h, m, s));
       RtcDateTime now = Rtc.GetDateTime();
       s_comm.sendDate("rtc_time", now);
 
     } else if(strncmp(cmd, ":" DEVICE_NO SET_WATER, 5) == 0) {
-      sscanf(cmd+5, "%ld", &s_water_count);
+      sscanf(cmd+5, "%lu", &s_water_count);
       s_epromm.water_count_rtc = s_water_count;
       Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, (uint8_t)sizeof(s_epromm));
     } else if(strncmp(cmd, ":" DEVICE_NO SET_TAP, 5) == 0) { 
@@ -522,8 +518,19 @@ void initRTC()
 
     if (!Rtc.IsDateTimeValid()) 
     {
-        Serial.println("RTC lost confidence in the DateTime!");
-        Rtc.SetDateTime(compiled);
+        if (Rtc.LastError() != 0)
+        {
+            // we have a communications error
+            // see https://www.arduino.cc/en/Reference/WireEndTransmission for 
+            // what the number means
+            Serial.print("RTC communications error = ");
+            Serial.println(Rtc.LastError());
+        }
+        else
+        {
+            Serial.println("RTC lost confidence in the DateTime!");
+            Rtc.SetDateTime(compiled);
+        }
     }
 
     if (!Rtc.GetIsRunning())
@@ -541,8 +548,8 @@ void initRTC()
 
     // never assume the Rtc was last configured by you, so
     // just clear them to your needed state
-    Rtc.SetSquareWavePin(DS1307SquareWaveOut_32kHz);   
-}
+    Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
+  }
 //------------------------------------
 void setup(void)
 {
@@ -558,24 +565,31 @@ void setup(void)
   iniInputPin(water_is_full, IS_BURREL_FULL);
   iniInputPin(water_is_empty, IS_BURREL_EMPTY);
   digitalWrite(WATER_PRESSURE, HIGH); // pullup
-  
-  // never assume the Rtc was last configured by you, so
-  // just clear them to your needed s_time_cnt
-  Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
-  Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, sizeof(s_epromm));
-  s_water_count = s_epromm.water_count_rtc;
-  s_comm.send_srv( ADDR_STR "/water=%ld", s_water_count);
-
-  // вывести текущее время, вывести время последнего поворота
-  RtcDateTime now = Rtc.GetDateTime();
-  s_comm.sendDate("rtc_time", now);
-  s_comm.sendDate("refresh_time", s_epromm.last_water_tap_time);
-
   s_comm.sendDeviceConfig("/water");
   s_comm.sendDeviceConfig("/barrel_empty");
   s_comm.sendDeviceConfig("/barrel_full");
   s_comm.sendDeviceConfig("/tap_closed");
   s_comm.sendDeviceConfig("/tap_open");
+
+  
+  // never assume the Rtc was last configured by you, so
+  // just clear them to your needed s_time_cnt
+  Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
+  uint8_t gotten = Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, sizeof(s_epromm));
+  if(gotten == sizeof(s_epromm)) {
+    s_water_count = s_epromm.water_count_rtc;
+    s_comm.send_srv( ADDR_STR "/water=%ld", s_water_count);
+  } else 
+    s_comm.send_srv( ADDR_STR "/water=NO");
+
+  // вывести текущее время, вывести время последнего поворота
+  if (!Rtc.IsDateTimeValid()) {
+    s_comm.send_srv( ADDR_STR "/rtc_time=NO");
+  } else {
+    RtcDateTime now = Rtc.GetDateTime();
+    s_comm.sendDate("rtc_time", now);
+    s_comm.sendDate("refresh_time", s_epromm.last_water_tap_time);
+  }
 
   s_tap_fsm.init();
   s_refresh_fsm.init();

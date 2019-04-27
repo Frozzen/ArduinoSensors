@@ -23,6 +23,10 @@
 		},
 		{
 			"path": "ArduWLdongle"
+		},
+		{
+			"name": "190427-163323-nanoatmega328",
+			"path": "/home/vovva/Documents/PlatformIO/Projects/190427-163323-nanoatmega328"
 		}
 	],
 	"settings": {

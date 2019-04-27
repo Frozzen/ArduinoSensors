@@ -8,9 +8,10 @@ extern char s_buf[MAX_OUT_BUFF];
 // команды с хоста
 #define DEVICE_NO "03"
 // установить время ":" DEVICE_NO SET_TIME "JUL 27 2019;23:00:00" 
-// :0301Apr 27 2019;15:54:20
+// :030104/27/2019 17:11:44
 #define SET_TIME "01"
 // установить счетчик воды ":" DEVICE_NO SET_WATER "0000001000" 
+// :030210
 #define SET_WATER "02"
 // управление краном воды ":" DEVICE_NO SET_TAP "0" / "1" 
 #define SET_TAP "03"
