@@ -71,9 +71,8 @@ public:
   void sendDate(const char *str, RtcDateTime &d)
   {
     char datestring[20]; 
-    snprintf_P(datestring, 
-        sizeof(datestring),
-        PSTR("%02u/%02u/%04u %02u:%02u:%02u"),
+    snprintf(datestring, sizeof(datestring),
+        "%02u/%02u/%04u %02u:%02u:%02u",
         d.Month(), 
         d.Day(),
         d.Year(),
@@ -399,7 +398,8 @@ public:
   }
 
   void string_ready(char *cmd) {
-    if(strcmp(cmd, ":" DEVICE_NO SET_TIME) == 0) {
+    Serial.print("Commnd:"); Serial.println(cmd);
+    if(strncmp(cmd, ":" DEVICE_NO SET_TIME, 5) == 0) {
       char *sep = strchr(cmd+5, ';');
       if(sep == 0)
         return;
@@ -408,11 +408,15 @@ public:
       // Example of __TIME__ string: "21:06:19"
       // DateTime(__DATE__, __TIME__)
       Rtc.SetDateTime(RtcDateTime(cmd+5, sep+1));
-    } else if(strcmp(cmd, ":" DEVICE_NO SET_WATER) == 0) {
+      Serial.print("set time:"); Serial.print(cmd+5); Serial.println(sep+1);
+      RtcDateTime now = Rtc.GetDateTime();
+      s_comm.sendDate("rtc_time", now);
+
+    } else if(strncmp(cmd, ":" DEVICE_NO SET_WATER, 5) == 0) {
       sscanf(cmd+5, "%ld", &s_water_count);
       s_epromm.water_count_rtc = s_water_count;
       Rtc.SetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, (uint8_t)sizeof(s_epromm));
-    } else if(strcmp(cmd, ":" DEVICE_NO SET_TAP) == 0) { 
+    } else if(strncmp(cmd, ":" DEVICE_NO SET_TAP, 5) == 0) { 
       if(cmd[5] == '0')
         s_tap_fsm.change(CTapFSM::eTapClose); 
       else if(cmd[5] == '1') 
@@ -430,17 +434,16 @@ public:
     }
     if(Serial.available()) {
       char c = Serial.read();
-      if(c == ':' && wr_ix != 0) {
+      if(c == '\n') {
         buffer[wr_ix] = '\0';
-        if(strcmp(buffer, ":" DEVICE_NO) == 0)  {
+        if(strncmp(buffer, ":" DEVICE_NO, 3) == 0)  {
           string_ready(buffer);
         } else {
           altSerial.print(buffer);
         }
         wr_ix = 0;
-        buffer[wr_ix++] = c; 
-      }
-      buffer[wr_ix++] = c;    
+      } else 
+        buffer[wr_ix++] = c;    
       if(wr_ix >= MAX_OUT_BUFF) {
           altSerial.print(buffer);
           wr_ix = 0;
@@ -509,6 +512,37 @@ void doDisplayValue()
     display.clear();
 }
 
+void initRTC()
+{
+  Rtc.Begin();
+
+    RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
+    s_comm.sendDate("rtc_ver", compiled);
+    Serial.println();
+
+    if (!Rtc.IsDateTimeValid()) 
+    {
+        Serial.println("RTC lost confidence in the DateTime!");
+        Rtc.SetDateTime(compiled);
+    }
+
+    if (!Rtc.GetIsRunning())
+    {
+        Serial.println("RTC was not actively running, starting now");
+        Rtc.SetIsRunning(true);
+    }
+
+    RtcDateTime now = Rtc.GetDateTime();
+    if (now < compiled) 
+    {
+        Serial.println("RTC is older than compile time!  (Updating DateTime)");
+        Rtc.SetDateTime(compiled);
+    }
+
+    // never assume the Rtc was last configured by you, so
+    // just clear them to your needed state
+    Rtc.SetSquareWavePin(DS1307SquareWaveOut_32kHz);   
+}
 //------------------------------------
 void setup(void)
 {
@@ -516,7 +550,8 @@ void setup(void)
   display.setBrightness(0x0f);
   s_comm.init();
   s_frwd.init();
-  
+  initRTC();
+
   iniInputPin(btn_open_water, BTN_OPEN_WATER);
   iniInputPin(water_cnt, WATER_COUNTER_PIN);
   iniInputPin(btn_display, BTN_DISPLAY);
@@ -524,7 +559,6 @@ void setup(void)
   iniInputPin(water_is_empty, IS_BURREL_EMPTY);
   digitalWrite(WATER_PRESSURE, HIGH); // pullup
   
-  Rtc.Begin();
   // never assume the Rtc was last configured by you, so
   // just clear them to your needed s_time_cnt
   Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
