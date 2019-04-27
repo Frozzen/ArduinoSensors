@@ -46,6 +46,7 @@ public:
   void sendToServer()
   {
   char buf[4];
+    Serial.print(s_buf);
     uint8_t sum = 0;
     for(const char *str = s_buf; *str; ++str)
       sum += *str;
@@ -362,28 +363,21 @@ class CRefreshTapFSM : public ICallback
 } s_refresh_fsm;
 
 //-----------------------------------------------------------------
-class Burrel : public ICallback {
+class Burrel  {
   public:
-  bool m_full, m_empty;
-
-  virtual void done(uint8_t error) override 
-  {
-
-  }
+  bool m_full = false, m_empty = false;
 
   void check() {
     m_empty = !water_is_empty.read();
-    if(isButtonChanged(water_is_empty, "/barrel_empty")) {
-        if(m_empty  && s_automatic_open_enabled)
-          s_tap_fsm.change(CTapFSM::eTapOpen, this);
-      }
-    // при появлении 1цы дать команду закрыть кран
     m_full = !water_is_full.read();
-    if(isButtonChanged(water_is_full, "/barrel_full")) {
-      if(m_full)
-        s_tap_fsm.change(CTapFSM::eTapClose, this);
-    }
-
+    if(isButtonChanged(water_is_empty, "/barrel_empty") && 
+      m_empty  && s_automatic_open_enabled)
+          s_tap_fsm.change(CTapFSM::eTapOpen);
+    // при появлении 1цы дать команду закрыть кран
+    else if(isButtonChanged(water_is_full, "/barrel_full") && m_full)
+        s_tap_fsm.change(CTapFSM::eTapClose);
+    else if(m_empty && m_full)
+        s_comm.send_srv(ADDR_STR "/burrel_error=1");
   }
 } s_burrel;
 /**
@@ -398,7 +392,7 @@ void updateTapDateEPROM()
 
 //------------------------------------------------------
 /// послать в шину изменения в контактах
-void   doTestWater() {
+void   doTestBtn() {
 
   if(checkButtonChanged(water_cnt)) {
     ++s_water_count;
@@ -415,13 +409,6 @@ void   doTestWater() {
     s_tap_fsm.change(s_tap_fsm.m_tap_state == CTapFSM::eTapClose ? 
       CTapFSM::eTapOpen: CTapFSM::eTapClose);
   }
-  // при появлении 1цы дать команду открыть кран - водзможно сделать блокировку этого
-  if(isButtonChanged(water_is_empty, "/barrel_empty") &&
-    !isTapClosed.read() &&  !water_is_empty.read() && s_automatic_open_enabled)
-      s_tap_fsm.change(CTapFSM::eTapOpen);
-  // при появлении 1цы дать команду закрыть кран
-  if(isButtonChanged(water_is_full, "/barrel_full") && !water_is_full.read())
-    s_tap_fsm.change(CTapFSM::eTapClose);
 }
 
 /**
@@ -498,11 +485,12 @@ void loop(void)
   static uint32_t s_last_loop;
   uint32_t delay = millis() - s_last_loop;
   // обновляем дисплей 10 раз в сек
+  doTestBtn();
   doDisplayValue();
-  doTestWater();
 
   // раз в 50 sec послать давление
   if(delay > DO_MSG_RATE) {
+    s_burrel.check();
     doWaterPressure();
     // write in eeprom
     if(s_epromm.water_count_rtc != s_water_count) {

@@ -22,9 +22,9 @@ extern char s_buf[MAX_OUT_BUFF];
 // бочка пустая
 #define IS_BURREL_EMPTY 7
 // бочка полная
-#define IS_BURREL_FULL  8
+#define IS_BURREL_FULL  A3
 // кран открыт
-#define IS_TAP_OPEN     9
+#define IS_TAP_OPEN     A2
 // кран закрыт
 #define IS_TAP_CLOSE    10
 // закрыть кран
