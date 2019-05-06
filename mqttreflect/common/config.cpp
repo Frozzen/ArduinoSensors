@@ -11,6 +11,7 @@
 #include <boost/range/algorithm/find.hpp>
 #include <rapidjson/filereadstream.h>
 #include "config.hpp"
+#include <stdexcept>
 
 using namespace std;
 using namespace rapidjson;
@@ -21,8 +22,9 @@ Document s_document;
 /**
  * key = "MQTT.server" напрмер
  */
-std::string Config::getOpt(const char *key) const {
-    return s_document[key].GetString();
+std::string Config::getOpt(const char *sect, const char *key) const {
+    auto l1 = s_document[sect].GetObject();
+    return l1[key].GetString();
 }
 
 
@@ -43,6 +45,8 @@ void Config::open(const char* ini_file)
 {
     std::lock_guard<std::mutex> lock(s_mtx);
     FILE *fp = fopen(ini_file, "rb"); // non-Windows use "r"
+    if (fp == NULL)
+        throw std::runtime_error(string("no file") + ini_file);
     char readBuffer[65536];
     FileReadStream is(fp, readBuffer, sizeof(readBuffer));
     s_document.ParseStream(is);

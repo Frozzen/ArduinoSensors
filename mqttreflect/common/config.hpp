@@ -11,7 +11,7 @@ public:
     static Config *getInstance();
     std::string m_filename;
     // key = "MQTT.server" напрмер
-    std::string getOpt(const char *key) const;
+    std::string getOpt(const char *sect, const char *key) const;
 
     std::unique_ptr<IniSection> getSection(const char *sect);
 
