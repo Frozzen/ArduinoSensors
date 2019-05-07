@@ -13,7 +13,7 @@
 //#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <mqtt/client.h>
-#include "json.hpp"
+#include <rapidjson/document.h>
 #include "config.hpp"
 #include "serial.hpp"
 
@@ -22,9 +22,7 @@
 const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
 using namespace std::chrono;
-
-
-using json = nlohmann::json;
+using namespace rapidjson;
 
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
@@ -79,28 +77,101 @@ void Handler::send_msg(const SendMessge &msg) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void recursive(json key, json value, const std::string &topic, Handler *h) {
-    string _key(key.get<string>());
+/**
+ * обходим дерево json и расылаем сообщения
+ * https://stackoverflow.com/questions/30896857/iterate-and-retrieve-nested-object-in-json-using-rapidjson
+ * @param key
+ * @param it
+ * @param topic
+ * @param h
+ */
+void recursive(const string &key, Value::ConstMemberIterator it, const std::string &topic, Handler *h) {
+    string _key(key);
     std::transform(_key.begin(), _key.end(), _key.begin(), ::tolower);
     string t(topic + "/" + _key);
-    if (value.is_object()) {
-        //cout << key << " >>";
-        for (auto&[k, v] : value.items())
-            recursive(k, v, t, h);
+    if (it->value.IsObject()) {
+        cout << key << " >>";
+        for (auto p = it->value.MemberBegin(); p != it->value.MemberEnd(); ++p) {
+            string k = p->name.GetString();
+            recursive(k, p, t, h);
+        }
     } else {
-        //cout << t << " : " << value << "\n";
         SendMessge mm(t, "");
-        if (value.type_name() == "string")
-            mm.payload = value.get<string>();
-        else if (value.type_name() == "boolean")
-            mm.payload = value.get<bool>();
-        else if (value.type_name() == "number")
-            mm.payload = value.get<double>();
-        else
+        if (it->value.IsString())
+            mm.payload = it->value.GetString();
+        else if (it->value.IsBool())
+            mm.payload = it->value.GetBool() ? "ON" : "OFF";
+        else if (it->value.IsNumber())
+            mm.payload = std::to_string(it->value.GetDouble());
+        else {
+            // TODO log unknown json type
             return;
+        }
+        cout << t << " : " << mm.payload << "\n";
         h->send_msg(mm);
     }
 }
+/*
+ * https://stackoverflow.com/questions/30896857/iterate-and-retrieve-nested-object-in-json-using-rapidjson
+void enter(const Value &obj, size_t indent = 0) { //print JSON tree
+
+    if (obj.IsObject()) { //check if object
+        for (Value::ConstMemberIterator itr = obj.MemberBegin(); itr != obj.MemberEnd(); ++itr) {   //iterate through object
+            const Value& objName = obj[itr->name.GetString()]; //make object value
+
+            for (size_t i = 0; i != indent; ++i) //indent
+                cout << " ";
+
+            cout << itr->name.GetString() << ": "; //key name
+
+            if (itr->value.IsNumber()) //if integer
+                std::cout << itr->value.GetInt() ;
+
+            else if (itr->value.IsString()) //if string
+                std::cout << itr->value.GetString();
+
+
+            else if (itr->value.IsBool()) //if bool
+                std::cout << itr->value.GetBool();
+
+            else if (itr->value.IsArray()){ //if array
+
+                for (SizeType i = 0; i < itr->value.Size(); i++) {
+                    if (itr->value[i].IsNumber()) //if array value integer
+                        std::cout << itr->value[i].GetInt() ;
+
+                    else if (itr->value[i].IsString()) //if array value string
+                        std::cout << itr->value[i].GetString() ;
+
+                    else if (itr->value[i].IsBool()) //if array value bool
+                        std::cout << itr->value[i].GetBool() ;
+
+                    else if (itr->value[i].IsObject()){ //if array value object
+                        cout << "\n  ";
+                        const Value& m = itr->value[i];
+                        for (auto& v : m.GetObject()) { //iterate through array object
+                            if (m[v.name.GetString()].IsString()) //if array object value is string
+                                cout << v.name.GetString() << ": " <<   m[v.name.GetString()].GetString();
+                            else //if array object value is integer
+                                cout << v.name.GetString() << ": "  <<  m[v.name.GetString()].GetInt();
+
+                            cout <<  "\t"; //indent
+                        }
+                    }
+                    cout <<  "\t"; //indent
+                }
+            }
+
+            cout << endl;
+            enter(objName, indent + 1); //if couldn't find in object, enter object and repeat process recursively
+        }
+    }
+}
+
+ Value v = document.GetObject();
+Value& m= v;
+enter(m);
+*/
 // http://rapidjson.org/md_doc_tutorial.html
 // https://github.com/nlohmann/json recommended
 bool DecodeJsonHandler::request(const SendMessge &m) {
@@ -109,11 +180,14 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
         return false;
     string sens((m.topic.begin() + ix + 1), m.topic.end());
     if (valid_case.find(sens) != valid_case.end()) {
-        auto json = json::parse(m.payload);
-        for (auto&[key, value] : json.items()) {
-            //cout << key << " : " << value << "\n";
+        Document document;
+        if (document.Parse(m.payload.c_str()).HasParseError())
+            return 1;
+        for (auto p = document.MemberBegin(); p != document.MemberEnd(); ++p) {
+            string key = p->name.GetString();
+            cout << p->name.GetString() << "\n";
             // traverse tree
-            recursive(key, value, m.topic, this);
+            recursive(key, p, m.topic, this);
         }
     }
     return true;
@@ -121,20 +195,20 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
 
 /////////////////////////////////////////////////////////////////
 void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
-    string head = c->getOpt("MQTT.topic_head");
+    string head = c->getOpt("MQTT", "topic_head");
     // TODO посмотреть какие еще ключи надо смотреть
     // TODO возможно сделать regexp
-    h->valid_case = {"SENSOR"};
+    h->valid_case = {"sensor"};
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("reflect");
-    string head = c->getOpt("MQTT.topic_head");
+    string head = c->getOpt("MQTT", "topic_head");
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
         h->reflect[head + t] = head + boost::algorithm::to_lower_copy(p.second);
-        //cout << "reflect+:" << p.first << '-' << p.second << endl;
+        cout << "reflect+:" << p.first << '-' << p.second << endl;
     }
 }
 
@@ -170,11 +244,11 @@ bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
     if (reflect.count(topic)) {
         vector<string> strs;
-        //cout << "relf:" << topic << "::";
+        cout << "relf:" << topic << "::";
         strs = split(reflect[topic], ',');
         string payload = m.payload;
         for (auto &s : strs) {
-            //cout << ">" << s << "< ";
+            cout << ">" << s << "< ";
             SendMessge mn(s, payload);
             send_msg(mn);
             // ограничить число новых сообщений и число циклов decorator
@@ -188,7 +262,7 @@ bool ReflectHandler::request(const SendMessge &m) {
             HandlerFactory::request(mn);
             stack_count--;
         }
-        //cout << "=>" << payload << endl;
+        cout << "=>" << payload << endl;
     }
     return true;
 }
@@ -199,12 +273,12 @@ bool ReflectHandler::request(const SendMessge &m) {
 ///
 void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("Domotizc");
-    string head = c->getOpt("MQTT.topic_head");
+    string head = c->getOpt("MQTT", "topic_head");
     for (auto p : *ini) {
         string topic = boost::algorithm::to_lower_copy(p.first);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        //cout << "domo+:" << p.first << '-' << p.second << endl;
+        cout << "domo+:" << p.first << '-' << p.second << endl;
     }
 }
 
@@ -224,7 +298,7 @@ bool DomotizcHandler::request(const SendMessge &m) {
         std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
                       domotizc[topic], payload.c_str());
         std::string tval = buf;
-        //cout << "domotizc:" << tval << endl;
+        cout << "domotizc:" << tval << endl;
         send_msg(SendMessge("domoticz/in", tval));
     }
     return true;
@@ -241,7 +315,7 @@ int mqtt_loop() {
     vector<string> TOPICS{"stat/#", "tele/#", "rs485/#"};
     const vector<int> QOS{0, 0, 0};
     HandlerFactory::makeAll(cfg);
-    string head = cfg->getOpt("MQTT.topic_head");
+    string head = cfg->getOpt("MQTT", "topic_head");
     if (!head.empty()) {
         for (auto ix = 0; ix < TOPICS.size(); ++ix) {
             TOPICS[ix] = head + TOPICS[ix];
@@ -251,16 +325,16 @@ int mqtt_loop() {
 
     const string CLIENT_ID{"sync_consume_cpp"};
 
-    mqtt::client cli(cfg->getOpt("MQTT.server"), CLIENT_ID);
-    mqtt::connect_options connOpts(cfg->getOpt("MQTT.user"), cfg->getOpt("MQTT.pass"));
+    mqtt::client cli(cfg->getOpt("MQTT", "server"), CLIENT_ID);
+    mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
 
     try {
-        //cout << "Connecting to the MQTT server..." << flush;
+        cout << "Connecting to the MQTT server..." << flush;
         cli.connect(connOpts);
         cli.subscribe(TOPICS, QOS);
-        //cout << "OK\n" << endl;
+        cout << "OK\n" << endl;
 
         // Consume messages
         uint16_t cnt = 0;
@@ -269,19 +343,19 @@ int mqtt_loop() {
             // восстанавливаем соединение
             if (!msg) {
                 if (!cli.is_connected()) {
-                    //cout << "Lost connection. Attempting reconnect" << endl;
+                    cout << "Lost connection. Attempting reconnect" << endl;
                     if (try_reconnect(cli)) {
                         cli.subscribe(TOPICS, QOS);
-                        //cout << "Reconnected" << endl;
+                        cout << "Reconnected" << endl;
                         continue;
                     } else {
-                        //cout << "Reconnect failed." << endl;
+                        cout << "Reconnect failed." << endl;
                         break;
                     }
                 } else
                     break;
             }
-            //cout << msg->get_topic() << ": " << msg->to_string() << endl;
+            cout << msg->get_topic() << ": " << msg->to_string() << endl;
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
@@ -302,9 +376,9 @@ int mqtt_loop() {
 
         // Disconnect
 
-        //cout << "\nDisconnecting from the MQTT server..." << flush;
+        cout << "\nDisconnecting from the MQTT server..." << flush;
         cli.disconnect();
-        //cout << "OK" << endl;
+        cout << "OK" << endl;
     }
     catch (const mqtt::exception &exc) {
         cerr << exc.what() << endl;
@@ -343,13 +417,13 @@ int read_serial(const char *dev)
             for(auto it = ix_start; it < ix_end - 4; ++it)
                { cs += *it;  }
             if((cs & 0xff) != csorg)
-                ;// //cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
+                ;// cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
             else {
                 std::string str(ix_start+3, ix_end-4);
                 auto it = boost::find(str, '=');
-                //cout << " rs:" << str << " end:" << *it << endl;
+                cout << " rs:" << str << " end:" << *it << endl;
                 if(it == str.end()) {
-                    //cout << "***com!:" <<  str << endl;
+                    cout << "***com!:" <<  str << endl;
                     continue;
                 }
                 std::string topic(str.begin(), it);
@@ -367,9 +441,9 @@ int read_serial(const char *dev)
 /////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
-    std::setlocale(LC_ALL, "ru_RU.UTF-8");
+    // std::setlocale(LC_ALL, "ru_RU.UTF-8");
     Config *cfg = Config::getInstance();
-    cfg->open("mqttfrwd.ini");
+    cfg->open("mqttfrwd.json");
 
     mqtt_loop();
 #if 0
