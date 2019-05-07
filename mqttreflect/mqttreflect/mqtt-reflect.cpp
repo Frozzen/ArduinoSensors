@@ -4,24 +4,17 @@
 #include <cstring>
 #include <cctype>
 #include <thread>
-#include <chrono>
 #include <map>
-#include <sstream>
 #include <boost/algorithm/string.hpp>
-#include <boost/range/algorithm/find.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/property_tree/json_parser.hpp>
 #include <mqtt/client.h>
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
 #include "config.hpp"
-#include "serial.hpp"
 
 #include "mqtt-reflect.hpp"
 
 const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
-using namespace std::chrono;
 using namespace rapidjson;
 
 // --------------------------------------------------------------------------
@@ -301,14 +294,8 @@ int mqtt_loop() {
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
             }
-#ifndef NDEBUG
-            if (cnt++ > 30000)
-                break;
-#endif
         }
-
         // Disconnect
-
         //cout << "\nDisconnecting from the MQTT server..." << flush;
         cli.disconnect();
         //cout << "OK" << endl;
@@ -321,69 +308,11 @@ int mqtt_loop() {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-#if 0
-static volatile bool rs232_looping = true;
-int read_serial(const char *dev)
-{
-    char mode[]={'8','N','1',0};
-    std::vector<char> buf(4096);
-    int port = RS232_GetPortnr(dev);
-    if(RS232_OpenComport(port, 38400, mode)) {
-      printf("Can not open comport\n");
-      return(2);
-    }
-
-    Config *cfg = Config::getInstance();
-    std::string head = cfg->getOpt("COM.topic_head");
-
-    while(rs232_looping)     {
-      int n = RS232_PollComport(port, (unsigned char*)buf.data(), buf.size() - 1);
-
-      if(n > 0)       {
-        buf[n] = '\0';   /* always put a "null" at the end of a string! */
-        auto ix_start = ::boost::find(buf, ':');
-        auto ix_end = ::boost::find(buf, '\n');
-        if(ix_end != buf.end() && ix_start != buf.end() && ix_start < (ix_end - 6)) {
-            int cs = 0;
-            char *e;
-            int csorg = strtol(&*(ix_end-3), &e, 16);
-            for(auto it = ix_start; it < ix_end - 4; ++it)
-               { cs += *it;  }
-            if((cs & 0xff) != csorg)
-                ;// //cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
-            else {
-                std::string str(ix_start+3, ix_end-4);
-                auto it = boost::find(str, '=');
-                //cout << " rs:" << str << " end:" << *it << endl;
-                if(it == str.end()) {
-                    //cout << "***com!:" <<  str << endl;
-                    continue;
-                }
-                std::string topic(str.begin(), it);
-                std::string payload(it+1, str.end());
-                mqtt::message & m(head + topic, payload);
-                msg_to_send.push_front(m);
-            }
-        } else if(n < 0)
-            return 1;
-      }
-      usleep(100000);  /* sleep for 100 milliSeconds */
-    }
-}
-#endif
-/////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
-    // std::setlocale(LC_ALL, "ru_RU.UTF-8");
     Config *cfg = Config::getInstance();
     cfg->open("mqttfrwd.json");
-
     mqtt_loop();
-#if 0
-    thread t1(read_serial, "ttyUSB0");
-    rs232_looping = false;
-    t1.join();
-#endif
     return 0;
 }
 

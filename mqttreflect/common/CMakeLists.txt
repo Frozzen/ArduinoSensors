@@ -16,3 +16,5 @@ add_library(common STATIC ${SOURCE_FILES})
 install(TARGETS common DESTINATION $ENV{HOME}/local/lib)
 
 add_executable(cfg-test cfg-test.cpp ${LIB_FILES} config.hpp config.cpp)
+
+add_executable(com-test serial-demo.c ${LIB_FILES})

@@ -1,3 +1,6 @@
+/**
+ * https://askubuntu.com/questions/645/how-do-you-reset-a-usb-device-from-the-command-line
+ */
 #include <errno.h>
 #include <fcntl.h> 
 #include <stdio.h>
@@ -103,7 +106,7 @@ int main()
         } else {  /* rdlen == 0 */
             printf("Timeout from read? lost device\n");
             break;
-        }               
+        }
         /* repeat read to get full message */
     } while (1);
 }
