@@ -10,10 +10,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/log/trivial.hpp>
-//#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <mqtt/client.h>
-#include "json.hpp"
+#include <rapidjson/document.h>
+#include <rapidjson/prettywriter.h>
 #include "config.hpp"
 #include "serial.hpp"
 
@@ -22,10 +22,8 @@
 const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
 using namespace std::chrono;
+using namespace rapidjson;
 
-
-using json = nlohmann::json;
-// TODO сделать отправление из ключа MQTT в LOG сообщения
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
 CSendQueue HandlerFactory::mqtt_mag_queue;
@@ -79,28 +77,34 @@ void Handler::send_msg(const SendMessge &msg) {
 }
 
 /////////////////////////////////////////////////////////////////////////////
-void recursive(json key, json value, const std::string &topic, Handler *h) {
-    string _key(key.get<string>());
+/**
+ * обходим дерево json и расылаем сообщения
+ * https://stackoverflow.com/questions/30896857/iterate-and-retrieve-nested-object-in-json-using-rapidjson
+ * @param key
+ * @param it
+ * @param topic
+ * @param h
+ */
+void recursive(const string &key, Value::ConstMemberIterator it, const std::string &topic, Handler *h) {
+    string _key(key);
     std::transform(_key.begin(), _key.end(), _key.begin(), ::tolower);
     string t(topic + "/" + _key);
-    if (value.is_object()) {
+    if (it->value.IsObject()) {
         //cout << key << " >>";
-        for (auto&[k, v] : value.items())
-            recursive(k, v, t, h);
+        for (auto p = it->value.MemberBegin(); p != it->value.MemberEnd(); ++p) {
+            string k = p->name.GetString();
+            recursive(k, p, t, h);
+        }
     } else {
-        //cout << t << " : " << value << "\n";
-        SendMessge mm(t, "");
-        if (value.type_name() == "string")
-            mm.payload = value.get<string>();
-        else if (value.type_name() == "boolean")
-            mm.payload = value.get<bool>();
-        else if (value.type_name() == "number")
-            mm.payload = value.get<double>();
-        else
-            return;
+        StringBuffer buffer;
+        Writer<StringBuffer> writer(buffer);
+        it->value.Accept(writer);
+        SendMessge mm(t, buffer.GetString());
+        //cout << t << " : " << mm.payload << "\n";
         h->send_msg(mm);
     }
 }
+
 // http://rapidjson.org/md_doc_tutorial.html
 // https://github.com/nlohmann/json recommended
 bool DecodeJsonHandler::request(const SendMessge &m) {
@@ -109,11 +113,14 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
         return false;
     string sens((m.topic.begin() + ix + 1), m.topic.end());
     if (valid_case.find(sens) != valid_case.end()) {
-        auto json = json::parse(m.payload);
-        for (auto&[key, value] : json.items()) {
-            //cout << key << " : " << value << "\n";
+        Document document;
+        if (document.Parse(m.payload.c_str()).HasParseError())
+            return 1;
+        for (auto p = document.MemberBegin(); p != document.MemberEnd(); ++p) {
+            string key = p->name.GetString();
+            //cout << p->name.GetString() << "\n";
             // traverse tree
-            recursive(key, value, m.topic, this);
+            recursive(key, p, m.topic, this);
         }
     }
     return true;
@@ -121,16 +128,16 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
 
 /////////////////////////////////////////////////////////////////
 void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
-    string head = c->getOpt("MQTT.topic_head");
+    string head = c->getOpt("MQTT", "topic_head");
     // TODO посмотреть какие еще ключи надо смотреть
     // TODO возможно сделать regexp
-    h->valid_case = {"SENSOR"};
+    h->valid_case = {"sensor"};
 }
 
 /////////////////////////////////////////////////////////////////////////////
 void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("reflect");
-    string head = c->getOpt("MQTT.topic_head");
+    string head = c->getOpt("MQTT", "topic_head");
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
         h->reflect[head + t] = head + boost::algorithm::to_lower_copy(p.second);
@@ -168,7 +175,7 @@ vector<string> split(const string &s, const char delim) {
  */
 bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
-    if (reflect.count(topic)) {
+    if (reflect.find(topic) != reflect.end()) {
         vector<string> strs;
         //cout << "relf:" << topic << "::";
         strs = split(reflect[topic], ',');
@@ -199,7 +206,7 @@ bool ReflectHandler::request(const SendMessge &m) {
 ///
 void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("Domotizc");
-    string head = c->getOpt("MQTT.topic_head");
+    string head = c->getOpt("MQTT", "topic_head");
     for (auto p : *ini) {
         string topic = boost::algorithm::to_lower_copy(p.first);
         char *pend;
@@ -241,7 +248,7 @@ int mqtt_loop() {
     vector<string> TOPICS{"stat/#", "tele/#", "rs485/#"};
     const vector<int> QOS{0, 0, 0};
     HandlerFactory::makeAll(cfg);
-    string head = cfg->getOpt("MQTT.topic_head");
+    string head = cfg->getOpt("MQTT", "topic_head");
     if (!head.empty()) {
         for (auto ix = 0; ix < TOPICS.size(); ++ix) {
             TOPICS[ix] = head + TOPICS[ix];
@@ -251,8 +258,8 @@ int mqtt_loop() {
 
     const string CLIENT_ID{"sync_consume_cpp"};
 
-    mqtt::client cli(cfg->getOpt("MQTT.server"), CLIENT_ID);
-    mqtt::connect_options connOpts(cfg->getOpt("MQTT.user"), cfg->getOpt("MQTT.pass"));
+    mqtt::client cli(cfg->getOpt("MQTT", "server"), CLIENT_ID);
+    mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
 
@@ -367,9 +374,9 @@ int read_serial(const char *dev)
 /////////////////////////////////////////////////////////////////////////////
 
 int main(int argc, char *argv[]) {
-    std::setlocale(LC_ALL, "ru_RU.UTF-8");
+    // std::setlocale(LC_ALL, "ru_RU.UTF-8");
     Config *cfg = Config::getInstance();
-    cfg->open("mqttfrwd.ini");
+    cfg->open("mqttfrwd.json");
 
     mqtt_loop();
 #if 0
