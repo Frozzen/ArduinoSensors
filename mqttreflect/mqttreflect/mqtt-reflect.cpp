@@ -104,67 +104,7 @@ void recursive(const string &key, Value::ConstMemberIterator it, const std::stri
         h->send_msg(mm);
     }
 }
-/*
- * https://stackoverflow.com/questions/30896857/iterate-and-retrieve-nested-object-in-json-using-rapidjson
-void enter(const Value &obj, size_t indent = 0) { //print JSON tree
 
-    if (obj.IsObject()) { //check if object
-        for (Value::ConstMemberIterator itr = obj.MemberBegin(); itr != obj.MemberEnd(); ++itr) {   //iterate through object
-            const Value& objName = obj[itr->name.GetString()]; //make object value
-
-            for (size_t i = 0; i != indent; ++i) //indent
-                //cout << " ";
-
-            //cout << itr->name.GetString() << ": "; //key name
-
-            if (itr->value.IsNumber()) //if integer
-                std:://cout << itr->value.GetInt() ;
-
-            else if (itr->value.IsString()) //if string
-                std:://cout << itr->value.GetString();
-
-
-            else if (itr->value.IsBool()) //if bool
-                std:://cout << itr->value.GetBool();
-
-            else if (itr->value.IsArray()){ //if array
-
-                for (SizeType i = 0; i < itr->value.Size(); i++) {
-                    if (itr->value[i].IsNumber()) //if array value integer
-                        std:://cout << itr->value[i].GetInt() ;
-
-                    else if (itr->value[i].IsString()) //if array value string
-                        std:://cout << itr->value[i].GetString() ;
-
-                    else if (itr->value[i].IsBool()) //if array value bool
-                        std:://cout << itr->value[i].GetBool() ;
-
-                    else if (itr->value[i].IsObject()){ //if array value object
-                        //cout << "\n  ";
-                        const Value& m = itr->value[i];
-                        for (auto& v : m.GetObject()) { //iterate through array object
-                            if (m[v.name.GetString()].IsString()) //if array object value is string
-                                //cout << v.name.GetString() << ": " <<   m[v.name.GetString()].GetString();
-                            else //if array object value is integer
-                                //cout << v.name.GetString() << ": "  <<  m[v.name.GetString()].GetInt();
-
-                            //cout <<  "\t"; //indent
-                        }
-                    }
-                    //cout <<  "\t"; //indent
-                }
-            }
-
-            //cout << endl;
-            enter(objName, indent + 1); //if couldn't find in object, enter object and repeat process recursively
-        }
-    }
-}
-
- Value v = document.GetObject();
-Value& m= v;
-enter(m);
-*/
 // http://rapidjson.org/md_doc_tutorial.html
 // https://github.com/nlohmann/json recommended
 bool DecodeJsonHandler::request(const SendMessge &m) {
@@ -235,7 +175,7 @@ vector<string> split(const string &s, const char delim) {
  */
 bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
-    if (reflect.count(topic)) {
+    if (reflect.find(topic) != reflect.end()) {
         vector<string> strs;
         //cout << "relf:" << topic << "::";
         strs = split(reflect[topic], ',');
@@ -362,7 +302,7 @@ int mqtt_loop() {
                 HandlerFactory::mqtt_mag_queue.clear();
             }
 #ifndef NDEBUG
-            if (cnt++ > 3000)
+            if (cnt++ > 30000)
                 break;
 #endif
         }
