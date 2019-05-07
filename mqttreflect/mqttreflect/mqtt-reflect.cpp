@@ -10,10 +10,10 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/range/algorithm/find.hpp>
 #include <boost/log/trivial.hpp>
-//#include <boost/algorithm/string.hpp>
 #include <boost/property_tree/json_parser.hpp>
 #include <mqtt/client.h>
 #include <rapidjson/document.h>
+#include <rapidjson/prettywriter.h>
 #include "config.hpp"
 #include "serial.hpp"
 
@@ -90,24 +90,17 @@ void recursive(const string &key, Value::ConstMemberIterator it, const std::stri
     std::transform(_key.begin(), _key.end(), _key.begin(), ::tolower);
     string t(topic + "/" + _key);
     if (it->value.IsObject()) {
-        cout << key << " >>";
+        //cout << key << " >>";
         for (auto p = it->value.MemberBegin(); p != it->value.MemberEnd(); ++p) {
             string k = p->name.GetString();
             recursive(k, p, t, h);
         }
     } else {
-        SendMessge mm(t, "");
-        if (it->value.IsString())
-            mm.payload = it->value.GetString();
-        else if (it->value.IsBool())
-            mm.payload = it->value.GetBool() ? "ON" : "OFF";
-        else if (it->value.IsNumber())
-            mm.payload = std::to_string(it->value.GetDouble());
-        else {
-            // TODO log unknown json type
-            return;
-        }
-        cout << t << " : " << mm.payload << "\n";
+        StringBuffer buffer;
+        Writer<StringBuffer> writer(buffer);
+        it->value.Accept(writer);
+        SendMessge mm(t, buffer.GetString());
+        //cout << t << " : " << mm.payload << "\n";
         h->send_msg(mm);
     }
 }
@@ -120,49 +113,49 @@ void enter(const Value &obj, size_t indent = 0) { //print JSON tree
             const Value& objName = obj[itr->name.GetString()]; //make object value
 
             for (size_t i = 0; i != indent; ++i) //indent
-                cout << " ";
+                //cout << " ";
 
-            cout << itr->name.GetString() << ": "; //key name
+            //cout << itr->name.GetString() << ": "; //key name
 
             if (itr->value.IsNumber()) //if integer
-                std::cout << itr->value.GetInt() ;
+                std:://cout << itr->value.GetInt() ;
 
             else if (itr->value.IsString()) //if string
-                std::cout << itr->value.GetString();
+                std:://cout << itr->value.GetString();
 
 
             else if (itr->value.IsBool()) //if bool
-                std::cout << itr->value.GetBool();
+                std:://cout << itr->value.GetBool();
 
             else if (itr->value.IsArray()){ //if array
 
                 for (SizeType i = 0; i < itr->value.Size(); i++) {
                     if (itr->value[i].IsNumber()) //if array value integer
-                        std::cout << itr->value[i].GetInt() ;
+                        std:://cout << itr->value[i].GetInt() ;
 
                     else if (itr->value[i].IsString()) //if array value string
-                        std::cout << itr->value[i].GetString() ;
+                        std:://cout << itr->value[i].GetString() ;
 
                     else if (itr->value[i].IsBool()) //if array value bool
-                        std::cout << itr->value[i].GetBool() ;
+                        std:://cout << itr->value[i].GetBool() ;
 
                     else if (itr->value[i].IsObject()){ //if array value object
-                        cout << "\n  ";
+                        //cout << "\n  ";
                         const Value& m = itr->value[i];
                         for (auto& v : m.GetObject()) { //iterate through array object
                             if (m[v.name.GetString()].IsString()) //if array object value is string
-                                cout << v.name.GetString() << ": " <<   m[v.name.GetString()].GetString();
+                                //cout << v.name.GetString() << ": " <<   m[v.name.GetString()].GetString();
                             else //if array object value is integer
-                                cout << v.name.GetString() << ": "  <<  m[v.name.GetString()].GetInt();
+                                //cout << v.name.GetString() << ": "  <<  m[v.name.GetString()].GetInt();
 
-                            cout <<  "\t"; //indent
+                            //cout <<  "\t"; //indent
                         }
                     }
-                    cout <<  "\t"; //indent
+                    //cout <<  "\t"; //indent
                 }
             }
 
-            cout << endl;
+            //cout << endl;
             enter(objName, indent + 1); //if couldn't find in object, enter object and repeat process recursively
         }
     }
@@ -185,7 +178,7 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
             return 1;
         for (auto p = document.MemberBegin(); p != document.MemberEnd(); ++p) {
             string key = p->name.GetString();
-            cout << p->name.GetString() << "\n";
+            //cout << p->name.GetString() << "\n";
             // traverse tree
             recursive(key, p, m.topic, this);
         }
@@ -208,7 +201,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
         h->reflect[head + t] = head + boost::algorithm::to_lower_copy(p.second);
-        cout << "reflect+:" << p.first << '-' << p.second << endl;
+        //cout << "reflect+:" << p.first << '-' << p.second << endl;
     }
 }
 
@@ -244,11 +237,11 @@ bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
     if (reflect.count(topic)) {
         vector<string> strs;
-        cout << "relf:" << topic << "::";
+        //cout << "relf:" << topic << "::";
         strs = split(reflect[topic], ',');
         string payload = m.payload;
         for (auto &s : strs) {
-            cout << ">" << s << "< ";
+            //cout << ">" << s << "< ";
             SendMessge mn(s, payload);
             send_msg(mn);
             // ограничить число новых сообщений и число циклов decorator
@@ -262,7 +255,7 @@ bool ReflectHandler::request(const SendMessge &m) {
             HandlerFactory::request(mn);
             stack_count--;
         }
-        cout << "=>" << payload << endl;
+        //cout << "=>" << payload << endl;
     }
     return true;
 }
@@ -278,7 +271,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
         string topic = boost::algorithm::to_lower_copy(p.first);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        cout << "domo+:" << p.first << '-' << p.second << endl;
+        //cout << "domo+:" << p.first << '-' << p.second << endl;
     }
 }
 
@@ -298,7 +291,7 @@ bool DomotizcHandler::request(const SendMessge &m) {
         std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
                       domotizc[topic], payload.c_str());
         std::string tval = buf;
-        cout << "domotizc:" << tval << endl;
+        //cout << "domotizc:" << tval << endl;
         send_msg(SendMessge("domoticz/in", tval));
     }
     return true;
@@ -331,10 +324,10 @@ int mqtt_loop() {
     connOpts.set_clean_session(true);
 
     try {
-        cout << "Connecting to the MQTT server..." << flush;
+        //cout << "Connecting to the MQTT server..." << flush;
         cli.connect(connOpts);
         cli.subscribe(TOPICS, QOS);
-        cout << "OK\n" << endl;
+        //cout << "OK\n" << endl;
 
         // Consume messages
         uint16_t cnt = 0;
@@ -343,19 +336,19 @@ int mqtt_loop() {
             // восстанавливаем соединение
             if (!msg) {
                 if (!cli.is_connected()) {
-                    cout << "Lost connection. Attempting reconnect" << endl;
+                    //cout << "Lost connection. Attempting reconnect" << endl;
                     if (try_reconnect(cli)) {
                         cli.subscribe(TOPICS, QOS);
-                        cout << "Reconnected" << endl;
+                        //cout << "Reconnected" << endl;
                         continue;
                     } else {
-                        cout << "Reconnect failed." << endl;
+                        //cout << "Reconnect failed." << endl;
                         break;
                     }
                 } else
                     break;
             }
-            cout << msg->get_topic() << ": " << msg->to_string() << endl;
+            //cout << msg->get_topic() << ": " << msg->to_string() << endl;
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
@@ -369,16 +362,16 @@ int mqtt_loop() {
                 HandlerFactory::mqtt_mag_queue.clear();
             }
 #ifndef NDEBUG
-            if (cnt++ > 30000)
+            if (cnt++ > 3000)
                 break;
 #endif
         }
 
         // Disconnect
 
-        cout << "\nDisconnecting from the MQTT server..." << flush;
+        //cout << "\nDisconnecting from the MQTT server..." << flush;
         cli.disconnect();
-        cout << "OK" << endl;
+        //cout << "OK" << endl;
     }
     catch (const mqtt::exception &exc) {
         cerr << exc.what() << endl;
@@ -417,13 +410,13 @@ int read_serial(const char *dev)
             for(auto it = ix_start; it < ix_end - 4; ++it)
                { cs += *it;  }
             if((cs & 0xff) != csorg)
-                ;// cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
+                ;// //cout << " err cs:" << hex << cs << " res:" << csorg << ':' << *(ix_end-3)  << *(ix_end-2)<< endl;
             else {
                 std::string str(ix_start+3, ix_end-4);
                 auto it = boost::find(str, '=');
-                cout << " rs:" << str << " end:" << *it << endl;
+                //cout << " rs:" << str << " end:" << *it << endl;
                 if(it == str.end()) {
-                    cout << "***com!:" <<  str << endl;
+                    //cout << "***com!:" <<  str << endl;
                     continue;
                 }
                 std::string topic(str.begin(), it);
