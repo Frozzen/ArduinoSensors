@@ -6,4 +6,5 @@ SET(CMAKE_MODULE_PATH lib/mqtt.cpp/cmake)
 
 add_subdirectory(common)
 add_subdirectory(mqttreflect)
+add_subdirectory(com2mqtt)
 

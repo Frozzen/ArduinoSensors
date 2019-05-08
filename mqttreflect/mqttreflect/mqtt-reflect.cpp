@@ -1,3 +1,4 @@
+#include <chrono>
 #include <iostream>
 #include <cstdlib>
 #include <string>
@@ -30,7 +31,7 @@ bool try_reconnect(mqtt::client &cli) {
             return true;
         }
         catch (const mqtt::exception &) {
-            this_thread::sleep_for(seconds(1));
+            this_thread::sleep_for(std::chrono::seconds(1));
         }
     }
     return false;

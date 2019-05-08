@@ -21,6 +21,3 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O0")
 add_executable(mqttreflect mqtt-reflect.cpp mqtt-reflect.hpp ${LIB_FILES} ../common/config.hpp ../common/config.cpp)
 target_link_libraries(mqttreflect paho-mqttpp3 paho-mqtt3a boost_system boost_thread pthread)
 
-add_executable(com-reader com-reader.cpp ${LIB_FILES}
-        ../common/serial.cpp ../common/serial.hpp
-        ../common/config.hpp ../common/config.cpp)
