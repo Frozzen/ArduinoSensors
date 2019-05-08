@@ -14,6 +14,8 @@ extern char s_buf[MAX_OUT_BUFF];
 // :030210
 #define SET_WATER "02"
 // управление краном воды ":" DEVICE_NO SET_TAP "0" / "1" 
+// :03030
+// :03031
 #define SET_TAP "03"
 
 #define IN_PIN_COUNT 7

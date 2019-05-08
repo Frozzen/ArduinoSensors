@@ -491,9 +491,12 @@ void   doTestBtn() {
 void doWaterPressure()
 {
 
-  int raw = analogRead(WATER_PRESSURE);
+  int raw = analogRead(WATER_PRESSURE); 
   float voltage = (float) raw * 5.0 / 1024.0;     // voltage at the pin of the Arduino
-  float pressure_kPa = (voltage - 0.5) / 4.0 * 1.200;          // voltage to pressure
+  float pressure_kPa = 0;
+  if(voltage > 0.5) 
+    pressure_kPa = (voltage - 0.5) / 4.0 * 8.0;          // voltage to pressure
+
   char str_press[6];
   dtostrf((float)pressure_kPa, 4, 1, str_press);
   s_comm.send_srv(ADDR_STR "/wpress=%s", str_press);
@@ -516,24 +519,11 @@ void initRTC()
   Rtc.Begin();
 
     RtcDateTime compiled = RtcDateTime(__DATE__, __TIME__);
-    s_comm.sendDate("rtc_ver", compiled);
-    Serial.println();
-
+    s_comm.sendDate("rtc_ver_from", compiled);
     if (!Rtc.IsDateTimeValid()) 
     {
-        if (Rtc.LastError() != 0)
-        {
-            // we have a communications error
-            // see https://www.arduino.cc/en/Reference/WireEndTransmission for 
-            // what the number means
-            Serial.print("RTC communications error = ");
-            Serial.println(Rtc.LastError());
-        }
-        else
-        {
-            Serial.println("RTC lost confidence in the DateTime!");
-            Rtc.SetDateTime(compiled);
-        }
+        Serial.println("RTC lost confidence in the DateTime!");
+        Rtc.SetDateTime(compiled);
     }
 
     if (!Rtc.GetIsRunning())
@@ -575,9 +565,6 @@ void setup(void)
   s_comm.sendDeviceConfig("/tap_open");
 
   
-  // never assume the Rtc was last configured by you, so
-  // just clear them to your needed s_time_cnt
-  Rtc.SetSquareWavePin(DS1307SquareWaveOut_Low); 
   uint8_t gotten = Rtc.GetMemory(EERPOM_ADDR_COUNT, (uint8_t*)&s_epromm, sizeof(s_epromm));
   if(gotten == sizeof(s_epromm)) {
     s_water_count = s_epromm.water_count_rtc;
@@ -624,4 +611,6 @@ void loop(void)
   s_tap_fsm.loop();
   /// цепочку из rs232 устройств получает в ALtSerial отправляет в Serial и назад
   s_frwd.loop();
+
+  //Serial.print(" tap close:"); Serial.print(isTapClosed.read()); Serial.print("-"); Serial.println(isTapClosed.update());
 }
