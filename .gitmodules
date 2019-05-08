@@ -1,0 +1,12 @@
+[submodule "mqttreflect/lib/async_comm"]
+	path = mqttreflect/lib/async_comm
+	url = https://github.com/dpkoch/async_comm.git
+[submodule "mqttreflect/lib/mqtt.c"]
+	path = mqttreflect/lib/mqtt.c
+	url = https://github.com/eclipse/paho.mqtt.c
+[submodule "mqttreflect/lib/mqtt.cpp"]
+	path = mqttreflect/lib/mqtt.cpp
+	url = https://github.com/eclipse/paho.mqtt.cpp
+[submodule "mqttreflect/lib/rapidjson"]
+	path = mqttreflect/lib/rapidjson
+	url = https://github.com/Tencent/rapidjson
