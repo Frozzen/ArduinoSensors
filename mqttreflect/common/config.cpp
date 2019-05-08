@@ -72,6 +72,6 @@ std::unique_ptr<IniSection> Config::getSection(const char *sect)
 
     for (auto p = section.MemberBegin(); p != section.MemberEnd(); ++p)
         res[p->name.GetString()] = p->value.GetString();
-    return std::make_unique<IniSection>(res);
+    return make_unique<IniSection>(res);
 }
 

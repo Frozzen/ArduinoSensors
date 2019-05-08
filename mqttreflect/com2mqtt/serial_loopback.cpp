@@ -76,7 +76,7 @@ int main(int argc, char **argv) {
     }
 
     // open serial port
-    async_comm::Serial serial(port, 115200);
+    async_comm::Serial serial(port, 38400);
     serial.register_receive_callback(&callback);
 
     if (!serial.init()) {
@@ -98,7 +98,8 @@ int main(int argc, char **argv) {
 
     // test sending all the bytes at once
     std::printf("Bulk transmit:\n");
-    serial.send_bytes(buffer, NUM_BYTES);
+    for(int i = 0;i < 10000; ++i)
+        serial.send_bytes(buffer, NUM_BYTES);
 
     // wait for all bytes to be received
     std::this_thread::sleep_for(std::chrono::milliseconds(500));

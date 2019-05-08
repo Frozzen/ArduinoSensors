@@ -9,7 +9,8 @@
 #include <config.hpp>
 #include <thread>
 #include <mqtt/client.h>
-#include <string.h>
+#include <cstring>
+#include "config.hpp"
 
 #define NUM_BYTES 64
 /**
@@ -50,7 +51,11 @@ class CCom2Mqtt {
     std::mutex mutex; //!< mutex for synchronization between the main thread and callback thread
     std::condition_variable condition_variable; //!< condition variable used to suspend main thread until all messages have been received back
 
-    void send_payload_mqtt(const uint8_t *receive_buffer, size_t payload_count);
+    bool send_payload_mqtt(const char *receive_buffer, size_t payload_count);
+    // TODO отправлять на сервер
+    size_t  badCS = 0, badData = 0, receive_count = 0;
+
+    bool check_cs(const char *receive_buffer, size_t payload_count);
 
 public:
     std::shared_ptr<mqtt::client> cli;
@@ -80,8 +85,7 @@ void CCom2Mqtt::init() {
     Config *cfg = Config::getInstance();
 
     topic_head = cfg->getOpt("COM", "topic_head");
-    /*std::transform(topic_head.begin(), topic_head.end(), topic_head.begin(),
-                   [topic_head](string s) -> string { return topic_head + s; });*/
+
     // TODO create uniq
     const string CLIENT_ID{"com_sync_consume_cpp"};
 
@@ -122,64 +126,71 @@ uint8_t update_crc(uint8_t inCrc, uint8_t inData) {
     return data;
 }
 
-
-volatile int receive_count = 0; //!< Keeps track of how many valid messages have been received
-
-volatile bool all_messages_received = false; //!< flag for whether all messages have been received back
+bool CCom2Mqtt::check_cs(const char *receive_buffer, size_t payload_count)
+{
+    const char *ix_start = std::strchr(receive_buffer, ':');
+    if(ix_start == NULL)
+        return false;
+    int cs = 0;
+    char *e;
+    int csorg = strtol(receive_buffer + payload_count - 2, &e, 16);
+    for (size_t it = ix_start - (char *) receive_buffer; it < payload_count - 4; ++it)
+        cs += receive_buffer[it];
+    if ((cs & 0xff) != csorg) {
+        // https://en.cppreference.com/w/cpp/thread/future/wait_for
+        // TODO start timeeout to send to Server
+        ++badCS;
+        return false;
+    }
+    return true;
+}
 
 void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
-    static size_t payload_count;
+    static size_t payload_count = 0;
     static uint8_t crc;
     for (size_t ix = 0; ix < len; ++ix) {
         uint8_t byte = buf[ix];
+        receive_buffer[payload_count] = byte;
         switch (parse_state) {
             case PARSE_STATE_IDLE:
                 if (byte == START_BYTE) {
                     payload_count = 0;
                     crc = 0;
-                    crc = update_crc(crc, byte);
-
+                    // crc = update_crc(crc, byte);
                     parse_state = PARSE_STATE_GOT_START_BYTE;
                 }
                 break;
             case PARSE_STATE_GOT_START_BYTE:
-                if (++payload_count >= (PAYLOAD_LEN - 1) || byte == '\n') {
-                    parse_state = PARSE_STATE_GOT_PAYLOAD;
+                if (++payload_count >= PAYLOAD_LEN) {
+                    parse_state = PARSE_STATE_IDLE;
+                    // TODO start timeout to send to Server
+                    ++badData;
+                } else if (byte == '\n') {
                     receive_buffer[payload_count] = '\0';
+                    // send message tp MQTT
+                    if(check_cs((const char*)receive_buffer, payload_count))
+                        send_payload_mqtt((const char*)receive_buffer, payload_count);
+                    // condition_variable.notify_one();
+                    parse_state = PARSE_STATE_IDLE;
                 } else {
                     receive_buffer[payload_count] = byte;
-                    crc = update_crc(crc, byte);
+                    // crc = update_crc(crc, byte);
                 }
-                break;
-            case PARSE_STATE_GOT_PAYLOAD:
-                if (byte == crc) {
-                    uint32_t id, v1, v2;
-                    receive_count++;
-                    // TODO send message tp MQTT
-                    send_payload_mqtt(receive_buffer, payload_count);
-                    // condition_variable.notify_one();
-                } // otherwise ignore it
-                parse_state = PARSE_STATE_IDLE;
-                break;
+            break;
         }
     }
 }
 
-void CCom2Mqtt::send_payload_mqtt(const uint8_t *receive_buffer, size_t payload_count) {
-    // TODO посчитать сообщение и послать статистику в mqtt
-    // TODO calc and check CS
-    char *ix_start = strchr((char *) receive_buffer, ':');
-    int cs = 0;
-    char *e;
-    int csorg = strtol((char *) receive_buffer + payload_count - 2, &e, 16);
-    for (size_t it = ix_start - (char *) receive_buffer; it < payload_count - 4; ++it) { cs += receive_buffer[it]; }
-    if ((cs & 0xff) != csorg)
-        return;
-    char *ix_sep = strchr((char *) receive_buffer, '=');
-    std::string topic((char *) receive_buffer, ix_sep);
+bool CCom2Mqtt::send_payload_mqtt(const char *receive_buffer, size_t payload_count) {
+    const char *ix_sep = strchr(receive_buffer, '=');
+    if(ix_sep == NULL)
+        return false;
+    // посчитать сообщение и послать статистику в mqtt
+    receive_count++;
+    std::string topic(receive_buffer, ix_sep);
     std::string payload(ix_sep + 1, ix_sep + 1);
     cli->publish(topic, payload.c_str(), payload.length());
-
+    return true;
 }
 /**
  * @brief Callback function for the async_comm library
@@ -233,8 +244,6 @@ int main(int argc, char **argv) {
         s_mqtt.reconnect();
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
-
-
     // close serial port
     serial.close();
 
