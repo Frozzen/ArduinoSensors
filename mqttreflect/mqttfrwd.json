@@ -11,7 +11,7 @@
         "username": "vovva"
     }, 
     "MQTT": {
-        "client": "arduino3132", 
+        "client": "arduino31g32",
         "pass": "cTA2S0pC", 
         "port": "1883", 
         "server": "172.20.110.2", 

@@ -8,7 +8,6 @@
 #include <mutex>
 
 #include <rapidjson/document.h>     // rapidjson's DOM-style API
-#include <boost/range/algorithm/find.hpp>
 #include <rapidjson/filereadstream.h>
 #include "config.hpp"
 #include <stdexcept>

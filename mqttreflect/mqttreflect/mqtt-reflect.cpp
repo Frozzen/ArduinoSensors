@@ -10,7 +10,6 @@
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
 
-#include <boost/algorithm/string.hpp>
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/syslog_sink.h>
 
@@ -142,7 +141,8 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("reflect");
     string head = c->getOpt("MQTT", "topic_head");
     for (auto &p : *ini) {
-        auto t = boost::algorithm::to_lower_copy(p.first);
+        string t = p.first;
+        std::transform(t.begin(), t.end(), t.begin(), ::tolower);
         h->reflect[head + t] = head + p.second;
         sysloger->info("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
@@ -180,7 +180,7 @@ bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
     if (reflect.find(topic) != reflect.end()) {
         vector<string> strs;
-        sysloger->trace("relf:{0}::{1}", topic.c_str(), reflect[topic].c_str());
+        sysloger->trace("relf:{0}::{1}={3}", topic.c_str(), reflect[topic].c_str(), m.payload.c_str());
         strs = split(reflect[topic], ',');
         string payload = m.payload;
         for (auto &s : strs) {
@@ -209,7 +209,8 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
     shared_ptr<IniSection> ini = c->getSection("Domotizc");
     string head = c->getOpt("MQTT", "topic_head");
     for (auto p : *ini) {
-        string topic = boost::algorithm::to_lower_copy(p.first);
+        string topic = p.first;
+        std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
         sysloger->info("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
@@ -292,7 +293,6 @@ int mqtt_loop() {
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
                 SendMessge mn(msg->get_topic(), msg->get_payload_str());
-                std::transform(mn.topic.begin(), mn.topic.end(), mn.topic.begin(), ::tolower);
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     const int mQOS = 0;
