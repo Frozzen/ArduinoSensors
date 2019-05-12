@@ -318,7 +318,7 @@ int main(int argc, char *argv[]) {
     sysloger->set_level(spdlog::level::info);
     Config *cfg = Config::getInstance();
     {
-        char cwd[PATH_MAX];
+        char cwd[256];
         getcwd(cwd, sizeof(cwd));
         sysloger->info("mqttreflect is starting, using:{0}/{1}", cwd, config_file);
     }
