@@ -12,6 +12,7 @@
 
 #include <boost/algorithm/string.hpp>
 #include <spdlog/spdlog.h>
+#include <spdlog/sinks/syslog_sink.h>
 
 #include "config.hpp"
 #include "mqtt-reflect.hpp"
@@ -21,7 +22,7 @@ const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
 using namespace rapidjson;
 
-
+std::shared_ptr<spdlog::logger> sysloger;
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
 CSendQueue HandlerFactory::mqtt_mag_queue;
@@ -97,7 +98,7 @@ void recursive(const string &key, Value::ConstMemberIterator it, const std::stri
         Writer<StringBuffer> writer(buffer);
         it->value.Accept(writer);
         SendMessge mm(t, buffer.GetString());
-        spdlog::trace("{0} : {1}", t.c_str(), mm.payload.c_str());
+        sysloger->trace("{0} : {1}", t.c_str(), mm.payload.c_str());
         h->send_msg(mm);
     }
 }
@@ -131,7 +132,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
     for (auto const& e : h->valid_case)     {
         s += e; s += ',';
     }
-    spdlog::info("+json:{0}", s.c_str());
+    sysloger->info("+json:{0}", s.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -141,7 +142,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
         h->reflect[head + t] = head + p.second;
-        spdlog::info("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
+        sysloger->info("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -177,7 +178,7 @@ bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
     if (reflect.find(topic) != reflect.end()) {
         vector<string> strs;
-        spdlog::trace("relf:{0}::{1}", topic.c_str(), reflect[topic].c_str());
+        sysloger->trace("relf:{0}::{1}", topic.c_str(), reflect[topic].c_str());
         strs = split(reflect[topic], ',');
         string payload = m.payload;
         for (auto &s : strs) {
@@ -187,7 +188,7 @@ bool ReflectHandler::request(const SendMessge &m) {
             static int stack_count = 0;
             stack_count++;
             if (stack_count > MAX_REFLECT_DEPTH) {
-                spdlog::error("reflect loop:{0}", m.topic.c_str());
+                sysloger->error("reflect loop:{0}", m.topic.c_str());
                 stack_count = 0;
                 break;
             }
@@ -209,7 +210,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
         string topic = boost::algorithm::to_lower_copy(p.first);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        spdlog::info("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
+        sysloger->info("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -229,7 +230,7 @@ bool DomotizcHandler::request(const SendMessge &m) {
         std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
                       domotizc[topic], payload.c_str());
         std::string tval = buf;
-        spdlog::trace("domotizc:{0}",  tval.c_str());
+        sysloger->trace("domotizc:{0}",  tval.c_str());
         send_msg(SendMessge("domoticz/in", tval));
     }
     return true;
@@ -261,7 +262,7 @@ int mqtt_loop() {
     connOpts.set_clean_session(true);
 
     try {
-        spdlog::info("Connecting to the MQTT server... {0}", cfg->getOpt("MQTT", "server").c_str());
+        sysloger->info("Connecting to the MQTT server... {0}", cfg->getOpt("MQTT", "server").c_str());
         cli.connect(connOpts);
         cli.subscribe(TOPICS, QOS);
 
@@ -272,19 +273,19 @@ int mqtt_loop() {
             // восстанавливаем соединение
             if (!msg) {
                 if (!cli.is_connected()) {
-                    spdlog::error("Lost connection. Attempting reconnect");
+                    sysloger->error("Lost connection. Attempting reconnect");
                     if (try_reconnect(cli)) {
                         cli.subscribe(TOPICS, QOS);
-                        spdlog::warn("Reconnected");
+                        sysloger->warn("Reconnected");
                         continue;
                     } else {
-                        spdlog::critical("Reconnect failed.");
+                        sysloger->critical("Reconnect failed.");
                         break;
                     }
                 } else
                     break;
             }
-            spdlog::trace("{0}:{1}", msg->get_topic().c_str(), msg->to_string().c_str());
+            sysloger->trace("{0}:{1}", msg->get_topic().c_str(), msg->to_string().c_str());
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
@@ -293,14 +294,14 @@ int mqtt_loop() {
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     const int mQOS = 0;
-                    spdlog::trace("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
+                    sysloger->trace("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
                     cli.publish(m.topic, m.payload.c_str(), m.payload.size());
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
             }
         }
         // Disconnect
-        spdlog::info("Disconnecting from the MQTT server...");
+        sysloger->info("Disconnecting from the MQTT server...");
         cli.disconnect();
     }
     catch (const mqtt::exception &exc) {
@@ -312,16 +313,18 @@ int mqtt_loop() {
 
 /////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
-    spdlog::set_level(spdlog::level::info);
+    string ident = "mqttreflect";
+    sysloger = spdlog::syslog_logger_mt("syslog", ident, LOG_PID);
+    sysloger->set_level(spdlog::level::info);
     Config *cfg = Config::getInstance();
     {
         char cwd[PATH_MAX];
         getcwd(cwd, sizeof(cwd));
-        spdlog::info("mqttreflect is starting, using:{0}/{1}", cwd, config_file);
+        sysloger->info("mqttreflect is starting, using:{0}/{1}", cwd, config_file);
     }
     cfg->open(config_file);
     mqtt_loop();
-    spdlog::info("mqttreflect is stopped");
+    sysloger->info("mqttreflect is stopped");
     return 0;
 }
 
