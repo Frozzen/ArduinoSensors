@@ -128,7 +128,6 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
 /////////////////////////////////////////////////////////////////
 void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
     string head = c->getOpt("MQTT", "topic_head");
-    // TODO посмотреть какие еще ключи надо смотреть
     // TODO возможно сделать regexp
     h->valid_case = {"sensor", "energy"};
     string s;
@@ -144,7 +143,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     string head = c->getOpt("MQTT", "topic_head");
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
-        h->reflect[head + t] = head + boost::algorithm::to_lower_copy(p.second);
+        h->reflect[head + t] = head + p.second;
         BOOST_LOG_TRIVIAL(info) << "+reflect:" << p.first << '-' << p.second;
     }
 }
@@ -317,8 +316,9 @@ int mqtt_loop() {
 
 /////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
+
     logging::core::get()->set_filter(
-          logging::trivial::severity >= logging::trivial::trace
+          logging::trivial::severity >= logging::trivial::info
       );
     Config *cfg = Config::getInstance();
     {
