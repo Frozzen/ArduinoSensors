@@ -14,6 +14,8 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/syslog_sink.h>
 
+#include <cxxopts.hpp>
+
 #include "config.hpp"
 #include "mqtt-reflect.hpp"
 
@@ -313,9 +315,17 @@ int mqtt_loop() {
 
 /////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
+    cxxopts::Options options("mqttreflect", "reflect events on MQTT bus");
+    options.add_options()
+      ("d,debug", "Enable debugging");
+    auto result = options.parse(argc, argv);
+
     string ident = "mqttreflect";
     sysloger = spdlog::syslog_logger_mt("syslog", ident, LOG_PID);
-    sysloger->set_level(spdlog::level::info);
+    if(result["debug"].as<bool>())
+        sysloger->set_level(spdlog::level::trace);
+    else
+        sysloger->set_level(spdlog::level::info);
     Config *cfg = Config::getInstance();
     {
         char cwd[256];
