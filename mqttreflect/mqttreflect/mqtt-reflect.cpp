@@ -11,9 +11,7 @@
 #include <rapidjson/prettywriter.h>
 
 #include <boost/algorithm/string.hpp>
-#include <boost/log/trivial.hpp>
-#include <boost/log/core.hpp>
-#include <boost/log/expressions.hpp>
+#include <spdlog/spdlog.h>
 
 #include "config.hpp"
 #include "mqtt-reflect.hpp"
@@ -23,7 +21,6 @@ const int MAX_REFLECT_DEPTH = 10;
 using namespace std;
 using namespace rapidjson;
 
-namespace logging = boost::log;
 
 // --------------------------------------------------------------------------
 // Simple function to manually reconect a client.
@@ -100,7 +97,7 @@ void recursive(const string &key, Value::ConstMemberIterator it, const std::stri
         Writer<StringBuffer> writer(buffer);
         it->value.Accept(writer);
         SendMessge mm(t, buffer.GetString());
-        BOOST_LOG_TRIVIAL(trace) << t << " : " << mm.payload << "\n";
+        spdlog::trace("{0} : {1}", t.c_str(), mm.payload.c_str());
         h->send_msg(mm);
     }
 }
@@ -134,7 +131,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
     for (auto const& e : h->valid_case)     {
         s += e; s += ',';
     }
-    BOOST_LOG_TRIVIAL(info) << "+json:" << s;
+    spdlog::info("+json:{0}", s.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -144,7 +141,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     for (auto &p : *ini) {
         auto t = boost::algorithm::to_lower_copy(p.first);
         h->reflect[head + t] = head + p.second;
-        BOOST_LOG_TRIVIAL(info) << "+reflect:" << p.first << '-' << p.second;
+        spdlog::info("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -180,7 +177,7 @@ bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
     if (reflect.find(topic) != reflect.end()) {
         vector<string> strs;
-        BOOST_LOG_TRIVIAL(trace) << "relf:" << topic << "::" << reflect[topic];
+        spdlog::trace("relf:{0}::{1}", topic.c_str(), reflect[topic].c_str());
         strs = split(reflect[topic], ',');
         string payload = m.payload;
         for (auto &s : strs) {
@@ -190,7 +187,7 @@ bool ReflectHandler::request(const SendMessge &m) {
             static int stack_count = 0;
             stack_count++;
             if (stack_count > MAX_REFLECT_DEPTH) {
-                BOOST_LOG_TRIVIAL(error) << "reflect loop:" << m.topic;
+                spdlog::error("reflect loop:{0}", m.topic.c_str());
                 stack_count = 0;
                 break;
             }
@@ -212,7 +209,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
         string topic = boost::algorithm::to_lower_copy(p.first);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        BOOST_LOG_TRIVIAL(info) << "+domo:" << p.first << '-' << p.second;
+        spdlog::info("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -232,7 +229,7 @@ bool DomotizcHandler::request(const SendMessge &m) {
         std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
                       domotizc[topic], payload.c_str());
         std::string tval = buf;
-        BOOST_LOG_TRIVIAL(trace) << "domotizc:" << tval;
+        spdlog::trace("domotizc:{0}",  tval.c_str());
         send_msg(SendMessge("domoticz/in", tval));
     }
     return true;
@@ -264,7 +261,7 @@ int mqtt_loop() {
     connOpts.set_clean_session(true);
 
     try {
-        BOOST_LOG_TRIVIAL(info) << "Connecting to the MQTT server... " << cfg->getOpt("MQTT", "server");
+        spdlog::info("Connecting to the MQTT server... {0}", cfg->getOpt("MQTT", "server").c_str());
         cli.connect(connOpts);
         cli.subscribe(TOPICS, QOS);
 
@@ -275,19 +272,19 @@ int mqtt_loop() {
             // восстанавливаем соединение
             if (!msg) {
                 if (!cli.is_connected()) {
-                    BOOST_LOG_TRIVIAL(error) << "Lost connection. Attempting reconnect";
+                    spdlog::error("Lost connection. Attempting reconnect");
                     if (try_reconnect(cli)) {
                         cli.subscribe(TOPICS, QOS);
-                        BOOST_LOG_TRIVIAL(warning) << "Reconnected";
+                        spdlog::warn("Reconnected");
                         continue;
                     } else {
-                        BOOST_LOG_TRIVIAL(fatal) << "Reconnect failed.";
+                        spdlog::critical("Reconnect failed.");
                         break;
                     }
                 } else
                     break;
             }
-            BOOST_LOG_TRIVIAL(trace) << msg->get_topic() << ":" << msg->to_string();
+            spdlog::trace("{0}:{1}", msg->get_topic().c_str(), msg->to_string().c_str());
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
@@ -296,15 +293,14 @@ int mqtt_loop() {
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     const int mQOS = 0;
-                    BOOST_LOG_TRIVIAL(trace) << "publ:" << m.topic << "::" << m.payload;
+                    spdlog::trace("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
                     cli.publish(m.topic, m.payload.c_str(), m.payload.size());
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
             }
-            logging::core::get()->flush();
         }
         // Disconnect
-        BOOST_LOG_TRIVIAL(info) << "Disconnecting from the MQTT server...";
+        spdlog::info("Disconnecting from the MQTT server...");
         cli.disconnect();
     }
     catch (const mqtt::exception &exc) {
@@ -316,19 +312,16 @@ int mqtt_loop() {
 
 /////////////////////////////////////////////////////////////////////////////
 int main(int argc, char *argv[]) {
-
-    logging::core::get()->set_filter(
-          logging::trivial::severity >= logging::trivial::info
-      );
+    spdlog::set_level(spdlog::level::info);
     Config *cfg = Config::getInstance();
     {
         char cwd[PATH_MAX];
         getcwd(cwd, sizeof(cwd));
-        BOOST_LOG_TRIVIAL(info) << "mqttreflect is starting, using:" << cwd << "/" << config_file;
+        spdlog::info("mqttreflect is starting, using:{0}/{1}", cwd, config_file);
     }
     cfg->open(config_file);
     mqtt_loop();
-    BOOST_LOG_TRIVIAL(info) << "mqttreflect is stopped";
+    spdlog::info("mqttreflect is stopped");
     return 0;
 }
 
