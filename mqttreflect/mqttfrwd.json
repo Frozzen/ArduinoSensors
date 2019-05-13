@@ -1,7 +1,8 @@
 {
     "COM": {
         "baudrate": "38400", 
-        "port": "/dev/ttyUSB0"
+        "port": "/dev/ttyUSB0",
+        "topic_head": "rs485/"
     }, 
     "Domotizc": {
         "ardustat01/ds1820-28ff2a480500004f/temp": "45", 
@@ -12,11 +13,11 @@
     }, 
     "MQTT": {
         "client": "arduino31g32",
-        "pass": "cTA2S0pC", 
+        "pass": "sysop",
         "port": "1883", 
-        "server": "172.20.110.2", 
-        "topic_head": "", 
-        "user": "yhome"
+        "server": "192.168.10.48",
+        "topic_head": "testing/",
+        "user": "sysop"
     }, 
     "check_device_online": {
         "172.20.110.90": "vladimir", 

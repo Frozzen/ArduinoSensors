@@ -10,8 +10,11 @@
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
 
+#include "spdlog/fmt/ostr.h" // must be included
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/syslog_sink.h>
+#include "spdlog/sinks/stdout_sinks.h"
+
 
 #include <cxxopts.hpp>
 
@@ -128,7 +131,7 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
 void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
     string head = c->getOpt("MQTT", "topic_head");
     // TODO возможно сделать regexp
-    h->valid_case = {"sensor", "energy"};
+    h->valid_case = {"sensor"};
     string s;
     for (auto const& e : h->valid_case)     {
         s += e; s += ',';
@@ -317,11 +320,14 @@ int mqtt_loop() {
 int main(int argc, char *argv[]) {
     cxxopts::Options options("mqttreflect", "reflect events on MQTT bus");
     options.add_options()
+      ("s,stdout", "Log to stdout")
       ("d,debug", "Enable debugging");
     auto result = options.parse(argc, argv);
 
-    string ident = "mqttreflect";
-    sysloger = spdlog::syslog_logger_mt("syslog", ident, LOG_PID);
+    if(result["stdout"].as<bool>())
+        sysloger = spdlog::stdout_logger_mt("console");
+    else
+        sysloger = spdlog::syslog_logger_mt("syslog", "mqttreflect", LOG_PID);
     if(result["debug"].as<bool>())
         sysloger->set_level(spdlog::level::trace);
     else

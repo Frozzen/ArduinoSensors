@@ -10,9 +10,20 @@
 #include <thread>
 #include <mqtt/client.h>
 #include <cstring>
+
+#include "spdlog/fmt/ostr.h" // must be included
+#include <spdlog/spdlog.h>
+#include <spdlog/sinks/syslog_sink.h>
+#include "spdlog/sinks/stdout_sinks.h"
+
+#include <cxxopts.hpp>
+
 #include "config.hpp"
 
 #define NUM_BYTES 64
+
+std::shared_ptr<spdlog::logger> sysloger;
+
 /**
  * @brief States for the parser state machine
  */
@@ -55,7 +66,8 @@ class CCom2Mqtt {
     // TODO отправлять на сервер
     size_t  badCS = 0, badData = 0, receive_count = 0;
 
-    bool check_cs(const char *receive_buffer, size_t payload_count);
+    size_t payload_count = 0;
+    uint8_t crc;
 
 public:
     std::shared_ptr<mqtt::client> cli;
@@ -65,19 +77,21 @@ public:
 
     void parse_bytes(const uint8_t *buf, size_t len);
 
-    void reconnect() {
+    bool reconnect() {
         auto msg = cli->consume_message();
         // восстанавливаем соединение
         if (!msg) {
             if (!cli->is_connected()) {
-                //cout << "Lost connection. Attempting reconnect" << endl;
+                sysloger->warn("Lost connection. Attempting reconnect");
                 if (try_reconnect(*cli)) {
-                    //cout << "Reconnected" << endl;
+                    sysloger->info("Reconnected");
                 } else {
-                    //cout << "Reconnect failed." << endl;
+                    sysloger->critical("Reconnect failed.");
+                    return true;
                 }
             }
         }
+        return false;
     }
 };
 
@@ -86,20 +100,19 @@ void CCom2Mqtt::init() {
 
     topic_head = cfg->getOpt("COM", "topic_head");
 
-    // TODO create uniq
-    const string CLIENT_ID{"com_sync_consume_cpp"};
-
-    cli = make_shared<mqtt::client>(cfg->getOpt("MQTT", "server"), CLIENT_ID);
+    cli = make_shared<mqtt::client>(cfg->getOpt("MQTT", "server"), "com2mttjkj");
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
-};
+    sysloger->info("Connecting to the MQTT server... {0}", cfg->getOpt("MQTT", "server").c_str());
+}
 
 CCom2Mqtt s_mqtt;
 
 
 /**
  * @brief Recursively update the cyclic redundancy check (CRC)
+ * обычно стартует от 0
  *
  * This uses the CRC-8-CCITT polynomial.
  *
@@ -126,7 +139,7 @@ uint8_t update_crc(uint8_t inCrc, uint8_t inData) {
     return data;
 }
 
-bool CCom2Mqtt::check_cs(const char *receive_buffer, size_t payload_count)
+bool check_cs(const char *receive_buffer, size_t payload_count)
 {
     const char *ix_start = std::strchr(receive_buffer, ':');
     if(ix_start == NULL)
@@ -137,17 +150,12 @@ bool CCom2Mqtt::check_cs(const char *receive_buffer, size_t payload_count)
     for (size_t it = ix_start - (char *) receive_buffer; it < payload_count - 4; ++it)
         cs += receive_buffer[it];
     if ((cs & 0xff) != csorg) {
-        // https://en.cppreference.com/w/cpp/thread/future/wait_for
-        // TODO start timeeout to send to Server
-        ++badCS;
         return false;
     }
     return true;
 }
 
 void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
-    static size_t payload_count = 0;
-    static uint8_t crc;
     for (size_t ix = 0; ix < len; ++ix) {
         uint8_t byte = buf[ix];
         receive_buffer[payload_count] = byte;
@@ -163,6 +171,7 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
             case PARSE_STATE_GOT_START_BYTE:
                 if (++payload_count >= PAYLOAD_LEN) {
                     parse_state = PARSE_STATE_IDLE;
+                    sysloger->warn("bad data len:{0}", payload_count);
                     // TODO start timeout to send to Server
                     ++badData;
                 } else if (byte == '\n') {
@@ -170,6 +179,12 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
                     // send message tp MQTT
                     if(check_cs((const char*)receive_buffer, payload_count))
                         send_payload_mqtt((const char*)receive_buffer, payload_count);
+                    else {
+                        // https://en.cppreference.com/w/cpp/thread/future/wait_for
+                        // TODO start timeeout to send to Server
+                        sysloger->warn("bad data checksum");
+                        ++badCS;
+                    }
                     // condition_variable.notify_one();
                     parse_state = PARSE_STATE_IDLE;
                 } else {
@@ -182,16 +197,21 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
 }
 
 bool CCom2Mqtt::send_payload_mqtt(const char *receive_buffer, size_t payload_count) {
+    Config *cfg = Config::getInstance();
+
     const char *ix_sep = strchr(receive_buffer, '=');
     if(ix_sep == NULL)
         return false;
     // посчитать сообщение и послать статистику в mqtt
+    string head = cfg->getOpt("COM", "topic_head");
     receive_count++;
-    std::string topic(receive_buffer, ix_sep);
-    std::string payload(ix_sep + 1, ix_sep + 1);
-    cli->publish(topic, payload.c_str(), payload.length());
+    string topic(receive_buffer, ix_sep);
+    string payload(ix_sep + 1, ix_sep + 1);
+    cli->publish(head+topic, payload.c_str(), payload.length());
+    sysloger->trace(">{0}:{1}", (head+topic).c_str(), payload.c_str());
     return true;
 }
+
 /**
  * @brief Callback function for the async_comm library
  *
@@ -207,41 +227,42 @@ void callback(const uint8_t *buf, size_t len) {
 
 //----------------------------------------------------------------------------------------
 int main(int argc, char **argv) {
+    cxxopts::Options options("com2mqtt", "reflect events from com poer to MQTT bus");
+    options.add_options()
+      ("s,stdout", "Log to stdout")
+      ("d,debug", "Enable debugging")
+      ("p,port", "com port", cxxopts::value<std::string>(), "/dev/ttyUSB0"),
+      ("b,baud", "com port speed", cxxopts::value<int>(), 38400);
+    auto result = options.parse(argc, argv);
     // initialize
-    char *port;
-    if (argc < 2) {
-        std::printf("USAGE: %s PORT\n", argv[0]);
-        return 1;
-    } else {
-        std::printf("Using port %s\n", argv[1]);
-        port = argv[1];
-    }
 
     Config *cfg = Config::getInstance();
     cfg->open("mqttfrwd.json");
 
-    // open serial port
-    async_comm::Serial serial(port, 38400);
-    serial.register_receive_callback(&callback);
+    if(result["stdout"].as<bool>())
+        sysloger = spdlog::stdout_logger_mt("console");
+    else
+        sysloger = spdlog::syslog_logger_mt("syslog", "com2mqtt", LOG_PID);
+    if(result["debug"].as<bool>())
+        sysloger->set_level(spdlog::level::trace);
+    else
+        sysloger->set_level(spdlog::level::info);
 
+    // open serial port
+    async_comm::Serial serial(result["port"].as<std::string>(),
+            result["baud"].as<int>());
     if (!serial.init()) {
         std::printf("Failed to initialize serial port\n");
         return 2;
     }
-    s_mqtt.init();
-    /*
-    uint8_t buffer[NUM_BYTES];
+    sysloger->info("use port:{0}", result["port"].as<std::string>());
+    serial.register_receive_callback(&callback);
 
-    // test sending bytes one at a time
-    std::printf("Transmit individual bytes:\n");
-    for (uint8_t i = 0; i < NUM_BYTES; i++) {
-        buffer[i] = i;
-        serial.send_byte(i);
-    }
-    */
+    s_mqtt.init();
     // wait for all bytes to be received
     while (true) {
-        s_mqtt.reconnect();
+        if(s_mqtt.reconnect())
+            break;
         std::this_thread::sleep_for(std::chrono::seconds(1));
     }
     // close serial port
