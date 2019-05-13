@@ -133,7 +133,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
     for (auto const& e : h->valid_case)     {
         s += e; s += ',';
     }
-    sysloger->info("+json:{0}", s.c_str());
+    sysloger->debug("+json:{0}", s.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -144,7 +144,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
         string t = p.first;
         std::transform(t.begin(), t.end(), t.begin(), ::tolower);
         h->reflect[head + t] = head + p.second;
-        sysloger->info("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
+        sysloger->debug("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -213,7 +213,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
         std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        sysloger->info("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
+        sysloger->debug("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
     }
 }
 
