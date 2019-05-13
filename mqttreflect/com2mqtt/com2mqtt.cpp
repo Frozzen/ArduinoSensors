@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <cstdint>
 #include <cstdio>
+#include <future>
 
 #include <chrono>
 #include <thread>
@@ -56,6 +57,44 @@ bool try_reconnect(mqtt::client &cli) {
     return false;
 }
 
+template <typename Clock = std::chrono::steady_clock>
+class timeout
+{
+public:
+    typedef Clock clock_type;
+    typedef typename clock_type::time_point time_point;
+    typedef typename clock_type::duration duration;
+
+    explicit timeout(duration maxDuration) :    mStartTime(clock_type::now()),    mMaxDuration(maxDuration)
+    {}
+
+    time_point start_time() const
+    {
+        return mStartTime;
+    }
+
+    duration max_duration() const
+    {
+        return mMaxDuration;
+    }
+
+    bool is_expired() const
+    {
+        const auto endTime = clock_type::now();
+        return (endTime - start_time()) > max_duration();
+    }
+
+    static timeout infinity()
+    {
+        return timeout(duration::max());
+    }
+
+private:
+    time_point mStartTime;
+    duration mMaxDuration;
+};
+
+
 class CCom2Mqtt {
     ParseState parse_state = PARSE_STATE_IDLE; //!< Current state of the parser state machine
     uint8_t receive_buffer[PAYLOAD_LEN]; //!< Buffer for accumulating received payload
@@ -66,10 +105,20 @@ class CCom2Mqtt {
 
     size_t payload_count = 0;
     uint8_t crc;
+    void publish_counters() {
+        string str = fmt::format("{d}", badCS);
+        cli->publish("log/bad_cs", str.c_str(), str.length());
+        str = fmt::format("{d}", badData);
+        cli->publish("log/bad_date", str.c_str(), str.length());
+        str = fmt::format("{d}", receive_count);
+        cli->publish("log/receive_count", str.c_str(), str.length());
+    }
+    std::string topic_head;
 
 public:
+
+    std::future<void> rsend_counters;
     std::shared_ptr<mqtt::client> cli;
-    std::string topic_head;
 
     void init();
 
@@ -90,6 +139,20 @@ public:
             }
         }
         return false;
+    }
+
+    void req_send_counters() {
+        if(rsend_counters.valid())
+            return;
+        rsend_counters = std::async([] (timeout<> timelimit, CCom2Mqtt *t) {
+                while(true) {
+                    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+                    if (timelimit.is_expired()) {
+                        t->publish_counters();
+                        break;
+                        }
+                    }
+            }, timeout<>(std::chrono::milliseconds(500)), this);
     }
 };
 
@@ -168,9 +231,9 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
             case PARSE_STATE_GOT_START_BYTE:
                 if (++payload_count >= PAYLOAD_LEN) {
                     parse_state = PARSE_STATE_IDLE;
-                    sysloger->warn("bad data len:{0}", payload_count);
-                    // TODO start timeout to send to Server
                     ++badData;
+                    sysloger->warn("bad data len:{0}", payload_count);
+                    req_send_counters();
                 } else if (byte == '\n') {
                     receive_buffer[payload_count] = '\0';
                     // send message tp MQTT
@@ -181,6 +244,7 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
                         // TODO start timeeout to send to Server
                         sysloger->warn("bad data checksum");
                         ++badCS;
+                        req_send_counters();
                     }
                     parse_state = PARSE_STATE_IDLE;
                 } else {
@@ -201,6 +265,7 @@ bool CCom2Mqtt::send_payload_mqtt(const char *receive_buffer, size_t payload_cou
     // посчитать сообщение и послать статистику в mqtt
     string head = cfg->getOpt("COM", "topic_head");
     receive_count++;
+    req_send_counters();
     string topic(receive_buffer, ix_sep);
     string payload(ix_sep + 1, ix_sep + 1);
     cli->publish(head+topic, payload.c_str(), payload.length());
@@ -260,6 +325,7 @@ int main(int argc, char **argv) {
         if(s_mqtt.reconnect())
             break;
         std::this_thread::sleep_for(std::chrono::seconds(1));
+        s_mqtt.rsend_counters.wait();
     }
     // close serial port
     serial.close();
