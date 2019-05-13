@@ -59,8 +59,6 @@ bool try_reconnect(mqtt::client &cli) {
 class CCom2Mqtt {
     ParseState parse_state = PARSE_STATE_IDLE; //!< Current state of the parser state machine
     uint8_t receive_buffer[PAYLOAD_LEN]; //!< Buffer for accumulating received payload
-    std::mutex mutex; //!< mutex for synchronization between the main thread and callback thread
-    std::condition_variable condition_variable; //!< condition variable used to suspend main thread until all messages have been received back
 
     bool send_payload_mqtt(const char *receive_buffer, size_t payload_count);
     // TODO отправлять на сервер
@@ -163,8 +161,7 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
             case PARSE_STATE_IDLE:
                 if (byte == START_BYTE) {
                     payload_count = 0;
-                    crc = 0;
-                    // crc = update_crc(crc, byte);
+                    // crc = 0; crc = update_crc(crc, byte);
                     parse_state = PARSE_STATE_GOT_START_BYTE;
                 }
                 break;
@@ -185,7 +182,6 @@ void CCom2Mqtt::parse_bytes(const uint8_t *buf, size_t len) {
                         sysloger->warn("bad data checksum");
                         ++badCS;
                     }
-                    // condition_variable.notify_one();
                     parse_state = PARSE_STATE_IDLE;
                 } else {
                     receive_buffer[payload_count] = byte;
@@ -267,6 +263,5 @@ int main(int argc, char **argv) {
     }
     // close serial port
     serial.close();
-
     return 0;
 }
