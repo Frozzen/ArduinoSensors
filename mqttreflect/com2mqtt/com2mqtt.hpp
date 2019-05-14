@@ -74,9 +74,10 @@ public:
     }
     void parse_bytes(const uint8_t *buf, size_t len); //<! разбираем входной поток
 
+#ifdef NO_TMO
     /**
      * @brief req_send_counters послать статистику через 5 сек
-     *//*
+     */
     void req_send_counters() {
         if(request2send.valid())
             return;
@@ -84,7 +85,8 @@ public:
             std::this_thread::sleep_for(std::chrono::seconds(5));
             t->publish_counters();
         }, this);
-    } */
+    }
+#endif
 };
 
 
