@@ -85,7 +85,7 @@ int main(int argc, char **argv) {
     }
 
     uint8_t buffer[NUM_BYTES];
-
+#if 0
     // test sending bytes one at a time
     std::printf("Transmit individual bytes:\n");
     for (uint8_t i = 0; i < NUM_BYTES; i++) {
@@ -100,7 +100,8 @@ int main(int argc, char **argv) {
     std::printf("Bulk transmit:\n");
     for(int i = 0;i < 10000; ++i)
         serial.send_bytes(buffer, NUM_BYTES);
-
+#endif
+    while(1)
     // wait for all bytes to be received
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
