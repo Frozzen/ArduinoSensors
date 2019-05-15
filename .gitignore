@@ -5,3 +5,4 @@ mqtt-frwd/mqtt-frwd.ini
 *.ipch
 *.bin
 *.sublime-workspace
+build*

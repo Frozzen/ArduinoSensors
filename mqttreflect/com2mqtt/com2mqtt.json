@@ -1,0 +1,14 @@
+{
+    "COM": {
+        "baudrate": "38400",
+        "port": "/dev/ttyUSB0",
+        "topic_head": "testing/rs485/"
+    },
+    "MQTT": {
+        "client": "arduino31g32",
+        "pass": "sysop",
+        "port": "1883",
+        "server": "192.168.10.48",
+        "user": "sysop"
+    }
+}

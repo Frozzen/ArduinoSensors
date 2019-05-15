@@ -126,4 +126,4 @@ if __name__ == "__main__":
             elif len(config[section][name]) == 0:
                 config[section][name] = ''
 
-    print json.dumps(config)
+    print json.dumps(config, indent=4, sort_keys=True)

@@ -10,7 +10,7 @@ public:
     void open(const char* filename);
     static Config *getInstance();
     std::string m_filename;
-    // key = "MQTT.server" напрмер
+    // sect = "MQTT", key = "server" напрмер
     std::string getOpt(const char *sect, const char *key) const;
 
     std::unique_ptr<IniSection> getSection(const char *sect);

@@ -4,7 +4,6 @@
 #include <set>
 #include <memory>
 #include <mqtt/message.h>
-#include <boost/property_tree/ptree.hpp>
 
 struct SendMessge {
     std::string topic, payload;
