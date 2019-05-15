@@ -63,7 +63,7 @@ string CCom2Mqtt::check_valid_msg(string str)
         req_send_counters();
         return "";
     }
-    return str.substr(1, it_cs);
+    return str.substr(3, it_cs);
 }
 
 bool try_reconnect(mqtt::client &cli) {
@@ -96,8 +96,8 @@ bool CCom2Mqtt::send_payload_mqtt(string str)
     // посчитать сообщение и послать статистику в mqtt
     receive_count++;
     req_send_counters();
-    string topic(str, it_sep);
-    string payload(str.begin()+it_sep + 1, str.end());
+    string topic(str, 0, it_sep);
+    string payload(str, it_sep + 1, str.length()-2-it_sep);
     cli->publish(topic_head+topic, payload.c_str(), payload.length());
     sysloger->trace(">{0}:{1}", (topic_head+topic).c_str(), payload.c_str());
     return true;
@@ -184,7 +184,7 @@ void CCom2Mqtt::loop(SimpleSerial &com){
             }
         }
         string str = com.readLine();
-        sysloger->trace("com:{}", str.c_str());
+        sysloger->trace("{}", str.c_str());
         string res = check_valid_msg(str);
         if(res.length() > 0)
             send_payload_mqtt(res);
