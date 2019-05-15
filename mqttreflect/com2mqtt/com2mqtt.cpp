@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <cstdint>
 #include <cstdio>
-#include <future>
+#include <thread>
 
 #include <chrono>
 #include <thread>
@@ -30,10 +30,11 @@ const char START_BYTE = ':';
 const char CS_BYTE = ';';
 const char COM_PAYLOAD_SEPARATOR = '=';
 using namespace std;
+
 /**
  * @brief check_valid_msg проверяем правильность строки
- * @param str
- * @return
+ * @param str полная входная строка
+ * @return пустая строка если ошибка, или чистая строка без обрамления
  */
 string CCom2Mqtt::check_valid_msg(string str)
 {
@@ -58,7 +59,7 @@ string CCom2Mqtt::check_valid_msg(string str)
     cs = 0xff - cs;
     if (cs != csorg) {
         sysloger->warn("bad data checksum");
-        ++badCS;
+        ++bad_cs;
         req_send_counters();
         return "";
     }
@@ -80,6 +81,31 @@ bool try_reconnect(mqtt::client &cli) {
     return false;
 }
 
+/**
+ * @brief CCom2Mqtt::send_payload_mqtt послать сообщение в mqtt
+ *
+ * если неправильное сообщение - не шлем
+ * @param str
+ * @return
+ */
+bool CCom2Mqtt::send_payload_mqtt(string str)
+{
+    auto it_sep = str.find(COM_PAYLOAD_SEPARATOR);
+    if(it_sep == std::string::npos)
+        return false;
+    // посчитать сообщение и послать статистику в mqtt
+    receive_count++;
+    req_send_counters();
+    string topic(str, it_sep);
+    string payload(str.begin()+it_sep + 1, str.end());
+    cli->publish(topic_head+topic, payload.c_str(), payload.length());
+    sysloger->trace(">{0}:{1}", (topic_head+topic).c_str(), payload.c_str());
+    return true;
+}
+
+/**
+ * @brief CCom2Mqtt::init инициирую пакет
+ */
 void CCom2Mqtt::init()
 {
     Config *cfg = Config::getInstance();
@@ -92,10 +118,45 @@ void CCom2Mqtt::init()
     connOpts.set_clean_session(true);
     cli->connect(connOpts);
     sysloger->info("Connecting to the MQTT server... {}", cfg->getOpt("MQTT", "server").c_str());
+    // TODO LWT
 }
 
+template<typename T>
+bool future_is_ready(std::future<T>& t){
+    return t.wait_for(std::chrono::seconds(0)) == std::future_status::ready;
+}
+/**
+ * @brief req_send_counters послать статистику через 5 сек
+ */
+void CCom2Mqtt::req_send_counters() {
+    if((request2send.valid() && !future_is_ready(request2send)))
+        return;
+    request2send = std::async(std::launch::async, [] (CCom2Mqtt *t) {
+        std::this_thread::sleep_for(std::chrono::seconds(5));
+        t->publish_counters();
+    }, this);
+}
 
+/**
+ * @brief publish_counters отправлять на сервер статистику
+ * собвтсенно отправка данных
+ */
+void CCom2Mqtt::publish_counters() {
+    string str = fmt::format("{d}", bad_cs);
+    cli->publish(topic_head+"log/bad_cs", str.c_str(), str.length());
+    str = fmt::format("{d}", bad_data);
+    cli->publish(topic_head+"log/bad_data", str.c_str(), str.length());
+    str = fmt::format("{d}", receive_count);
+    cli->publish(topic_head+"log/receive_count", str.c_str(), str.length());
+    sysloger->debug("pub log: cs:{} bad:{} rcv:{}", bad_cs, bad_data, receive_count);
+}
 
+/**
+ * @brief CCom2Mqtt::loop главный цикл обработки сообщений
+ *
+ * выходит при неисправляемых ошибках
+ * @param com
+ */
 void CCom2Mqtt::loop(SimpleSerial &com){
     // wait for all bytes to be received
     while (true) {
@@ -115,21 +176,6 @@ void CCom2Mqtt::loop(SimpleSerial &com){
         if(res.length() > 0)
             send_payload_mqtt(res);
     }
-}
-
-bool CCom2Mqtt::send_payload_mqtt(string str)
-{
-    auto it_sep = str.find(COM_PAYLOAD_SEPARATOR);
-    if(it_sep == std::string::npos)
-        return false;
-    // посчитать сообщение и послать статистику в mqtt
-    receive_count++;
-    req_send_counters();
-    string topic(str, it_sep);
-    string payload(str.begin()+it_sep + 1, str.end());
-    cli->publish(topic_head+topic, payload.c_str(), payload.length());
-    sysloger->trace(">{0}:{1}", (topic_head+topic).c_str(), payload.c_str());
-    return true;
 }
 
 //----------------------------------------------------------------------------------------
