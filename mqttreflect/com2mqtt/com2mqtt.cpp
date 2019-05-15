@@ -205,7 +205,7 @@ int main(int argc, char **argv) {
     // initialize
 
     Config *cfg = Config::getInstance();
-    cfg->open("mqttfrwd.json");
+    cfg->open("com2mqtt.json");
 
     if(result["stdout"].as<bool>())
         sysloger = spdlog::stdout_logger_mt("console");

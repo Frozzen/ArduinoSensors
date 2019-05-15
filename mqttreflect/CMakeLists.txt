@@ -17,3 +17,4 @@ add_subdirectory(common)
 add_subdirectory(mqttreflect)
 add_subdirectory(com2mqtt)
 
+install(FILES mqttfrwd.json DESTINATION bin COMPONENT config)
