@@ -102,7 +102,7 @@ void recursive(const string &key, Value::ConstMemberIterator it, const std::stri
         Writer<StringBuffer> writer(buffer);
         it->value.Accept(writer);
         SendMessge mm(t, buffer.GetString());
-        sysloger->trace("{0} : {1}", t.c_str(), mm.payload.c_str());
+        sysloger->trace("{} : {}", t.c_str(), mm.payload.c_str());
         h->send_msg(mm);
     }
 }
@@ -217,7 +217,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
         std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
         char *pend;
         h->domotizc[head + topic] = std::strtol(p.second.c_str(), &pend, 10);
-        sysloger->debug("+domo:{0}-{1}", p.first.c_str(), p.second.c_str());
+        sysloger->debug("+domo:{}-{}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -231,13 +231,14 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DomotizcHandler> &h) {
  */
 bool DomotizcHandler::request(const SendMessge &m) {
     string topic(m.topic);
+    std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
     if (domotizc.count(topic) > 0) {
         char buf[100];
         string payload = m.payload;
         std::snprintf(buf, 100, R"({ "idx" : %d, "nvalue" : 0, "svalue": "%s" })",
                       domotizc[topic], payload.c_str());
         std::string tval = buf;
-        sysloger->trace("domotizc:{0}",  tval.c_str());
+        sysloger->trace("domotizc:{}",  tval.c_str());
         send_msg(SendMessge("domoticz/in", tval));
     }
     return true;
@@ -292,16 +293,17 @@ int mqtt_loop() {
                 } else
                     break;
             }
-            sysloger->debug("{0}:{1}", msg->get_topic().c_str(), msg->to_string().c_str());
+            sysloger->debug("{}:{}", msg->get_topic().c_str(), msg->to_string().c_str());
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
                 SendMessge mn(msg->get_topic(), msg->get_payload_str());
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
-                    const int mQOS = 0;
                     sysloger->debug("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
-                    cli.publish(m.topic, m.payload.c_str(), m.payload.size());
+                    mqtt::message msg(m.topic, m.payload.c_str(), 0, true);
+                    cli.publish(msg);
+                    std::this_thread::sleep_for(std::chrono::microseconds(50000));
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
             }
