@@ -42,7 +42,6 @@ string CCom2Mqtt::check_valid_msg(string str)
         req_send_counters();
         return "";
     }
-    int cs = 0;
     char *e;
     auto it_cs = str.find(CS_BYTE);
     if(it_cs == std::string::npos) {
@@ -51,8 +50,12 @@ string CCom2Mqtt::check_valid_msg(string str)
         return "";
     }
     int csorg = strtol(str.c_str()+it_cs+1, &e, 16);
-    for (auto it = str.begin()+1; it < str.begin()+it_cs; ++it)
-        cs += *it;
+    uint8_t cs = 0;
+    for (auto it = str.begin()+1; it < str.begin()+it_cs; ++it) {
+        cout <<  *it << flush;
+        cs += (uint8_t)*it;
+    }
+    cout <<  '<' << flush;
     if ((cs & 0xff) != csorg) {
         sysloger->warn("bad data checksum");
         ++badCS;
@@ -87,6 +90,7 @@ void CCom2Mqtt::init()
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
+    cli->connect(connOpts);
     sysloger->info("Connecting to the MQTT server... {}", cfg->getOpt("MQTT", "server").c_str());
 }
 
@@ -104,11 +108,12 @@ void CCom2Mqtt::loop(SimpleSerial &com){
                 sysloger->critical("Reconnect failed.");
                 break;
             }
+        }
         string str = com.readLine();
+        sysloger->trace("com:{}", str.c_str());
         string res = check_valid_msg(str);
         if(res.length() > 0)
             send_payload_mqtt(res);
-        }
     }
 }
 
@@ -130,11 +135,13 @@ bool CCom2Mqtt::send_payload_mqtt(string str)
 //----------------------------------------------------------------------------------------
 int main(int argc, char **argv) {
     cxxopts::Options options("com2mqtt", "reflect events from com poer to MQTT bus");
+    string port{"/dev/ttyUSB0"};
+    int baud = 38400;
     options.add_options()
       ("s,stdout", "Log to stdout")
       ("d,debug", "Enable debugging")
-      ("p,port", "com port", cxxopts::value<std::string>(), "/dev/ttyUSB0"),
-      ("b,baud", "com port speed", cxxopts::value<int>(), 38400);
+      ("p,port", "com port", cxxopts::value<std::string>(port))
+      ("b,baud", "com port speed", cxxopts::value(baud));
     auto result = options.parse(argc, argv);
     // initialize
 
@@ -151,8 +158,8 @@ int main(int argc, char **argv) {
         sysloger->set_level(spdlog::level::info);
     try {
         // open serial port
-        SimpleSerial serial(result["port"].as<std::string>(), result["baud"].as<int>());
-        sysloger->info("use port:{0}", result["port"].as<std::string>());
+        SimpleSerial serial(port, baud);
+        sysloger->info("use port:{0}", port);
 
         s_mqtt.init();
         s_mqtt.loop(serial);
