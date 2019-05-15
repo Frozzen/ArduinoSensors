@@ -103,6 +103,14 @@ bool CCom2Mqtt::send_payload_mqtt(string str)
     return true;
 }
 
+std::string getTimeStr(){
+    std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
+
+    std::string s(30, '\0');
+    std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
+    return s;
+}
+
 /**
  * @brief CCom2Mqtt::init инициирую пакет
  */
@@ -116,9 +124,14 @@ void CCom2Mqtt::init()
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
+    mqtt::message willmsg(topic_head + "log/com2mqtt", "com2mqtt terminated", 1, true);
+    mqtt::will_options will(willmsg);
+    connOpts.set_will(will);
+
     cli->connect(connOpts);
     sysloger->info("Connecting to the MQTT server... {}", cfg->getOpt("MQTT", "server").c_str());
-    // TODO LWT
+    mqtt::message msg(topic_head + "log/com2mqtt", getTimeStr(), 1, true);
+    cli->publish(msg);
 }
 
 template<typename T>
