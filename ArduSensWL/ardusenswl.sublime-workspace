@@ -4,6 +4,10 @@
 		"selected_items":
 		[
 			[
+				"inc",
+				"include"
+			],
+			[
 				"n",
 				"name"
 			],
@@ -483,6 +487,11 @@
 	],
 	"file_history":
 	[
+		"/home/vovva/work/cpp/async_comm/src/serial.cpp",
+		"/home/vovva/work/cpp/async_tutorial/movie_serial.cpp",
+		"/home/vovva/work/cpp/async_tutorial/async1.cpp",
+		"/home/vovva/work/cpp/async_comm/src/comm.cpp",
+		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/mqttreflect/common/com-test/CMakeLists.txt",
 		"/home/vovva/Documents/PlatformIO/Projects/ArduinoSensors/ArduSensWL/src/arduSensUtils.cpp",
 		"/home/vovva/work/corutine/co101.py",
 		"/usr/lib/python3/dist-packages/serial/serialposix.py",
@@ -605,12 +614,7 @@
 		"/Users/jai/go/src/github.com/mattermost/platform/config/config.json",
 		"/Users/jai/go/src/github.com/mattermost/platform/docker/local/Dockerfile",
 		"/Users/jai/go/src/github.com/mattermost/platform/web/react/components/navbar_dropdown.jsx",
-		"/etc/hosts",
-		"/Users/jai/Workspace/trevo/app/models/user.rb",
-		"/Users/jai/.bash_profile",
-		"/Users/jai/.profile",
-		"/Users/jai/Workspace/trevo/app/controllers/api/v1/bookings_controller.rb",
-		"/Users/jai/Workspace/trevo/app/controllers/api/v1/feedbacks_controller.rb"
+		"/etc/hosts"
 	],
 	"find":
 	{
@@ -752,8 +756,8 @@
 						"selection":
 						[
 							[
-								668,
-								668
+								148,
+								148
 							]
 						],
 						"settings":

@@ -6,6 +6,7 @@
 #include <cctype>
 #include <thread>
 #include <map>
+
 #include <mqtt/client.h>
 #include <rapidjson/document.h>
 #include <rapidjson/prettywriter.h>
@@ -14,7 +15,6 @@
 #include <spdlog/spdlog.h>
 #include <spdlog/sinks/syslog_sink.h>
 #include "spdlog/sinks/stdout_sinks.h"
-
 
 #include <cxxopts.hpp>
 
@@ -114,6 +114,7 @@ bool DecodeJsonHandler::request(const SendMessge &m) {
     if (ix == -1)
         return false;
     string sens((m.topic.begin() + ix + 1), m.topic.end());
+    std::transform(sens.begin(), sens.end(), sens.begin(), ::tolower);
     if (valid_case.find(sens) != valid_case.end()) {
         Document document;
         if (document.Parse(m.payload.c_str()).HasParseError())
@@ -136,7 +137,7 @@ void HandlerFactory::set_config(Config *c, shared_ptr<DecodeJsonHandler> &h) {
     for (auto const& e : h->valid_case)     {
         s += e; s += ',';
     }
-    sysloger->debug("+json:{0}", s.c_str());
+    sysloger->debug("+json:{}", s.c_str());
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -145,9 +146,8 @@ void HandlerFactory::set_config(Config *c, shared_ptr<ReflectHandler> &h) {
     string head = c->getOpt("MQTT", "topic_head");
     for (auto &p : *ini) {
         string t = p.first;
-        std::transform(t.begin(), t.end(), t.begin(), ::tolower);
         h->reflect[head + t] = head + p.second;
-        sysloger->debug("+reflect:{0}-{1}", p.first.c_str(), p.second.c_str());
+        sysloger->debug("+reflect:{}-{}", p.first.c_str(), p.second.c_str());
     }
 }
 
@@ -181,9 +181,10 @@ vector<string> split(const string &s, const char delim) {
  */
 bool ReflectHandler::request(const SendMessge &m) {
     string topic(m.topic);
+    std::transform(topic.begin(), topic.end(), topic.begin(), ::tolower);
     if (reflect.find(topic) != reflect.end()) {
         vector<string> strs;
-        sysloger->trace("relf:{0}::{1}={3}", topic.c_str(), reflect[topic].c_str(), m.payload.c_str());
+        sysloger->trace("relf:{}::{}={}", topic.c_str(), reflect[topic].c_str(), m.payload.c_str());
         strs = split(reflect[topic], ',');
         string payload = m.payload;
         for (auto &s : strs) {
@@ -193,7 +194,7 @@ bool ReflectHandler::request(const SendMessge &m) {
             static int stack_count = 0;
             stack_count++;
             if (stack_count > MAX_REFLECT_DEPTH) {
-                sysloger->error("reflect loop:{0}", m.topic.c_str());
+                sysloger->error("reflect loop:{}", m.topic.c_str());
                 stack_count = 0;
                 break;
             }
@@ -291,7 +292,7 @@ int mqtt_loop() {
                 } else
                     break;
             }
-            sysloger->trace("{0}:{1}", msg->get_topic().c_str(), msg->to_string().c_str());
+            sysloger->debug("{0}:{1}", msg->get_topic().c_str(), msg->to_string().c_str());
             // TODO в этот моменту очередь @var mqtt_mag_queue должна быть пустой
             // проверить что содержимое - печатное
             if (is_valid_payload(msg->get_payload_str())) {
@@ -299,7 +300,7 @@ int mqtt_loop() {
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     const int mQOS = 0;
-                    sysloger->trace("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
+                    sysloger->debug("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
                     cli.publish(m.topic, m.payload.c_str(), m.payload.size());
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
@@ -310,7 +311,7 @@ int mqtt_loop() {
         cli.disconnect();
     }
     catch (const mqtt::exception &exc) {
-        cerr << exc.what();
+        sysloger->critical("MQTT:{}", exc.what());
         return 1;
     }
     return 0;
