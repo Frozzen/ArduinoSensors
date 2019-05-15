@@ -49,20 +49,20 @@ string CCom2Mqtt::check_valid_msg(string str)
         req_send_counters();
         return "";
     }
-    int csorg = strtol(str.c_str()+it_cs+1, &e, 16);
+    string ss= str.substr(it_cs+1);
+    int csorg = strtol(ss.c_str(), &e, 16);
     uint8_t cs = 0;
-    for (auto it = str.begin()+1; it < str.begin()+it_cs; ++it) {
-        cout <<  *it << flush;
-        cs += (uint8_t)*it;
-    }
-    cout <<  '<' << flush;
-    if ((cs & 0xff) != csorg) {
+    for (auto it = str.begin(); it < str.end()-3; ++it) {
+        cs += (int8_t)*it;
+    }    
+    cs = 0xff - cs;
+    if (cs != csorg) {
         sysloger->warn("bad data checksum");
         ++badCS;
         req_send_counters();
         return "";
     }
-    return string(str.begin()+1, str.begin()+it_cs);
+    return str.substr(1, it_cs);
 }
 
 bool try_reconnect(mqtt::client &cli) {
