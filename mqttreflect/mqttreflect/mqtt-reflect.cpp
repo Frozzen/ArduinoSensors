@@ -301,7 +301,7 @@ int mqtt_loop() {
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     sysloger->debug("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
-                    mqtt::message msg(m.topic, m.payload.c_str(), 0, true);
+                    mqtt::message msg(m.topic, m.payload.c_str(), 1, false);
                     cli.publish(msg);
                     std::this_thread::sleep_for(std::chrono::microseconds(50000));
                 }

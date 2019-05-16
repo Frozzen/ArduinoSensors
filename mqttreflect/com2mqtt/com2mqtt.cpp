@@ -22,7 +22,7 @@
 #include "com2mqtt.hpp"
 
 #define NUM_BYTES 64
-
+const char *LWT = "log/com2mqtt";
 std::shared_ptr<spdlog::logger> sysloger;
 CCom2Mqtt s_mqtt;
 
@@ -98,7 +98,7 @@ bool CCom2Mqtt::send_payload_mqtt(string str)
     req_send_counters();
     string topic(str, 0, it_sep);
     string payload(str, it_sep + 1, str.length()-2-it_sep);
-    cli->publish(topic_head+topic, payload.c_str(), payload.length());
+    cli->publish(topic_head+topic, payload.c_str(), payload.length(), 1, false);
     sysloger->trace(">{0}:{1}", (topic_head+topic).c_str(), payload.c_str());
     return true;
 }
@@ -130,7 +130,7 @@ void CCom2Mqtt::init()
 
     cli->connect(connOpts);
     sysloger->info("Connecting to the MQTT server... {}", cfg->getOpt("MQTT", "server").c_str());
-    mqtt::message msg(topic_head + "log/com2mqtt", getTimeStr(), 1, true);
+    mqtt::message msg(topic_head + LWT, getTimeStr(), 1, true);
     cli->publish(msg);
 }
 
@@ -156,11 +156,11 @@ void CCom2Mqtt::req_send_counters() {
  */
 void CCom2Mqtt::publish_counters() {
     string str = fmt::format("{d}", bad_cs);
-    cli->publish(topic_head+"log/bad_cs", str.c_str(), str.length());
+    cli->publish(topic_head+"log/bad_cs", str.c_str(), str.length(), 1, true);
     str = fmt::format("{d}", bad_data);
-    cli->publish(topic_head+"log/bad_data", str.c_str(), str.length());
+    cli->publish(topic_head+"log/bad_data", str.c_str(), str.length(), 1, true);
     str = fmt::format("{d}", receive_count);
-    cli->publish(topic_head+"log/receive_count", str.c_str(), str.length());
+    cli->publish(topic_head+"log/receive_count", str.c_str(), str.length(), 1, true);
     sysloger->debug("pub log: cs:{} bad:{} rcv:{}", bad_cs, bad_data, receive_count);
 }
 
