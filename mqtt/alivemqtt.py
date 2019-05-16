@@ -2,7 +2,9 @@
 """
 определяем состояние нашей mqtt управляющей сети - устройства
 собрать все устройства из БД - json. показать их состояние на картинке - плазма - красная не работает, зеленая ок
-
+https://pypi.org/project/simple-monitor-alert/
+https://github.com/netdata/netdata
+https://jamesoff.github.io/simplemonitor/
 https://habr.com/ru/sandbox/28540/
 
 состояние получать из MQTT
@@ -32,8 +34,7 @@ stat/house/
 import fcntl, os
 import json
 
-import paho.mqtt.client as mqtt
-from BaseHTTPServer import BaseHTTPRequestHandler,HTTPServer
+from http.server import BaseHTTPRequestHandler,HTTPServer
 
 import configparser, sys, time
 import syslog
@@ -51,15 +52,16 @@ class HttpProcessor(BaseHTTPRequestHandler):
         self.send_response(200)
         self.send_header('content-type','text/json')
         self.end_headers()
-        self.wfile.write(json.encoder(alive_obj.alive_data))
+        str = json.dumps(alive_obj.alive_data)
+        self.wfile.write(str.encode())
+        #self.wfile.close()
 
 class AliveMQTT(MyMQTT):
     def __init__(self):
         super(AliveMQTT, self).__init__()
-        with open('alivedb.json') as fp:
-            self.alivedb = json.load(fp.read());
-        with open('alive_data.json') as fp:
-            self.alive_data = json.load(fp.read());
+        with open('alivedb.json', 'r') as fp:
+            self.alivedb = json.load(fp)
+        self.alive_data = {}
         self.connected = False
 
         ###################################
@@ -69,11 +71,12 @@ class AliveMQTT(MyMQTT):
                 global __Connected
                 userdata.onnected = True
                 userdata.main_subscribe()
+                print("Connected")
             else:
                 print("Connection failed", rc, flags)
 
         def __on_message(client, userdata, msg):
-            lwt = re.search(r"tele/([A-z0-9\-_]+)/(LWT|STATE|SENSOR|UPTIME)", msg.topic)
+            lwt = re.search(r"^tele/([A-z0-9\-_]+)/(LWT|STATE|SENSOR|UPTIME)$", msg.topic)
             if lwt is not None:
                 dev = lwt.group(1)
                 if dev not in self.alivedb['mqttdevices']:
@@ -81,12 +84,18 @@ class AliveMQTT(MyMQTT):
                 if dev not in  self.alive_data:
                     self.alive_data[dev] = {}
                 key = lwt.group(2)
-                payload = msg.payload
+                if key not in self.alive_data[dev]:
+                    self.alive_data[dev][key] = {}
+                payload = msg.payload.decode("utf-8", 'ignore')
                 if key == 'LWT':
-                    payload = '{"%s"}' % (payload,)
-                # merge dictionary
-                self.alive_data[dev][key] = merge_two_dicts(self.alive_data[dev][key],
-                                                            json.load(payload))
+                    self.alive_data[dev][key] = payload
+                else:
+                    try:
+                        self.alive_data[dev][key] = merge_two_dicts(self.alive_data[dev][key],
+                                                                json.loads(payload))
+                    except (TypeError, ValueError, json.JSONDecodeError) as e:
+                        print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
+                print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
 
         def __on_disconnect(client, userdata, flags, rc):
             userdata.onnected = False
@@ -97,7 +106,7 @@ class AliveMQTT(MyMQTT):
         self.client.on_disconnect = __on_disconnect
 
     def  main_subscribe(self):
-        for tpc in self.domotizc.keys():
+        for tpc in ['tele/#']:
             self.client.subscribe(tpc)
 
 def main(argv):
@@ -132,7 +141,7 @@ if __name__ == '__main__':
     run_once()
     syslog.openlog(logoption=syslog.LOG_PID, facility=syslog.LOG_DAEMON)
     main(sys.argv)
-    try:
-        main(sys.argv)
-    except Exception as e:
-        syslog.syslog(syslog.LOG_ERR, "**alivemqtt exception %s" % (str(e)))
+    # try:
+    #     main(sys.argv)
+    # except Exception as e:
+    #     syslog.syslog(syslog.LOG_ERR, "**alivemqtt exception %s" % (str(e)))
