@@ -10,3 +10,6 @@
 [submodule "mqttreflect/lib/rapidjson"]
 	path = mqttreflect/lib/rapidjson
 	url = https://github.com/Tencent/rapidjson
+[submodule "mqttreflect/com2mqtt/resetusb"]
+	path = mqttreflect/com2mqtt/resetusb
+	url = https://github.com/mcarans/resetusb

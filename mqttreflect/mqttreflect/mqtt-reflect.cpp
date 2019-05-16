@@ -322,7 +322,7 @@ int mqtt_loop() {
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     sysloger->debug("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
                     cli.publish(mqtt::message(m.topic, m.payload, 1, false));
-                    std::this_thread::sleep_for(std::chrono::microseconds(50000));
+                    // std::this_thread::sleep_for(std::chrono::microseconds(5000));
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
             }

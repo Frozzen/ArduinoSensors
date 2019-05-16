@@ -99,7 +99,7 @@ bool CCom2Mqtt::send_payload_mqtt(string str)
     string topic(str, 0, it_sep);
     string payload(str, it_sep + 1, str.length()-2-it_sep);
     cli->publish(topic_head+topic, payload.c_str(), payload.length(), 1, false);
-    sysloger->trace(">{0}:{1}", (topic_head+topic).c_str(), payload.c_str());
+    sysloger->trace(">{}:{}", (topic_head+topic).c_str(), payload.c_str());
     return true;
 }
 
@@ -208,6 +208,7 @@ int main(int argc, char **argv) {
         sysloger->set_level(spdlog::level::trace);
     else
         sysloger->set_level(spdlog::level::info);
+    // TODO полать RESETUSB ---------------------
     try {
         // open serial port
         SimpleSerial serial(port, baud);
