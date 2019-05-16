@@ -183,6 +183,24 @@ void CCom2Mqtt::loop(SimpleSerial &com){
             send_payload_mqtt(res);
     }
 }
+/**
+ * @brief exec выполнить команду системы
+// https://stackoverflow.com/questions/478898/how-do-i-execute-a-command-and-get-output-of-command-within-c-using-posix
+ * @param cmd
+ * @return
+ */
+std::string exec(const char* cmd) {
+    std::array<char, 128> buffer;
+    std::string result;
+    std::unique_ptr<FILE, decltype(&pclose)> pipe(popen(cmd, "r"), pclose);
+    if (!pipe) {
+        throw std::runtime_error("popen() failed!");
+    }
+    while (fgets(buffer.data(), buffer.size(), pipe.get()) != nullptr) {
+        result += buffer.data();
+    }
+    return result;
+}
 
 //----------------------------------------------------------------------------------------
 int main(int argc, char **argv) {
@@ -208,7 +226,8 @@ int main(int argc, char **argv) {
         sysloger->set_level(spdlog::level::trace);
     else
         sysloger->set_level(spdlog::level::info);
-    // TODO полать RESETUSB ---------------------
+    // полать RESETUSB ---------------------
+    exec("python reset_usb.py search UART");
     try {
         // open serial port
         SimpleSerial serial(port, baud);
