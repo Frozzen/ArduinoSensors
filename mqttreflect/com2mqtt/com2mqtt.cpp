@@ -103,13 +103,6 @@ bool CCom2Mqtt::send_payload_mqtt(string str)
     return true;
 }
 
-std::string getTimeStr(){
-    std::time_t now = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
-
-    std::string s(30, '\0');
-    std::strftime(&s[0], s.size(), "%Y-%m-%d %H:%M:%S", std::localtime(&now));
-    return s;
-}
 
 /**
  * @brief CCom2Mqtt::init инициирую пакет
@@ -124,13 +117,13 @@ void CCom2Mqtt::init()
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
-    mqtt::message willmsg(topic_head + "log/com2mqtt", "com2mqtt terminated", 1, true);
+    mqtt::message willmsg(topic_head + LWT, "com2mqtt terminated", 1, RETAIN);
     mqtt::will_options will(willmsg);
     connOpts.set_will(will);
 
     cli->connect(connOpts);
     sysloger->info("Connecting to the MQTT server... {}", cfg->getOpt("MQTT", "server").c_str());
-    mqtt::message msg(topic_head + LWT, getTimeStr(), 1, true);
+    mqtt::message msg(topic_head + LWT, getTimeStr(), 1, RETAIN);
     cli->publish(msg);
 }
 
@@ -156,11 +149,11 @@ void CCom2Mqtt::req_send_counters() {
  */
 void CCom2Mqtt::publish_counters() {
     string str = fmt::format("{d}", bad_cs);
-    cli->publish(topic_head+"log/bad_cs", str.c_str(), str.length(), 1, true);
+    cli->publish(topic_head+"log/bad_cs", str.c_str(), str.length(), 1, RETAIN);
     str = fmt::format("{d}", bad_data);
-    cli->publish(topic_head+"log/bad_data", str.c_str(), str.length(), 1, true);
+    cli->publish(topic_head+"log/bad_data", str.c_str(), str.length(), 1, RETAIN);
     str = fmt::format("{d}", receive_count);
-    cli->publish(topic_head+"log/receive_count", str.c_str(), str.length(), 1, true);
+    cli->publish(topic_head+"log/receive_count", str.c_str(), str.length(), 1, RETAIN);
     sysloger->debug("pub log: cs:{} bad:{} rcv:{}", bad_cs, bad_data, receive_count);
 }
 

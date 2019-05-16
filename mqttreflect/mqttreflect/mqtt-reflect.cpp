@@ -23,6 +23,8 @@
 
 const char *config_file = "mqttfrwd.json";
 const int MAX_REFLECT_DEPTH = 10;
+const char *LWT = "log/mqttreflect";
+
 using namespace std;
 using namespace rapidjson;
 
@@ -75,8 +77,22 @@ bool HandlerFactory::request(const SendMessge &m) {
     return true;
 }
 
+/**
+ * @brief Handler::send_msg вставить сообщение в очередь для отправки
+ *
+ * @param msg
+ */
 void Handler::send_msg(const SendMessge &msg) {
-    HandlerFactory::mqtt_mag_queue.push_front(SendMessge(msg));
+    // не вставлять дублируюжщиеся сообщения
+    // считаем сообщение независимыми от последовательности отправки - внути автоматической сессии
+    for(auto it : HandlerFactory::mqtt_mag_queue) {
+        if(it.topic == msg.topic) {
+            if(it.payload != msg.payload)
+                it.payload = msg.payload;
+            return;
+        }
+    }
+    HandlerFactory::mqtt_mag_queue.push_back(SendMessge(msg));
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -268,10 +284,14 @@ int mqtt_loop() {
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
+    mqtt::message willmsg(head + LWT, "mqttreflect terminated", 1, RETAIN);
+    mqtt::will_options will(willmsg);
+    connOpts.set_will(will);
 
     try {
         sysloger->info("Connecting to the MQTT server... {0}", cfg->getOpt("MQTT", "server").c_str());
         cli.connect(connOpts);
+        cli.publish(mqtt::message(head + LWT, getTimeStr(), 1, RETAIN));
         cli.subscribe(TOPICS, QOS);
 
         // Consume messages
@@ -301,8 +321,7 @@ int mqtt_loop() {
                 HandlerFactory::request(mn);
                 for (auto &m : HandlerFactory::mqtt_mag_queue) {
                     sysloger->debug("publ:{0}::{1}", m.topic.c_str(),  m.payload.c_str());
-                    mqtt::message msg(m.topic, m.payload.c_str(), 1, false);
-                    cli.publish(msg);
+                    cli.publish(mqtt::message(m.topic, m.payload, 1, false));
                     std::this_thread::sleep_for(std::chrono::microseconds(50000));
                 }
                 HandlerFactory::mqtt_mag_queue.clear();
