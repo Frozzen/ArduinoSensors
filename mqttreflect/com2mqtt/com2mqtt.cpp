@@ -22,7 +22,7 @@
 #include "com2mqtt.hpp"
 
 #define NUM_BYTES 64
-const char *LWT = "log/com2mqtt";
+const char *LWT = "tele/com2mqtt/LWT";
 std::shared_ptr<spdlog::logger> sysloger;
 CCom2Mqtt s_mqtt;
 
@@ -117,13 +117,13 @@ void CCom2Mqtt::init()
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
-    mqtt::message willmsg(topic_head + LWT, "com2mqtt terminated", 1, RETAIN);
+    mqtt::message willmsg(topic_head + LWT, "Offline", 1, RETAIN);
     mqtt::will_options will(willmsg);
     connOpts.set_will(will);
 
     cli->connect(connOpts);
     sysloger->info("Connecting to the MQTT server... {}", cfg->getOpt("MQTT", "server").c_str());
-    mqtt::message msg(topic_head + LWT, getTimeStr(), 1, RETAIN);
+    mqtt::message msg(topic_head + LWT, "Online", 1, RETAIN);
     cli->publish(msg);
 }
 

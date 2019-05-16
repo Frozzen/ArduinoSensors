@@ -23,7 +23,7 @@
 
 const char *config_file = "mqttfrwd.json";
 const int MAX_REFLECT_DEPTH = 10;
-const char *LWT = "log/mqttreflect";
+const char *LWT = "tele/mqttreflect/LWT";
 
 using namespace std;
 using namespace rapidjson;
@@ -284,14 +284,14 @@ int mqtt_loop() {
     mqtt::connect_options connOpts(cfg->getOpt("MQTT", "user"), cfg->getOpt("MQTT", "pass"));
     connOpts.set_keep_alive_interval(20);
     connOpts.set_clean_session(true);
-    mqtt::message willmsg(head + LWT, "mqttreflect terminated", 1, RETAIN);
+    mqtt::message willmsg(head + LWT, "Offline", 1, RETAIN);
     mqtt::will_options will(willmsg);
     connOpts.set_will(will);
 
     try {
         sysloger->info("Connecting to the MQTT server... {0}", cfg->getOpt("MQTT", "server").c_str());
         cli.connect(connOpts);
-        cli.publish(mqtt::message(head + LWT, getTimeStr(), 1, RETAIN));
+        cli.publish(mqtt::message(head + LWT, "Online", 1, RETAIN));
         cli.subscribe(TOPICS, QOS);
 
         // Consume messages
