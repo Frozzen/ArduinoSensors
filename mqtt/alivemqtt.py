@@ -2,10 +2,9 @@
 """
 определяем состояние нашей mqtt управляющей сети - устройства
 собрать все устройства из БД - json. показать их состояние на картинке - плазма - красная не работает, зеленая ок
-https://pypi.org/project/simple-monitor-alert/
+https://pypi.org/project/simple-monitor-alert/ https://github.com/Nekmo/simple-monitor-alert
 https://github.com/netdata/netdata
-https://jamesoff.github.io/simplemonitor/
-https://habr.com/ru/sandbox/28540/
+https://jamesoff.github.io/simplemonitor/ https://github.com/jamesoff/simplemonitor
 
 состояние получать из MQTT
 только PING идет отдельно

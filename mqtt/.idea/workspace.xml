@@ -5,8 +5,15 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="">
+      <change afterPath="$PROJECT_DIR$/netdata" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/simple-monitor-alert" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/simplemonitor" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.gitmodules" beforeDir="false" afterPath="$PROJECT_DIR$/../.gitmodules" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/alivedb.json" beforeDir="false" afterPath="$PROJECT_DIR$/alivedb.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/alivemqtt.py" beforeDir="false" afterPath="$PROJECT_DIR$/alivemqtt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/netdata/collectors/python.d.plugin/example/example.chart.py" beforeDir="false" afterPath="$PROJECT_DIR$/netdata/collectors/python.d.plugin/example/example.chart.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -18,7 +25,6 @@
     <SUITE FILE_PATH="coverage/mqtt$mqtt_frwd.coverage" NAME="mqtt-frwd Coverage Results" MODIFIED="1552392963718" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$reflect.coverage" NAME="reflect Coverage Results" MODIFIED="1554900100617" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$sun___shedule.coverage" NAME="sun &amp; shedule Coverage Results" MODIFIED="1551540575074" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/mqtt$alert.coverage" NAME="alert Coverage Results" MODIFIED="1558024476831" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$check_my.coverage" NAME="check my Coverage Results" MODIFIED="1552100488844" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$ref_domotizc.coverage" NAME="ref domotizc Coverage Results" MODIFIED="1554904548080" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
@@ -40,7 +46,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="23" />
+          <entry key="project.closed" value="24" />
           <entry key="project.open.time.1" value="2" />
           <entry key="project.open.time.103" value="1" />
           <entry key="project.open.time.105" value="1" />
@@ -49,7 +55,6 @@
           <entry key="project.open.time.26" value="1" />
           <entry key="project.open.time.27" value="1" />
           <entry key="project.open.time.29" value="1" />
-          <entry key="project.open.time.30" value="1" />
           <entry key="project.open.time.31" value="1" />
           <entry key="project.open.time.32" value="2" />
           <entry key="project.open.time.33" value="2" />
@@ -64,6 +69,7 @@
           <entry key="project.open.time.52" value="1" />
           <entry key="project.open.time.54" value="1" />
           <entry key="project.open.time.6" value="1" />
+          <entry key="project.open.time.62" value="1" />
           <entry key="project.open.time.63" value="1" />
           <entry key="project.opened" value="30" />
         </counts>
@@ -71,42 +77,44 @@
       <usages-collector id="statistics.file.extensions.open">
         <counts>
           <entry key="h" value="1" />
-          <entry key="ini" value="15" />
+          <entry key="ini" value="14" />
           <entry key="json" value="2" />
           <entry key="md" value="4" />
           <entry key="node-red" value="1" />
           <entry key="py" value="69" />
+          <entry key="rst" value="1" />
           <entry key="service" value="4" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.open">
         <counts>
           <entry key="C++" value="1" />
-          <entry key="Ini" value="15" />
+          <entry key="Ini" value="14" />
           <entry key="JSON" value="3" />
           <entry key="Markdown" value="4" />
           <entry key="PLAIN_TEXT" value="4" />
           <entry key="Python" value="69" />
+          <entry key="ReST" value="1" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.edit">
         <counts>
           <entry key="dummy" value="7" />
           <entry key="ini" value="1377" />
-          <entry key="json" value="86" />
+          <entry key="json" value="335" />
           <entry key="md" value="36" />
-          <entry key="py" value="7748" />
+          <entry key="py" value="7430" />
           <entry key="service" value="56" />
-          <entry key="txt" value="492" />
+          <entry key="txt" value="525" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
         <counts>
           <entry key="Ini" value="1377" />
-          <entry key="JSON" value="86" />
+          <entry key="JSON" value="335" />
           <entry key="Markdown" value="36" />
-          <entry key="PLAIN_TEXT" value="555" />
-          <entry key="Python" value="7748" />
+          <entry key="PLAIN_TEXT" value="588" />
+          <entry key="Python" value="7430" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages">
@@ -121,22 +129,24 @@
   <component name="FileEditorManager">
     <leaf SIDE_TABS_SIZE_LIMIT_KEY="300">
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
+        <entry file="file://$PROJECT_DIR$/alivemqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="120">
-              <caret line="8" column="16" selection-start-line="8" selection-start-column="16" selection-end-line="8" selection-end-column="16" />
+            <state relative-caret-position="135">
+              <caret line="27" column="11" lean-forward="true" selection-start-line="27" selection-start-column="11" selection-end-line="27" selection-end-column="11" />
             </state>
           </provider>
         </entry>
       </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/reflect-domotizc.py">
+        <entry file="file://$PROJECT_DIR$/simple-monitor-alert/README.rst">
+          <provider selected="true" editor-type-id="restructured-text-editor" />
+        </entry>
+      </file>
+      <file pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/alivedb.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="200">
-              <caret line="51" lean-forward="true" selection-start-line="48" selection-end-line="51" />
-              <folding>
-                <element signature="e#145#161#0" expanded="true" />
-              </folding>
+            <state relative-caret-position="510">
+              <caret line="34" column="66" selection-start-line="34" selection-start-column="66" selection-end-line="34" selection-end-column="66" />
             </state>
           </provider>
         </entry>
@@ -144,8 +154,8 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2310">
-              <caret line="162" selection-start-line="80" selection-end-line="162" />
+            <state relative-caret-position="742">
+              <caret line="132" column="32" lean-forward="true" selection-start-line="132" selection-start-column="32" selection-end-line="132" selection-end-column="32" />
               <folding>
                 <element signature="e#247#262#0" expanded="true" />
               </folding>
@@ -153,34 +163,14 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
-        <entry file="file://$PROJECT_DIR$/alivemqtt.py">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="275">
-              <caret line="94" column="84" lean-forward="true" selection-start-line="94" selection-start-column="84" selection-end-line="94" selection-end-column="84" />
-            </state>
-          </provider>
-        </entry>
-      </file>
       <file pinned="false" current-in-tab="false">
-        <entry file="file:///usr/lib/python3.6/http/server.py">
+        <entry file="file://$PROJECT_DIR$/netdata/collectors/python.d.plugin/example/example.chart.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="163">
-              <caret line="405" selection-start-line="405" selection-end-line="405" />
-            </state>
-          </provider>
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
-          <provider selected="true" editor-type-id="text-editor" />
-        </entry>
-      </file>
-      <file pinned="false" current-in-tab="false">
-        <entry file="file://$PROJECT_DIR$/alivedb.json">
-          <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="300">
-              <caret line="20" column="20" selection-start-line="20" selection-start-column="20" selection-end-line="20" selection-end-column="20" />
+            <state relative-caret-position="60">
+              <caret line="4" column="43" lean-forward="true" selection-start-line="4" selection-start-column="43" selection-end-line="4" selection-end-column="43" />
+              <folding>
+                <element signature="e#165#196#0" expanded="true" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -245,6 +235,7 @@
     </replaceStrings>
   </component>
   <component name="Git.Settings">
+    <option name="UPDATE_TYPE" value="MERGE" />
     <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
     <option name="RECENT_BRANCH_BY_REPOSITORY">
       <map>
@@ -270,10 +261,11 @@
         <option value="$PROJECT_DIR$/reflect-mqtt.py" />
         <option value="$PROJECT_DIR$/reflect-domotizc.py" />
         <option value="$PROJECT_DIR$/mqtt-frwd.json" />
-        <option value="$PROJECT_DIR$/alivedb.json" />
         <option value="$PROJECT_DIR$/alive-app/__init__.py" />
         <option value="$PROJECT_DIR$/alive-app/routes.py" />
         <option value="$PROJECT_DIR$/alivemqtt.py" />
+        <option value="$PROJECT_DIR$/netdata/collectors/python.d.plugin/example/example.chart.py" />
+        <option value="$PROJECT_DIR$/alivedb.json" />
       </list>
     </option>
   </component>
@@ -283,9 +275,14 @@
     <detection-done>true</detection-done>
     <sorting>DEFINITION_ORDER</sorting>
   </component>
+  <component name="NodePackageJsonFileManager">
+    <packageJsonPaths>
+      <path value="$PROJECT_DIR$/netdata/package.json" />
+    </packageJsonPaths>
+  </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="501" />
-    <option name="y" value="64" />
+    <option name="x" value="93" />
+    <option name="y" value="24" />
     <option name="width" value="1291" />
     <option name="height" value="911" />
   </component>
@@ -316,16 +313,132 @@
     <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/alivemqtt.py" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$/reflect-domotizc.py" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
-    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+    <property name="settings.editor.selected.configurable" value="editor.preferences.smartKeys" />
   </component>
   <component name="RecentsManager">
     <key name="CopyFile.RECENT_KEYS">
       <recent name="$PROJECT_DIR$" />
     </key>
+  </component>
+  <component name="RestoreUpdateTree" date="Moments ago" ActionInfo="_Update">
+    <UpdatedFiles>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Updated from server" />
+        <option name="myStatusName" value="Changed on server" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="CHANGED_ON_SERVER" />
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Updated" />
+          <option name="myStatusName" value="Changed" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="UPDATED" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/.idea/workspace.xml</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/alivemqtt.py</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/../mqttreflect/com2mqtt/CMakeLists.txt</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/../mqttreflect/com2mqtt/com2mqtt.cpp</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/../mqttreflect/common/CMakeLists.txt</PATH>
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/../mqttreflect/mqttreflect/CMakeLists.txt</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Created" />
+          <option name="myStatusName" value="Created" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="CREATED" />
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Deleted" />
+          <option name="myStatusName" value="Deleted" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="true" />
+          <option name="myId" value="REMOVED_FROM_REPOSITORY" />
+          <PATH vcs="Git" revision="">$PROJECT_DIR$/../mqttreflect/CMakeLists.txt.user</PATH>
+        </FILE-GROUP>
+        <FILE-GROUP>
+          <option name="myUpdateName" value="Restored" />
+          <option name="myStatusName" value="Will be restored" />
+          <option name="mySupportsDeletion" value="false" />
+          <option name="myCanBeAbsent" value="false" />
+          <option name="myId" value="RESTORED" />
+        </FILE-GROUP>
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Modified" />
+        <option name="myStatusName" value="Modified" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MODIFIED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Skipped" />
+        <option name="myStatusName" value="Skipped" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SKIPPED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with conflicts" />
+        <option name="myStatusName" value="Will be merged with conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_CONFLICTS" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with tree conflicts" />
+        <option name="myStatusName" value="Merged with tree conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_TREE_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged with property conflicts" />
+        <option name="myStatusName" value="Will be merged with property conflicts" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED_WITH_PROPERTY_CONFLICT" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Merged" />
+        <option name="myStatusName" value="Will be merged" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="MERGED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Not in repository" />
+        <option name="myStatusName" value="Not in repository" />
+        <option name="mySupportsDeletion" value="true" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="UNKNOWN" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally added" />
+        <option name="myStatusName" value="Locally added" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_ADDED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Locally removed" />
+        <option name="myStatusName" value="Locally removed" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="LOCALLY_REMOVED" />
+      </FILE-GROUP>
+      <FILE-GROUP>
+        <option name="myUpdateName" value="Switched" />
+        <option name="myStatusName" value="Switched" />
+        <option name="mySupportsDeletion" value="false" />
+        <option name="myCanBeAbsent" value="false" />
+        <option name="myId" value="SWITCHED" />
+      </FILE-GROUP>
+    </UpdatedFiles>
   </component>
   <component name="RunDashboard">
     <option name="ruleStates">
@@ -339,29 +452,7 @@
       </list>
     </option>
   </component>
-  <component name="RunManager" selected="Python.alert">
-    <configuration name="alert" type="PythonConfigurationType" factoryName="Python">
-      <module name="mqtt" />
-      <option name="INTERPRETER_OPTIONS" value="" />
-      <option name="PARENT_ENVS" value="true" />
-      <envs>
-        <env name="PYTHONUNBUFFERED" value="1" />
-      </envs>
-      <option name="SDK_HOME" value="/usr/bin/python3.6" />
-      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
-      <option name="IS_MODULE_SDK" value="false" />
-      <option name="ADD_CONTENT_ROOTS" value="true" />
-      <option name="ADD_SOURCE_ROOTS" value="true" />
-      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/alivemqtt.py" />
-      <option name="PARAMETERS" value="" />
-      <option name="SHOW_COMMAND_LINE" value="false" />
-      <option name="EMULATE_TERMINAL" value="false" />
-      <option name="MODULE_MODE" value="false" />
-      <option name="REDIRECT_INPUT" value="false" />
-      <option name="INPUT_FILE" value="" />
-      <method v="2" />
-    </configuration>
+  <component name="RunManager" selected="Python.ref domotizc">
     <configuration name="check my" type="PythonConfigurationType" factoryName="Python">
       <module name="mqtt" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -476,7 +567,6 @@
       <item itemvalue="Python.mqtt-frwd" />
       <item itemvalue="Python.reflect" />
       <item itemvalue="Python.ref domotizc" />
-      <item itemvalue="Python.alert" />
       <item itemvalue="Python.check my" />
       <item itemvalue="Python.sun &amp; shedule" />
     </list>
@@ -660,20 +750,27 @@
       <option name="project" value="LOCAL" />
       <updated>1554904746372</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="начал панель состояния устройств">
+      <created>1558001485108</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1558001485108</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="501" y="64" width="1291" height="911" extended-state="0" />
+    <frame x="93" y="24" width="1291" height="911" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48022598" visible="true" weight="0.19967663" />
+      <window_info active="true" content_ui="combo" id="Project" order="0" sideWeight="0.48022598" visible="true" weight="0.3387227" />
       <window_info id="Structure" order="1" sideWeight="0.519774" side_tool="true" weight="0.35758513" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32875" />
-      <window_info active="true" anchor="bottom" id="Run" order="2" visible="true" weight="0.3277635" />
-      <window_info anchor="bottom" id="Debug" order="3" weight="0.33547556" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.32875" />
+      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.33625" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -759,7 +856,8 @@
     <MESSAGE value="отправляю сообщения mqtt в domotizc - заработало" />
     <MESSAGE value="свожу" />
     <MESSAGE value="была ошибка" />
-    <option name="LAST_COMMIT_MESSAGE" value="была ошибка" />
+    <MESSAGE value="начал панель состояния устройств" />
+    <option name="LAST_COMMIT_MESSAGE" value="начал панель состояния устройств" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -774,6 +872,11 @@
           <line>131</line>
           <option name="timeStamp" value="41" />
         </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file:///usr/local/lib/python3.6/dist-packages/paho/mqtt/client.py</url>
+          <line>2909</line>
+          <option name="timeStamp" value="64" />
+        </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
         <breakpoint type="python-exception">
@@ -787,47 +890,47 @@
   <component name="debuggerHistoryManager">
     <expressions id="evaluateExpression">
       <expression>
-        <expression-string>payload</expression-string>
+        <expression-string>isinstance(topic, unicode)</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>json.dumps({'sonoff-3C1ED0': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-9230AE': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-3BCB3C': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-F9A731': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:15:30', 'Uptime': '10T14:58:11', 'Vcc': 3.449, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'ON', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 46}}, 'SENSOR': {'Time': '2019-05-16T23:15:30', 'Switch1': 'ON'}}, 'sonoff-3BC398': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-922B3C': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-923A2A': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:16:20', 'Uptime': '30T00:49:07', 'Vcc': 3.584, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'OFF', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 46}}, 'SENSOR': {'Time': '2019-05-16T23:16:20', 'ENERGY': {'TotalStartTime': '2019-02-06T17:43:49', 'Total': 28.767, 'Yesterday': 0.0, 'Today': 0.0, 'Period': 0, 'Power': 0, 'ApparentPower': 0, 'ReactivePower': 0, 'Factor': 0.0, 'Voltage': 0, 'Current': 0.0}}}, 'sonoff-9ED488': {'LWT': {'LWT': b'Online'}}, 'sonoff-F99B3A': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-922CB3': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-3C20CF': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:15:39', 'Uptime': '10T14:58:20', 'Vcc': 3.591, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'OFF', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 80}}, 'SENSOR': {'Time': '2019-05-16T23:15:39', 'Switch1': 'ON'}}, 'sonoff-3C1716': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:16:53', 'Uptime': '2T13:41:33', 'Vcc': 3.481, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'ON', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 72}}, 'SENSOR': {'Time': '2019-05-16T23:16:53', 'Switch1': 'OFF'}}, 'sonoff-92D1DA': {'LWT': {'LWT': b'\xd0\x9e\xd1\x84\xd1\x84-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-F9966A': {'LWT': {'LWT': b'\xd0\x9e\xd1\x84\xd1\x84-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-57AA58': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:15:30', 'Uptime': '10T14:58:12', 'Vcc': 3.447, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'OFF', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 50}}, 'SENSOR': {'Time': '2019-05-16T23:15:30', 'Switch1': 'ON'}}, 'sonoff-579E5B': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-5A6CAB': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-97D5D7': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-97A45E': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'mqttreflect': {'LWT': {'LWT': b'Online'}}}, ensure_ascii=False)</expression-string>
+        <expression-string>'{ &quot;idx&quot; : %s, &quot;nvalue&quot; : 0, &quot;svalue&quot;: &quot;%s&quot; }' % (userdata.domotizc[topic], msg.payload.decode(&quot;utf-8&quot;))</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>json.dumps({'sonoff-3C1ED0': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-9230AE': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-3BCB3C': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-F9A731': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:15:30', 'Uptime': '10T14:58:11', 'Vcc': 3.449, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'ON', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 46}}, 'SENSOR': {'Time': '2019-05-16T23:15:30', 'Switch1': 'ON'}}, 'sonoff-3BC398': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-922B3C': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-923A2A': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:16:20', 'Uptime': '30T00:49:07', 'Vcc': 3.584, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'OFF', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 46}}, 'SENSOR': {'Time': '2019-05-16T23:16:20', 'ENERGY': {'TotalStartTime': '2019-02-06T17:43:49', 'Total': 28.767, 'Yesterday': 0.0, 'Today': 0.0, 'Period': 0, 'Power': 0, 'ApparentPower': 0, 'ReactivePower': 0, 'Factor': 0.0, 'Voltage': 0, 'Current': 0.0}}}, 'sonoff-9ED488': {'LWT': {'LWT': b'Online'}}, 'sonoff-F99B3A': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-922CB3': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-3C20CF': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:15:39', 'Uptime': '10T14:58:20', 'Vcc': 3.591, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'OFF', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 80}}, 'SENSOR': {'Time': '2019-05-16T23:15:39', 'Switch1': 'ON'}}, 'sonoff-3C1716': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:16:53', 'Uptime': '2T13:41:33', 'Vcc': 3.481, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'ON', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 72}}, 'SENSOR': {'Time': '2019-05-16T23:16:53', 'Switch1': 'OFF'}}, 'sonoff-92D1DA': {'LWT': {'LWT': b'\xd0\x9e\xd1\x84\xd1\x84-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-F9966A': {'LWT': {'LWT': b'\xd0\x9e\xd1\x84\xd1\x84-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-57AA58': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}, 'STATE': {'Time': '2019-05-16T23:15:30', 'Uptime': '10T14:58:12', 'Vcc': 3.447, 'SleepMode': 'Dynamic', 'Sleep': 50, 'LoadAvg': 19, 'POWER': 'OFF', 'Wifi': {'AP': 1, 'SSId': 'neacrisH', 'BSSId': 'E0:91:F5:AD:AB:75', 'Channel': 5, 'RSSI': 50}}, 'SENSOR': {'Time': '2019-05-16T23:15:30', 'Switch1': 'ON'}}, 'sonoff-579E5B': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-5A6CAB': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-97D5D7': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'sonoff-97A45E': {'LWT': {'LWT': b'\xd0\x9e\xd0\xbd-\xd0\xbb\xd0\xb0\xd0\xb9\xd0\xbd'}}, 'mqttreflect': {'LWT': {'LWT': b'Online'}}}.decode(utf-8), ensure_ascii=False)</expression-string>
+        <expression-string>'{ &quot;idx&quot; : %s, &quot;nvalue&quot; : 0, &quot;svalue&quot;: &quot;%s&quot; }' % (userdata.domotizc[topic], msg.payload)</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>alive_obj.alive_data</expression-string>
+        <expression-string>'{ &quot;idx&quot; : %s, &quot;nvalue&quot; : 0, &quot;svalue&quot;: &quot;%s&quot; }' % (userdata.domotizc[topic], str(msg.payload))</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>json.dumps({}, ensure_ascii=False)</expression-string>
+        <expression-string>topic = msg.topic</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>json.dumps(alive_obj.alive_data, ensure_ascii=False)</expression-string>
+        <expression-string>topic in userdata.domotizc</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>json.dumps(alive_obj.alive_data)</expression-string>
+        <expression-string>self.domitizc.keys()</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>json.dumpa(alive_obj.alive_data)</expression-string>
+        <expression-string>js.iteritems()</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
       <expression>
-        <expression-string>self.alive_data[dev][key]</expression-string>
+        <expression-string>opts</expression-string>
         <language-id>Python</language-id>
         <evaluation-mode>EXPRESSION</evaluation-mode>
       </expression>
@@ -923,27 +1026,11 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini" />
     <entry file="file://$USER_HOME$/.local/lib/python2.7/site-packages/paho/mqtt/client.py" />
     <entry file="file://$PROJECT_DIR$/mqtt-frwd.json" />
     <entry file="file://$PROJECT_DIR$/alive-app/__init__.py" />
     <entry file="file://$PROJECT_DIR$/alive-app/routes.py" />
-    <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="120">
-          <caret line="8" column="16" selection-start-line="8" selection-start-column="16" selection-end-line="8" selection-end-column="16" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2310">
-          <caret line="162" selection-start-line="80" selection-end-line="162" />
-          <folding>
-            <element signature="e#247#262#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/mymqtt.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="195">
@@ -954,44 +1041,64 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
-      <provider selected="true" editor-type-id="text-editor" />
-    </entry>
-    <entry file="file://$PROJECT_DIR$/alivedb.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="300">
-          <caret line="20" column="20" selection-start-line="20" selection-start-column="20" selection-end-line="20" selection-end-column="20" />
-        </state>
-      </provider>
+    <entry file="file://$PROJECT_DIR$/simple-monitor-alert/README.rst">
+      <provider selected="true" editor-type-id="restructured-text-editor" />
     </entry>
     <entry file="file:///usr/local/lib/python3.6/dist-packages/paho/mqtt/client.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="5290">
+        <state relative-caret-position="696">
           <caret line="2907" selection-start-line="2907" selection-end-line="2907" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/reflect-domotizc.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="200">
-          <caret line="51" lean-forward="true" selection-start-line="48" selection-end-line="51" />
+        <state relative-caret-position="45">
+          <caret line="33" lean-forward="true" selection-start-line="33" selection-end-line="33" />
           <folding>
             <element signature="e#145#161#0" expanded="true" />
           </folding>
         </state>
       </provider>
     </entry>
-    <entry file="file:///usr/lib/python3.6/http/server.py">
+    <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="163">
-          <caret line="405" selection-start-line="405" selection-end-line="405" />
+        <state relative-caret-position="120">
+          <caret line="8" column="16" selection-start-line="8" selection-start-column="16" selection-end-line="8" selection-end-column="16" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/alivemqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="275">
-          <caret line="94" column="84" lean-forward="true" selection-start-line="94" selection-start-column="84" selection-end-line="94" selection-end-column="84" />
+        <state relative-caret-position="135">
+          <caret line="27" column="11" lean-forward="true" selection-start-line="27" selection-start-column="11" selection-end-line="27" selection-end-column="11" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="742">
+          <caret line="132" column="32" lean-forward="true" selection-start-line="132" selection-start-column="32" selection-end-line="132" selection-end-column="32" />
+          <folding>
+            <element signature="e#247#262#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/netdata/collectors/python.d.plugin/example/example.chart.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="60">
+          <caret line="4" column="43" lean-forward="true" selection-start-line="4" selection-start-column="43" selection-end-line="4" selection-end-column="43" />
+          <folding>
+            <element signature="e#165#196#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/alivedb.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="510">
+          <caret line="34" column="66" selection-start-line="34" selection-start-column="66" selection-end-line="34" selection-end-column="66" />
         </state>
       </provider>
     </entry>

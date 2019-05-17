@@ -13,3 +13,12 @@
 [submodule "mqttreflect/com2mqtt/resetusb"]
 	path = mqttreflect/com2mqtt/resetusb
 	url = https://github.com/mcarans/resetusb
+[submodule "mqtt/simplemonitor"]
+	path = mqtt/simplemonitor
+	url = https://github.com/jamesoff/simplemonitor
+[submodule "mqtt/simple-monitor-alert"]
+	path = mqtt/simple-monitor-alert
+	url = https://github.com/Nekmo/simple-monitor-alert
+[submodule "mqtt/netdata"]
+	path = mqtt/netdata
+	url = https://github.com/netdata/netdata
