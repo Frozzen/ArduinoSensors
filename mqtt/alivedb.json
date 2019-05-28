@@ -15,6 +15,7 @@
     ["sonoff-3C20CF","sonoff"],
     ["sonoff-3C1716","sonoff"],
     ["sonoff-92D1DA","sonoff"],
+    ["sonoff-F99B3A","sonoff"],
     ["sonoff-F9966A","sonoff"],
     ["sonoff-57AA58","sonoff"],
     ["sonoff-579E5B","sonoff"],
@@ -27,13 +28,12 @@
     "sonoff" : ["LWT","SENSOR/time", "STATE/uptime", "STATE/IP"
       ],
     "POW": ["LWT","SENSOR/time", "STATE/uptime", "STATE/IP",
-      "SENSOR/energy/current", "SENSOR/energy/total",],
+      "SENSOR/energy/current", "SENSOR/energy/total"],
     "sonoffT": ["LWT", "SENSOR/time", "STATE/uptime", "STATE/IP",
       "SENSOR/ds18b20/temperature"],
     "sonoffT2": ["LWT", "SENSOR/time", "STATE/uptime", "STATE/IP",
       "SENSOR/ds18b20/temperature", "SENSOR/ds18b20-1/temperature"],
     "sonoffTH": ["LWT", "SENSOR/time", "STATE/uptime", "STATE/IP",
-      "SENSOR/am2301/temperature", "SENSOR/am2301/humidity"],
-
+      "SENSOR/am2301/temperature", "SENSOR/am2301/humidity"]
   }
-}"sonoff",
+}

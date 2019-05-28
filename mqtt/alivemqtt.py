@@ -63,16 +63,27 @@ class HttpProcessor(BaseHTTPRequestHandler):
             str = json.dumps(alive_obj.alive_data)
         elif self.path == "/devlist":
             str = json.dumps(alive_obj.alivedb['mqttdevices'])
+        elif self.path == "/all_status":
+            for dev, type in alive_obj.alivedb['mqttdevices']:
+                if type in ['sonoff', 'POW', 'sonoffT', 'sonoffT2', 'sonoffTH']:
+                    alive_obj.client.publish('cmnd/%s/STATUS' % (dev,), '0')
+            str = 'ok'
         elif  "/dev/" in self.path:
             dev = self.path.split('/')[2]
-            str = json.dumps(alive_obj.alive_data[dev])
+            if dev in alive_obj.alive_data:
+                str = json.dumps(alive_obj.alive_data[dev])
+            else:
+                str = "no dev %s" % (dev, )
         elif  "/status/" in self.path:
             dev = self.path.split('/')[2]
             alive_obj.client.publish('cmnd/%s/STATUS' % (dev,), '0')
             str = 'ok'
         elif "/devkey/" in self.path:
             _, _, dev, key = self.path.split('/')
-            str = json.dumps(_finditem(alive_obj.alive_data[dev], key))
+            if dev in alive_obj.alive_data:
+                str = json.dumps(_finditem(alive_obj.alive_data[dev], key))
+            else:
+                str = "no dev %s" % (dev,)
         else:
             return
         self.send_response(200)
@@ -81,12 +92,19 @@ class HttpProcessor(BaseHTTPRequestHandler):
         self.wfile.write(str.encode())
 
 class AliveMQTT(MyMQTT):
+    def search_device(self, dev):
+        for it in self.alivedb['mqttdevices']:
+            if it[0] == dev:
+                return it[1]
+        return None
+
     def __init__(self):
         super(AliveMQTT, self).__init__()
         with open('alivedb.json', 'r') as fp:
             self.alivedb = json.load(fp)
         self.alive_data = {}
         self.connected = False
+
 
         ###################################
         def __on_connect(client, userdata, flags, rc):
@@ -103,7 +121,7 @@ class AliveMQTT(MyMQTT):
             lwt = re.search(r"^tele/([A-z0-9\-_]+)/(LWT|STATE|SENSOR|UPTIME)$", msg.topic)
             if lwt is not None:
                 dev = lwt.group(1)
-                if dev not in self.alivedb['mqttdevices']:
+                if self.search_device(dev) is None:
                     return
                 if dev not in  self.alive_data:
                     self.alive_data[dev] = {}
@@ -122,8 +140,10 @@ class AliveMQTT(MyMQTT):
                 print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
             else:
                 stat = re.search(r"^stat/([A-z0-9\-_]+)/(STATUS[0-9]+)$", msg.topic)
+                if stat is None:
+                    return
                 dev = stat.group(1)
-                if dev not in self.alivedb['mqttdevices']:
+                if self.search_device(dev) is None:
                     return
                 if dev not in  self.alive_data:
                     self.alive_data[dev] = {}
