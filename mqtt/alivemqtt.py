@@ -19,6 +19,7 @@ https://jamesoff.github.io/simplemonitor/ https://github.com/jamesoff/simplemoni
       • датчики последнее значение и когда
 https://habr.com/ru/post/346306/ flask
 
+TODO давть всем команду cmnd/sonoff-F99B3A/STATUS 0 - получить конфигурацию
 """
 # -*- coding: utf-8 -*-
 import re
@@ -46,14 +47,38 @@ def merge_two_dicts(x, y):
 
 alive_obj = None
 
+def _finditem(obj, key):
+    if key in obj:
+        return obj[key]
+    for k, v in obj.items():
+        if isinstance(v,dict):
+            v = _finditem(v, key)
+            if v is not None:
+                return v
+    return None
+
 class HttpProcessor(BaseHTTPRequestHandler):
     def do_GET(self):
+        if self.path=="/":
+            str = json.dumps(alive_obj.alive_data)
+        elif self.path == "/devlist":
+            str = json.dumps(alive_obj.alivedb['mqttdevices'])
+        elif  "/dev/" in self.path:
+            dev = self.path.split('/')[2]
+            str = json.dumps(alive_obj.alive_data[dev])
+        elif  "/status/" in self.path:
+            dev = self.path.split('/')[2]
+            alive_obj.client.publish('cmnd/%s/STATUS' % (dev,), '0')
+            str = 'ok'
+        elif "/devkey/" in self.path:
+            _, _, dev, key = self.path.split('/')
+            str = json.dumps(_finditem(alive_obj.alive_data[dev], key))
+        else:
+            return
         self.send_response(200)
         self.send_header('content-type','text/json')
         self.end_headers()
-        str = json.dumps(alive_obj.alive_data)
         self.wfile.write(str.encode())
-        #self.wfile.close()
 
 class AliveMQTT(MyMQTT):
     def __init__(self):
@@ -95,6 +120,23 @@ class AliveMQTT(MyMQTT):
                     except (TypeError, ValueError, json.JSONDecodeError) as e:
                         print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
                 print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
+            else:
+                stat = re.search(r"^stat/([A-z0-9\-_]+)/(STATUS[0-9]+)$", msg.topic)
+                dev = stat.group(1)
+                if dev not in self.alivedb['mqttdevices']:
+                    return
+                if dev not in  self.alive_data:
+                    self.alive_data[dev] = {}
+                key = stat.group(2)
+                if key not in self.alive_data[dev]:
+                    self.alive_data[dev][key] = {}
+                payload = msg.payload.decode("utf-8", 'ignore')
+                try:
+                    self.alive_data[dev][key] = merge_two_dicts(self.alive_data[dev][key],
+                                                            json.loads(payload))
+                except (TypeError, ValueError, json.JSONDecodeError) as e:
+                    print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
+                print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
 
         def __on_disconnect(client, userdata, flags, rc):
             userdata.onnected = False
@@ -105,7 +147,7 @@ class AliveMQTT(MyMQTT):
         self.client.on_disconnect = __on_disconnect
 
     def  main_subscribe(self):
-        for tpc in ['tele/#']:
+        for tpc in ['tele/#', 'stat/#']:
             self.client.subscribe(tpc)
 
 def main(argv):
@@ -133,7 +175,6 @@ def run_once():
         fcntl.flock(fh, fcntl.LOCK_EX | fcntl.LOCK_NB)
     except:
         os._exit(1)
-
 
 if __name__ == '__main__':
 
