@@ -137,7 +137,7 @@ class AliveMQTT(MyMQTT):
                                                                 json.loads(payload))
                     except (TypeError, ValueError, json.JSONDecodeError) as e:
                         print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
-                print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
+                # print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
             else:
                 stat = re.search(r"^stat/([A-z0-9\-_]+)/(STATUS[0-9]+)$", msg.topic)
                 if stat is None:
@@ -156,7 +156,7 @@ class AliveMQTT(MyMQTT):
                                                             json.loads(payload))
                 except (TypeError, ValueError, json.JSONDecodeError) as e:
                     print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
-                print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
+                #print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
 
         def __on_disconnect(client, userdata, flags, rc):
             userdata.onnected = False
@@ -179,7 +179,7 @@ def main(argv):
 
     # while mqtt.connected != True:  # Wait for connection
     #     time.sleep(0.1)
-    serv = HTTPServer(("localhost", 8087), HttpProcessor)
+    serv = HTTPServer(("0.0.0.0", 8087), HttpProcessor)
     serv.serve_forever()
     # while mqtt.connected == True:  # Wait for connection
     #     time.sleep(0.1)

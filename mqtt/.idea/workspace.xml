@@ -5,9 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="">
-      <change beforePath="$PROJECT_DIR$/.idea/vcs.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/vcs.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/deployment.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/deployment.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/alivedb.json" beforeDir="false" afterPath="$PROJECT_DIR$/alivedb.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/alivemqtt.py" beforeDir="false" afterPath="$PROJECT_DIR$/alivemqtt.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
@@ -42,7 +41,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="23" />
+          <entry key="project.closed" value="25" />
           <entry key="project.open.time.1" value="3" />
           <entry key="project.open.time.103" value="1" />
           <entry key="project.open.time.105" value="1" />
@@ -51,8 +50,9 @@
           <entry key="project.open.time.26" value="1" />
           <entry key="project.open.time.27" value="1" />
           <entry key="project.open.time.29" value="1" />
+          <entry key="project.open.time.3" value="1" />
           <entry key="project.open.time.30" value="1" />
-          <entry key="project.open.time.31" value="1" />
+          <entry key="project.open.time.31" value="2" />
           <entry key="project.open.time.32" value="2" />
           <entry key="project.open.time.33" value="2" />
           <entry key="project.open.time.34" value="1" />
@@ -67,7 +67,7 @@
           <entry key="project.open.time.54" value="1" />
           <entry key="project.open.time.6" value="1" />
           <entry key="project.open.time.63" value="1" />
-          <entry key="project.opened" value="31" />
+          <entry key="project.opened" value="33" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -99,7 +99,7 @@
           <entry key="md" value="36" />
           <entry key="py" value="8080" />
           <entry key="service" value="56" />
-          <entry key="txt" value="492" />
+          <entry key="txt" value="566" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
@@ -107,7 +107,7 @@
           <entry key="Ini" value="1377" />
           <entry key="JSON" value="86" />
           <entry key="Markdown" value="36" />
-          <entry key="PLAIN_TEXT" value="555" />
+          <entry key="PLAIN_TEXT" value="629" />
           <entry key="Python" value="8080" />
         </counts>
       </usages-collector>
@@ -146,7 +146,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="2430">
+            <state relative-caret-position="2310">
               <caret line="162" selection-start-line="80" selection-end-line="162" />
               <folding>
                 <element signature="e#247#262#0" expanded="true" />
@@ -158,10 +158,10 @@
       <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/alivemqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="215">
-              <caret line="69" selection-start-line="69" selection-end-line="69" />
+            <state relative-caret-position="585">
+              <caret line="39" column="13" lean-forward="true" selection-start-line="39" selection-start-column="13" selection-end-line="39" selection-end-column="13" />
               <folding>
-                <marker date="1559055004018" expanded="true" signature="3153:3284" ph="..." />
+                <marker date="1559055538804" expanded="true" signature="3153:3284" ph="..." />
               </folding>
             </state>
           </provider>
@@ -170,7 +170,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/alivedb.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="210">
+            <state relative-caret-position="405">
               <caret line="27" column="11" selection-start-line="27" selection-start-column="5" selection-end-line="27" selection-end-column="11" />
             </state>
           </provider>
@@ -179,7 +179,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mymqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
+            <state relative-caret-position="195">
               <caret line="15" selection-start-line="15" selection-end-line="15" />
               <folding>
                 <element signature="e#25#56#0" expanded="true" />
@@ -275,8 +275,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="501" />
-    <option name="y" value="64" />
+    <option name="x" value="633" />
+    <option name="y" value="105" />
     <option name="width" value="1291" />
     <option name="height" value="911" />
   </component>
@@ -307,7 +307,7 @@
     <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
     <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
-    <property name="last_opened_file_path" value="$PROJECT_DIR$/alivemqtt.py" />
+    <property name="last_opened_file_path" value="$USER_HOME$/work/domoticz/plugins" />
     <property name="nodejs_interpreter_path.stuck_in_default_project" value="undefined stuck path" />
     <property name="nodejs_npm_path_reset_for_default_project" value="true" />
     <property name="run.code.analysis.last.selected.profile" value="pProject Default" />
@@ -651,20 +651,27 @@
       <option name="project" value="LOCAL" />
       <updated>1554904746372</updated>
     </task>
-    <option name="localTasksCounter" value="25" />
+    <task id="LOCAL-00025" summary="отладил получение данныз по mqtt и получение статуса всех устройств">
+      <created>1559055082696</created>
+      <option name="number" value="00025" />
+      <option name="presentableId" value="LOCAL-00025" />
+      <option name="project" value="LOCAL" />
+      <updated>1559055082697</updated>
+    </task>
+    <option name="localTasksCounter" value="26" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="501" y="64" width="1291" height="911" extended-state="0" />
+    <frame x="633" y="105" width="1291" height="911" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48022598" visible="true" weight="0.20291026" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48022598" visible="true" weight="0.20937753" />
       <window_info id="Structure" order="1" sideWeight="0.519774" side_tool="true" weight="0.35758513" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32875" />
       <window_info anchor="bottom" id="Run" order="2" weight="0.3277635" />
-      <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.33547556" />
+      <window_info anchor="bottom" id="Debug" order="3" weight="0.33547556" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
       <window_info anchor="bottom" id="TODO" order="6" />
@@ -755,7 +762,8 @@
     <MESSAGE value="отправляю сообщения mqtt в domotizc - заработало" />
     <MESSAGE value="свожу" />
     <MESSAGE value="была ошибка" />
-    <option name="LAST_COMMIT_MESSAGE" value="была ошибка" />
+    <MESSAGE value="отладил получение данныз по mqtt и получение статуса всех устройств" />
+    <option name="LAST_COMMIT_MESSAGE" value="отладил получение данныз по mqtt и получение статуса всех устройств" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -923,6 +931,23 @@
     <entry file="file://$PROJECT_DIR$/mqtt-frwd.json" />
     <entry file="file://$PROJECT_DIR$/alive-app/__init__.py" />
     <entry file="file://$PROJECT_DIR$/alive-app/routes.py" />
+    <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
+      <provider selected="true" editor-type-id="text-editor" />
+    </entry>
+    <entry file="file:///usr/local/lib/python3.6/dist-packages/paho/mqtt/client.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="215">
+          <caret line="2074" selection-start-line="2074" selection-end-line="2074" />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file:///usr/lib/python3.6/http/server.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="163">
+          <caret line="405" selection-start-line="405" selection-end-line="405" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
@@ -942,7 +967,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mqtt-frwd.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="2430">
+        <state relative-caret-position="2310">
           <caret line="162" selection-start-line="80" selection-end-line="162" />
           <folding>
             <element signature="e#247#262#0" expanded="true" />
@@ -950,12 +975,16 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/mqtt-frwd.ini">
-      <provider selected="true" editor-type-id="text-editor" />
+    <entry file="file://$PROJECT_DIR$/alivedb.json">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="405">
+          <caret line="27" column="11" selection-start-line="27" selection-start-column="5" selection-end-line="27" selection-end-column="11" />
+        </state>
+      </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/mymqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
+        <state relative-caret-position="195">
           <caret line="15" selection-start-line="15" selection-end-line="15" />
           <folding>
             <element signature="e#25#56#0" expanded="true" />
@@ -963,33 +992,12 @@
         </state>
       </provider>
     </entry>
-    <entry file="file:///usr/local/lib/python3.6/dist-packages/paho/mqtt/client.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="215">
-          <caret line="2074" selection-start-line="2074" selection-end-line="2074" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file:///usr/lib/python3.6/http/server.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="163">
-          <caret line="405" selection-start-line="405" selection-end-line="405" />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/alivedb.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="210">
-          <caret line="27" column="11" selection-start-line="27" selection-start-column="5" selection-end-line="27" selection-end-column="11" />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/alivemqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="215">
-          <caret line="69" selection-start-line="69" selection-end-line="69" />
+        <state relative-caret-position="585">
+          <caret line="39" column="13" lean-forward="true" selection-start-line="39" selection-start-column="13" selection-end-line="39" selection-end-column="13" />
           <folding>
-            <marker date="1559055004018" expanded="true" signature="3153:3284" ph="..." />
+            <marker date="1559055538804" expanded="true" signature="3153:3284" ph="..." />
           </folding>
         </state>
       </provider>
