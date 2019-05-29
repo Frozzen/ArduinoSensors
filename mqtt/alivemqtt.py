@@ -65,7 +65,7 @@ class HttpProcessor(BaseHTTPRequestHandler):
             str = json.dumps(alive_obj.alivedb['mqttdevices'])
         elif self.path == "/all_status":
             for dev, type in alive_obj.alivedb['mqttdevices']:
-                if type in ['sonoff', 'POW', 'sonoffT', 'sonoffT2', 'sonoffTH']:
+                if type in ['RF-10', 'POW', 'TH-10']:
                     alive_obj.client.publish('cmnd/%s/STATUS' % (dev,), '0')
             str = 'ok'
         elif  "/dev/" in self.path:
