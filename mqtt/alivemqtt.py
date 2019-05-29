@@ -113,12 +113,12 @@ class AliveMQTT(MyMQTT):
                 global __Connected
                 userdata.onnected = True
                 userdata.main_subscribe()
-                print("Connected")
+                syslog.syslog(syslog.LOG_NOTICE, "Connected")
             else:
-                print("Connection failed", rc, flags)
+                syslog.syslog(syslog.LOG_ERR, "Connection failed", rc, flags)
 
         def __on_message(client, userdata, msg):
-            lwt = re.search(r"^tele/([A-z0-9\-_]+)/(LWT|STATE|SENSOR|UPTIME)$", msg.topic)
+            lwt = re.search(r"^tele/([A-z0-9\-_/]+)/(LWT|STATE|SENSOR|UPTIME)$", msg.topic)
             if lwt is not None:
                 dev = lwt.group(1)
                 if self.search_device(dev) is None:
@@ -136,10 +136,10 @@ class AliveMQTT(MyMQTT):
                         self.alive_data[dev][key] = merge_two_dicts(self.alive_data[dev][key],
                                                                 json.loads(payload))
                     except (TypeError, ValueError, json.JSONDecodeError) as e:
-                        print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
-                # print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
+                        syslog.syslog(syslog.LOG_ERR, "json err[%s][%s]=%s:%s" % (dev, key, payload, e))
+                    syslog.syslog(syslog.LOG_DEBUG,"data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
             else:
-                stat = re.search(r"^stat/([A-z0-9\-_]+)/(STATUS[0-9]+)$", msg.topic)
+                stat = re.search(r"^stat/([A-z0-9\-_/]+)/(STATUS[0-9]+)$", msg.topic)
                 if stat is None:
                     return
                 dev = stat.group(1)
@@ -155,8 +155,8 @@ class AliveMQTT(MyMQTT):
                     self.alive_data[dev][key] = merge_two_dicts(self.alive_data[dev][key],
                                                             json.loads(payload))
                 except (TypeError, ValueError, json.JSONDecodeError) as e:
-                    print("json err[%s][%s]=%s:%s" % (dev, key, payload, e))
-                #print("data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
+                    syslog.syslog(syslog.LOG_ERR, "json err[%s][%s]=%s:%s" % (dev, key, payload, e))
+                syslog.syslog(syslog.LOG_DEBUG, "data[%s][%s]=%s" % (dev, key, json.dumps(self.alive_data[dev][key])))
 
         def __on_disconnect(client, userdata, flags, rc):
             userdata.onnected = False
