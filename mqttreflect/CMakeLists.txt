@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.7)
-project(cpp-projects)
+project(shome-projects)
 # cmake  -D CMAKE_C_COMPILER=gcc-9 -D CMAKE_CXX_COMPILER=g++-9 ../mqttreflect/
 add_definitions(-Wno-unused-result)
 add_definitions(-std=c++17)

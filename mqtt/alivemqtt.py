@@ -69,17 +69,19 @@ class HttpProcessor(BaseHTTPRequestHandler):
                     alive_obj.client.publish('cmnd/%s/STATUS' % (dev,), '0')
             str = 'ok'
         elif  "/dev/" in self.path:
-            dev = self.path.split('/')[2]
+            dev = self.path[5:]
             if dev in alive_obj.alive_data:
                 str = json.dumps(alive_obj.alive_data[dev])
             else:
                 str = "no dev %s" % (dev, )
         elif  "/status/" in self.path:
-            dev = self.path.split('/')[2]
+            dev = self.path[8:]
             alive_obj.client.publish('cmnd/%s/STATUS' % (dev,), '0')
             str = 'ok'
         elif "/devkey/" in self.path:
-            _, _, dev, key, _ = self.path.split('/')
+            v = self.path.split('/')
+            key = v[-1]
+            dev = "/".join(v[2:-1])
             if dev in alive_obj.alive_data:
                 str = json.dumps(_finditem(alive_obj.alive_data[dev], key))
             else:

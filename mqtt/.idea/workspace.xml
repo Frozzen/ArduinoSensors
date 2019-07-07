@@ -4,10 +4,13 @@
     <option name="SCOPE_TYPE" value="3" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="">
+    <list default="true" id="94cb23af-24ac-4063-a5bc-dcf6e7af18dc" name="Default Changelist" comment="получение">
+      <change beforePath="$PROJECT_DIR$/../asensors.code-workspace" beforeDir="false" afterPath="$PROJECT_DIR$/../asensors.code-workspace" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/alivedb.json" beforeDir="false" afterPath="$PROJECT_DIR$/alivedb.json" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/alivemqtt.py" beforeDir="false" afterPath="$PROJECT_DIR$/alivemqtt.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../mqttreflect/CMakeLists.txt" beforeDir="false" afterPath="$PROJECT_DIR$/../mqttreflect/CMakeLists.txt" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../mqttreflect/serial-test/serial-test.pro" beforeDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -20,7 +23,7 @@
     <SUITE FILE_PATH="coverage/mqtt$reflect.coverage" NAME="reflect Coverage Results" MODIFIED="1554900100617" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$sun___shedule.coverage" NAME="sun &amp; shedule Coverage Results" MODIFIED="1551540575074" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$alert.coverage" NAME="aleve Coverage Results" MODIFIED="1559054840525" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
-    <SUITE FILE_PATH="coverage/mqtt$aleve.coverage" NAME="aleve Coverage Results" MODIFIED="1559140694240" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
+    <SUITE FILE_PATH="coverage/mqtt$aleve.coverage" NAME="aleve Coverage Results" MODIFIED="1562474756420" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$check_my.coverage" NAME="check my Coverage Results" MODIFIED="1552100488844" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
     <SUITE FILE_PATH="coverage/mqtt$ref_domotizc.coverage" NAME="ref domotizc Coverage Results" MODIFIED="1554904548080" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$" />
   </component>
@@ -42,7 +45,7 @@
     <session id="1719507450">
       <usages-collector id="statistics.lifecycle.project">
         <counts>
-          <entry key="project.closed" value="25" />
+          <entry key="project.closed" value="26" />
           <entry key="project.open.time.1" value="3" />
           <entry key="project.open.time.103" value="1" />
           <entry key="project.open.time.105" value="1" />
@@ -66,9 +69,10 @@
           <entry key="project.open.time.49" value="1" />
           <entry key="project.open.time.52" value="1" />
           <entry key="project.open.time.54" value="1" />
+          <entry key="project.open.time.56" value="1" />
           <entry key="project.open.time.6" value="1" />
           <entry key="project.open.time.63" value="1" />
-          <entry key="project.opened" value="33" />
+          <entry key="project.opened" value="34" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.extensions.open">
@@ -98,9 +102,9 @@
           <entry key="ini" value="1377" />
           <entry key="json" value="375" />
           <entry key="md" value="36" />
-          <entry key="py" value="8141" />
+          <entry key="py" value="8204" />
           <entry key="service" value="56" />
-          <entry key="txt" value="620" />
+          <entry key="txt" value="660" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.file.types.edit">
@@ -108,8 +112,8 @@
           <entry key="Ini" value="1377" />
           <entry key="JSON" value="375" />
           <entry key="Markdown" value="36" />
-          <entry key="PLAIN_TEXT" value="683" />
-          <entry key="Python" value="8141" />
+          <entry key="PLAIN_TEXT" value="723" />
+          <entry key="Python" value="8204" />
         </counts>
       </usages-collector>
       <usages-collector id="statistics.vcs.git.usages">
@@ -156,23 +160,23 @@
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="false">
+      <file pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/alivemqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="153">
-              <caret line="66" selection-start-line="66" selection-end-line="66" />
+            <state relative-caret-position="330">
+              <caret line="83" column="30" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
               <folding>
-                <marker date="1559140663170" expanded="true" signature="3132:3263" ph="..." />
+                <marker date="1562474667426" expanded="true" signature="3156:3287" ph="..." />
               </folding>
             </state>
           </provider>
         </entry>
       </file>
-      <file pinned="false" current-in-tab="true">
+      <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/alivedb.json">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="45">
-              <caret line="3" column="28" selection-start-line="3" selection-start-column="28" selection-end-line="3" selection-end-column="28" />
+            <state relative-caret-position="225">
+              <caret line="15" column="73" selection-start-line="15" selection-start-column="73" selection-end-line="15" selection-end-column="73" />
             </state>
           </provider>
         </entry>
@@ -180,7 +184,7 @@
       <file pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/mymqtt.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="225">
+            <state relative-caret-position="195">
               <caret line="15" selection-start-line="15" selection-end-line="15" />
               <folding>
                 <element signature="e#25#56#0" expanded="true" />
@@ -265,8 +269,8 @@
         <option value="$PROJECT_DIR$/mqtt-frwd.json" />
         <option value="$PROJECT_DIR$/alive-app/__init__.py" />
         <option value="$PROJECT_DIR$/alive-app/routes.py" />
-        <option value="$PROJECT_DIR$/alivemqtt.py" />
         <option value="$PROJECT_DIR$/alivedb.json" />
+        <option value="$PROJECT_DIR$/alivemqtt.py" />
       </list>
     </option>
   </component>
@@ -277,8 +281,8 @@
     <sorting>DEFINITION_ORDER</sorting>
   </component>
   <component name="ProjectFrameBounds">
-    <option name="x" value="619" />
-    <option name="y" value="96" />
+    <option name="x" value="74" />
+    <option name="y" value="40" />
     <option name="width" value="1273" />
     <option name="height" value="901" />
   </component>
@@ -674,19 +678,26 @@
       <option name="project" value="LOCAL" />
       <updated>1559139991388</updated>
     </task>
-    <option name="localTasksCounter" value="28" />
+    <task id="LOCAL-00028" summary="отладил alive">
+      <created>1559140773054</created>
+      <option name="number" value="00028" />
+      <option name="presentableId" value="LOCAL-00028" />
+      <option name="project" value="LOCAL" />
+      <updated>1559140773054</updated>
+    </task>
+    <option name="localTasksCounter" value="29" />
     <servers />
   </component>
   <component name="ToolWindowManager">
-    <frame x="619" y="96" width="1273" height="901" extended-state="0" />
+    <frame x="74" y="40" width="1273" height="901" extended-state="0" />
     <editor active="true" />
     <layout>
-      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48022598" visible="true" weight="0.21246924" />
+      <window_info content_ui="combo" id="Project" order="0" sideWeight="0.48022598" visible="true" weight="0.21575062" />
       <window_info id="Structure" order="1" sideWeight="0.519774" side_tool="true" weight="0.35758513" />
       <window_info id="Favorites" order="2" side_tool="true" />
       <window_info anchor="bottom" id="Message" order="0" />
       <window_info anchor="bottom" id="Find" order="1" weight="0.32875" />
-      <window_info anchor="bottom" id="Run" order="2" weight="0.3277635" />
+      <window_info anchor="bottom" id="Run" order="2" weight="0.3268229" />
       <window_info active="true" anchor="bottom" id="Debug" order="3" visible="true" weight="0.3346354" />
       <window_info anchor="bottom" id="Cvs" order="4" weight="0.25" />
       <window_info anchor="bottom" id="Inspection" order="5" weight="0.4" />
@@ -780,7 +791,8 @@
     <MESSAGE value="была ошибка" />
     <MESSAGE value="отладил получение данныз по mqtt и получение статуса всех устройств" />
     <MESSAGE value="переименовал реле и обрабратчика&#10;отдал log в syslog" />
-    <option name="LAST_COMMIT_MESSAGE" value="переименовал реле и обрабратчика&#10;отдал log в syslog" />
+    <MESSAGE value="отладил alive" />
+    <option name="LAST_COMMIT_MESSAGE" value="отладил alive" />
   </component>
   <component name="XDebuggerManager">
     <breakpoint-manager>
@@ -794,6 +806,11 @@
           <url>file://$PROJECT_DIR$/check_device_online.py</url>
           <line>131</line>
           <option name="timeStamp" value="41" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/alivemqtt.py</url>
+          <line>82</line>
+          <option name="timeStamp" value="42" />
         </line-breakpoint>
       </breakpoints>
       <default-breakpoints>
@@ -965,6 +982,13 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$USER_HOME$/.PyCharm2018.2/system/python_stubs/-1247971763/syslog.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="161">
+          <caret line="16" selection-start-line="16" selection-end-line="16" />
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/reflect-mqtt.py">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="120">
@@ -994,7 +1018,7 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/mymqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="225">
+        <state relative-caret-position="195">
           <caret line="15" selection-start-line="15" selection-end-line="15" />
           <folding>
             <element signature="e#25#56#0" expanded="true" />
@@ -1002,27 +1026,20 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$USER_HOME$/.PyCharm2018.2/system/python_stubs/-1247971763/syslog.py">
+    <entry file="file://$PROJECT_DIR$/alivedb.json">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="161">
-          <caret line="16" selection-start-line="16" selection-end-line="16" />
+        <state relative-caret-position="225">
+          <caret line="15" column="73" selection-start-line="15" selection-start-column="73" selection-end-line="15" selection-end-column="73" />
         </state>
       </provider>
     </entry>
     <entry file="file://$PROJECT_DIR$/alivemqtt.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="153">
-          <caret line="66" selection-start-line="66" selection-end-line="66" />
+        <state relative-caret-position="330">
+          <caret line="83" column="30" selection-start-line="83" selection-start-column="30" selection-end-line="83" selection-end-column="30" />
           <folding>
-            <marker date="1559140663170" expanded="true" signature="3132:3263" ph="..." />
+            <marker date="1562474667426" expanded="true" signature="3156:3287" ph="..." />
           </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/alivedb.json">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="45">
-          <caret line="3" column="28" selection-start-line="3" selection-start-column="28" selection-end-line="3" selection-end-column="28" />
         </state>
       </provider>
     </entry>
