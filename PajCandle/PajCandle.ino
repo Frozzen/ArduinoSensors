@@ -67,6 +67,7 @@ const int COLD_TEMP = 40;
 const float LOWEST_TEMP = -25.0;
 // максимальное время горения свечей
 const long MAX_CANDLE_BURN_TIME  = 120000;
+const long START_CANDLE_BURN_TIME  = 1000;
 // низкое напряжение не включать свечи 
 const float ACC_LOW = 10.5;
 // задержка цикла опроса в милисекундах 
@@ -93,7 +94,9 @@ bool s_tempOk = true;
 
 float getAccVolts()
 {
-    return analogRead(AC_VOLT) * 35.5 / 1024.0 + 0.59;
+  int v = analogRead(AC_VOLT);
+  Serial.print(" acc adc:"); Serial.println(v);    
+    return v * 35.5 / 1024.0 + 0.59;
 }
 
 void setup(void)
@@ -125,12 +128,14 @@ void setup(void)
   // Start up the library
   sensors.begin();
   if(sensors.getDeviceCount() == 0) {
-    s_tempOk = false;  // TODO зажечь обе лампочки - синюю и красную
+    s_tempOk = false;  
     s_temp = 20.0;
+    Serial.println("no temp sensor");
   } else {
     sensors.requestTemperatures(); // Send the command to get temperatures
     s_tempOk = true;
     s_temp = sensors.getTempCByIndex(0);  
+    Serial.print("temp:"); Serial.println(s_temp);
   }
 
 #ifdef USE_I2C_LED
@@ -140,8 +145,10 @@ void setup(void)
   Wire.onRequest (requestEvent);  // interrupt handler for when data is wanted
 #endif
 
+  delay(500);
   // низкое напряжение - не даем включать реле
   float volts = getAccVolts();
+  Serial.print("acc volts:"); Serial.println(volts);
   if(volts < ACC_LOW) {
     candle_state = OFF_STATE;
     candle_on_time = 0;
@@ -155,10 +162,11 @@ void setup(void)
  */
 float calcTime(float temp)
 {
-  float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, 0); // сделать более быстро растущую функцию
+  // TODO сделать более быстро растущую функцию
+  float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, START_CANDLE_BURN_TIME); 
   
   if(res < 0)
-    return 0.0;
+    return START_CANDLE_BURN_TIME;
   return res;
 }
 
@@ -189,36 +197,38 @@ void loop(void)
   else if(candle_state == GREEN_STATE) {
     candle_on_time -= CANDLE_CHECK_TIME;
     if(candle_on_time <= 0) {
-      candle_state = OFF_STATE;
+     candle_state = OFF_STATE;
       candle_on_time = 0;
     }
   } 
   else if(candle_state == OFF_STATE) {
-    // ждем в среднем секунду вносим случайность чтобы разбить блокирование шины
-    delay(1000 + random(CANDLE_CHECK_TIME, 500));
+    delay(1000);
     if(sensors.getDeviceCount() == 0) {
       s_tempOk = false;
+      Serial.println(" no temp sensor:"); 
     } else {
       sensors.requestTemperatures(); // Send the command to get temperatures
       s_tempOk = true;
       temp = sensors.getTempCByIndex(0);  
     }
-
+    Serial.print("acc:"); Serial.println(getAccVolts());
     // фильтр для Кальмана отбрасываем неправильные измерения
     if(abs(temp - s_temp) < 5.0) {
       s_temp = temp;  
     }
   }
 
-  // включаем и выключаем реле каждый оборот - 
+  Serial.print("candle_state:"); Serial.print(candle_state); Serial.print(" time="); Serial.print(candle_on_time); 
+  Serial.print(" temp="); Serial.println(s_temp); 
+    // включаем и выключаем реле каждый оборот - 
   digitalWrite(RELAY, (candle_state == RED_STATE || candle_state == GREEN_STATE) ? HIGH : LOW); 
   
-  digitalWrite(OVERHEAT, (s_tempOk && (s_temp > OVERHEAT_TEMP)) ? HIGH : LOW); 
-  digitalWrite(COLD, (s_tempOk && (s_temp < COLD_TEMP)) ? HIGH : LOW); 
+  digitalWrite(OVERHEAT, (!s_tempOk || (s_temp > OVERHEAT_TEMP)) ? HIGH : LOW); 
+  digitalWrite(COLD, (!s_tempOk || (s_temp < COLD_TEMP)) ? HIGH : LOW); 
 
   digitalWrite(RED_CANDLE, (candle_state == RED_STATE) ? HIGH : LOW); 
   digitalWrite(GREEN_CANDLE, (candle_state == GREEN_STATE) ? HIGH : LOW); 
-#ifdef USE_I2C_LED  
+#ifdef USE_I2C_LED 
   // не заливать шину данными - оправлять при изменении и раз в 1 секунд  + rand(0.5)
   byte t = ((s_tempOk && (s_temp > OVERHEAT_TEMP)) ? PANEL::MASK_OVERHEAT : 0) | 
           ((s_tempOk && (s_temp < COLD_TEMP)) ? PANEL::MASK_COLD : 0) | 
