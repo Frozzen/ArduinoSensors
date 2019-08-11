@@ -107,23 +107,23 @@ void setup(void)
 
   // конфишурим провод управления реле и выключаем его 
   pinMode(RELAY, OUTPUT); 
-#ifndef USE_I2C_LED  
+
   pinMode(OVERHEAT, OUTPUT); 
   pinMode(COLD, OUTPUT); 
   pinMode(RED_CANDLE, OUTPUT); 
   pinMode(GREEN_CANDLE, OUTPUT); 
-#endif  
+
   pinMode(AC_VOLT, INPUT);
   digitalWrite(AC_VOLT, LOW); // disable pull-up
 
   // выключаем все
   digitalWrite(RELAY, LOW);
-#ifndef USE_I2C_LED
+
   digitalWrite(OVERHEAT, HIGH);
   digitalWrite(COLD, HIGH);
   digitalWrite(RED_CANDLE, HIGH);
   digitalWrite(GREEN_CANDLE, HIGH);
-#endif  
+
   
   // Start up the library
   sensors.begin();
@@ -138,18 +138,11 @@ void setup(void)
     Serial.print("temp:"); Serial.println(s_temp);
   }
 
-#ifdef USE_I2C_LED
-  // отдаем по i2c состояние свечей и напряжение сети по старту
-  Wire.begin(I2C_SLAVE_ADDRESS_TEMP_VOLT);                // join i2c bus with address #2
-  Wire.onReceive (receiveEvent);  // interrupt handler for incoming messages
-  Wire.onRequest (requestEvent);  // interrupt handler for when data is wanted
-#endif
-
   delay(500);
   // низкое напряжение - не даем включать реле
   float volts = getAccVolts();
   Serial.print("acc volts:"); Serial.println(volts);
-  if(volts < ACC_LOW) {
+  if(volts < ACC_LOW || s_temp > COLD_TEMP) {
     candle_state = OFF_STATE;
     candle_on_time = 0;
     red_time = 0;
@@ -166,7 +159,7 @@ float calcTime(float temp)
   float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, START_CANDLE_BURN_TIME); 
   
   if(res < 0)
-    return START_CANDLE_BURN_TIME;
+    return 0;
   return res;
 }
 
@@ -228,53 +221,5 @@ void loop(void)
 
   digitalWrite(RED_CANDLE, (candle_state == RED_STATE) ? HIGH : LOW); 
   digitalWrite(GREEN_CANDLE, (candle_state == GREEN_STATE) ? HIGH : LOW); 
-#ifdef USE_I2C_LED 
-  // не заливать шину данными - оправлять при изменении и раз в 1 секунд  + rand(0.5)
-  byte t = ((s_tempOk && (s_temp > OVERHEAT_TEMP)) ? PANEL::MASK_OVERHEAT : 0) | 
-          ((s_tempOk && (s_temp < COLD_TEMP)) ? PANEL::MASK_COLD : 0) | 
-        ((candle_state == RED_STATE) ? PANEL::MASK_RED_CANDLE : 0) |
-        ((candle_state == GREEN_STATE) ? PANEL::MASK_GREEN_CANDLE : 0);
-  PPanel::writeLED(t);
-#endif
-}
 
-#ifdef USE_I2C_LED  
-byte command;
-//***************************************************************************
-// function that executes whenever data is requested by master
-// this function is registered as an event, see setup()
-void receiveEvent(int)
-{
-  command = Wire.read(); // receive byte subaddress
-  switch(command) {
-  case RCB::I2C_CMD_RELE_SET: 
-    candle_state = RED_STATE;
-    candle_on_time = min(Wire.read() * 1000, MAX_CANDLE_BURN_TIME);
-    red_time = candle_on_time / 3;
-    break;
-  default: ;
-  } 
 }
-
-//***************************************************************************
-void requestEvent ()
-{
-  switch (command)
-     {
-      case RCB::I2C_CMD_TEMP: 
-        Wire.write((char)s_temp);
-        break;
-      case RCB::I2C_CMD_VOLT: {
-        byte volt = getAccVolts() * 10;
-        Wire.write(volt);
-        }
-        break;
-      case RCB::I2C_CMD_STATE: 
-        Wire.write((s_tempOk ? 0 : RCB::BAD_TEMP_STATE) | 
-                  (candle_state == RED_STATE ? RCB::RED_LED_CANDLE_STATE : 0) |
-                  (candle_state == GREEN_STATE ? RCB::GREEN_LED_CANDLE_STATE : 0));
-        break;      
-      default:;
-     } 
-}
-#endif
