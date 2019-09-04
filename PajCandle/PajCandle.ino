@@ -63,8 +63,8 @@ const int OVERHEAT_TEMP = 105;
 const int COLD_TEMP = 40;
 const float LOWEST_TEMP = -25.0;
 // максимальное время горения свечей
-const long MAX_CANDLE_BURN_TIME  = 120000;
-const long START_CANDLE_BURN_TIME  = 1000;
+const long MAX_CANDLE_BURN_TIME  = 600;
+const long START_CANDLE_BURN_TIME  = 1;
 // низкое напряжение не включать свечи 
 const float ACC_LOW = 10.5;
 // задержка цикла опроса в милисекундах 
@@ -95,7 +95,7 @@ float getAccVolts()
 {
   int v = analogRead(AC_VOLT);
   Serial.print(" acc adc:"); Serial.println(v);    
-  return v * 24.5 / 1024.0 + 0.59;
+  return v * 35.5 / 1024.0 + 0.59;
 }
 
 void setup(void)
@@ -157,7 +157,11 @@ void setup(void)
 float calcTime(float temp)
 {
   // TODO сделать более быстро растущую функцию
-  float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, START_CANDLE_BURN_TIME); 
+  if(temp > COLD_TEMP)
+    return 0;
+  if(temp > 0)
+    return map(temp, 0, 40, 80, 1);
+  float res = map(temp, LOWEST_TEMP, 0, MAX_CANDLE_BURN_TIME, 80); 
   
   if(res < 0)
     return 0;
@@ -217,5 +221,6 @@ void loop(void)
      break;
   }
 
-  Serial.print("candle_state:"); Serial.print(candle_state); Serial.print(" time="); Serial.print(candle_on_time); 
+  Serial.print("candle_state:"); Serial.print(candle_state); 
+  Serial.print(" time="); Serial.println(candle_on_time); 
  }
