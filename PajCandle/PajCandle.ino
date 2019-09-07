@@ -43,10 +43,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Wire.h>
-//#include <PPanel.h>
-
-//#define USE_I2C_LED
-//#define DEBUG
+#define DEBUG
 
 // PINS
 // Data wire is plugged into pin 2 on the Arduino
@@ -66,8 +63,8 @@ const int OVERHEAT_TEMP = 105;
 const int COLD_TEMP = 40;
 const float LOWEST_TEMP = -25.0;
 // максимальное время горения свечей
-const long MAX_CANDLE_BURN_TIME  = 120000;
-const long START_CANDLE_BURN_TIME  = 1000;
+const long MAX_CANDLE_BURN_TIME  = 600;
+const long START_CANDLE_BURN_TIME  = 1;
 // низкое напряжение не включать свечи 
 const float ACC_LOW = 10.5;
 // задержка цикла опроса в милисекундах 
@@ -91,12 +88,14 @@ long candle_on_time = 0, // время которое реле включено 
     red_time = 0;        // время которое будет гореть красная лампочка свечей
 float s_temp = 0;      // температура за прошлый цикл измерений
 bool s_tempOk = true;
+#define ERR_TMO 1000
+int s_temp_error_time = ERR_TMO;  // счетчик времени светить обоими лампами если нет термометра
 
 float getAccVolts()
 {
   int v = analogRead(AC_VOLT);
   Serial.print(" acc adc:"); Serial.println(v);    
-    return v * 35.5 / 1024.0 + 0.59;
+  return v * 35.5 / 1024.0 + 0.59;
 }
 
 void setup(void)
@@ -107,49 +106,44 @@ void setup(void)
 
   // конфишурим провод управления реле и выключаем его 
   pinMode(RELAY, OUTPUT); 
-#ifndef USE_I2C_LED  
+
   pinMode(OVERHEAT, OUTPUT); 
   pinMode(COLD, OUTPUT); 
   pinMode(RED_CANDLE, OUTPUT); 
   pinMode(GREEN_CANDLE, OUTPUT); 
-#endif  
+
   pinMode(AC_VOLT, INPUT);
   digitalWrite(AC_VOLT, LOW); // disable pull-up
 
   // выключаем все
   digitalWrite(RELAY, LOW);
-#ifndef USE_I2C_LED
+
   digitalWrite(OVERHEAT, HIGH);
   digitalWrite(COLD, HIGH);
   digitalWrite(RED_CANDLE, HIGH);
   digitalWrite(GREEN_CANDLE, HIGH);
-#endif  
+
   
   // Start up the library
   sensors.begin();
   if(sensors.getDeviceCount() == 0) {
     s_tempOk = false;  
     s_temp = 20.0;
+    s_temp_error_time = ERR_TMO; 
     Serial.println("no temp sensor");
   } else {
     sensors.requestTemperatures(); // Send the command to get temperatures
     s_tempOk = true;
     s_temp = sensors.getTempCByIndex(0);  
     Serial.print("temp:"); Serial.println(s_temp);
+    s_temp_error_time = 0; 
   }
-
-#ifdef USE_I2C_LED
-  // отдаем по i2c состояние свечей и напряжение сети по старту
-  Wire.begin(I2C_SLAVE_ADDRESS_TEMP_VOLT);                // join i2c bus with address #2
-  Wire.onReceive (receiveEvent);  // interrupt handler for incoming messages
-  Wire.onRequest (requestEvent);  // interrupt handler for when data is wanted
-#endif
 
   delay(500);
   // низкое напряжение - не даем включать реле
   float volts = getAccVolts();
   Serial.print("acc volts:"); Serial.println(volts);
-  if(volts < ACC_LOW) {
+  if(volts < ACC_LOW || s_temp > COLD_TEMP) {
     candle_state = OFF_STATE;
     candle_on_time = 0;
     red_time = 0;
@@ -163,10 +157,14 @@ void setup(void)
 float calcTime(float temp)
 {
   // TODO сделать более быстро растущую функцию
-  float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, START_CANDLE_BURN_TIME); 
+  if(temp > COLD_TEMP)
+    return 0;
+  if(temp > 0)
+    return map(temp, 0, 40, 80, 1);
+  float res = map(temp, LOWEST_TEMP, 0, MAX_CANDLE_BURN_TIME, 80); 
   
   if(res < 0)
-    return START_CANDLE_BURN_TIME;
+    return 0;
   return res;
 }
 
@@ -174,107 +172,55 @@ void loop(void)
 {
   float temp;
   delay(CANDLE_CHECK_TIME);
-
-  // сразу после запуска определяем надо включать свечи и время 
-  if(candle_state == START_STATE) {
-    candle_on_time = calcTime(s_temp);
-    red_time = candle_on_time / 3;
-    if(candle_on_time > 0.0)
-      candle_state = RED_STATE;
-    else
-      candle_state = OFF_STATE;
-  } 
-  // горит красная лампочка - надо ждать - заводить рано
-  else if(candle_state == RED_STATE) {
-    candle_on_time -= CANDLE_CHECK_TIME;
-    red_time -= CANDLE_CHECK_TIME;
-    if(red_time <= 0) {
-      red_time = 0;
-      candle_state = GREEN_STATE;
-    }
-  } 
-  // прогрев свечей на работающем движке
-  else if(candle_state == GREEN_STATE) {
-    candle_on_time -= CANDLE_CHECK_TIME;
-    if(candle_on_time <= 0) {
-     candle_state = OFF_STATE;
-      candle_on_time = 0;
-    }
-  } 
-  else if(candle_state == OFF_STATE) {
-    delay(1000);
-    if(sensors.getDeviceCount() == 0) {
-      s_tempOk = false;
-      Serial.println(" no temp sensor:"); 
-    } else {
-      sensors.requestTemperatures(); // Send the command to get temperatures
-      s_tempOk = true;
-      temp = sensors.getTempCByIndex(0);  
-    }
-    Serial.print("acc:"); Serial.println(getAccVolts());
-    // фильтр для Кальмана отбрасываем неправильные измерения
-    if(abs(temp - s_temp) < 5.0) {
-      s_temp = temp;  
-    }
-  }
-
-  Serial.print("candle_state:"); Serial.print(candle_state); Serial.print(" time="); Serial.print(candle_on_time); 
-  Serial.print(" temp="); Serial.println(s_temp); 
-    // включаем и выключаем реле каждый оборот - 
+   // включаем и выключаем реле каждый оборот - 
   digitalWrite(RELAY, (candle_state == RED_STATE || candle_state == GREEN_STATE) ? HIGH : LOW); 
-  
-  digitalWrite(OVERHEAT, (!s_tempOk || (s_temp > OVERHEAT_TEMP)) ? HIGH : LOW); 
-  digitalWrite(COLD, (!s_tempOk || (s_temp < COLD_TEMP)) ? HIGH : LOW); 
+  if(s_temp_error_time > 0) {
+    s_temp_error_time--;
+    digitalWrite(OVERHEAT, HIGH); 
+    digitalWrite(COLD, HIGH ); 
+
+  } else {
+    digitalWrite(OVERHEAT, (s_temp > OVERHEAT_TEMP) ? HIGH : LOW); 
+    digitalWrite(COLD, (s_temp < COLD_TEMP) ? HIGH : LOW); 
+  }
 
   digitalWrite(RED_CANDLE, (candle_state == RED_STATE) ? HIGH : LOW); 
   digitalWrite(GREEN_CANDLE, (candle_state == GREEN_STATE) ? HIGH : LOW); 
-#ifdef USE_I2C_LED 
-  // не заливать шину данными - оправлять при изменении и раз в 1 секунд  + rand(0.5)
-  byte t = ((s_tempOk && (s_temp > OVERHEAT_TEMP)) ? PANEL::MASK_OVERHEAT : 0) | 
-          ((s_tempOk && (s_temp < COLD_TEMP)) ? PANEL::MASK_COLD : 0) | 
-        ((candle_state == RED_STATE) ? PANEL::MASK_RED_CANDLE : 0) |
-        ((candle_state == GREEN_STATE) ? PANEL::MASK_GREEN_CANDLE : 0);
-  PPanel::writeLED(t);
-#endif
-}
 
-#ifdef USE_I2C_LED  
-byte command;
-//***************************************************************************
-// function that executes whenever data is requested by master
-// this function is registered as an event, see setup()
-void receiveEvent(int)
-{
-  command = Wire.read(); // receive byte subaddress
-  switch(command) {
-  case RCB::I2C_CMD_RELE_SET: 
-    candle_state = RED_STATE;
-    candle_on_time = min(Wire.read() * 1000, MAX_CANDLE_BURN_TIME);
-    red_time = candle_on_time / 3;
-    break;
-  default: ;
-  } 
-}
+  // сразу после запуска определяем надо включать свечи и время 
+  switch(candle_state) {
+    case START_STATE: {
+      candle_on_time = calcTime(s_temp);
+      red_time = candle_on_time / 3;
+      if(candle_on_time > 0.0) {
+        candle_state = RED_STATE; 
+      } 
+    } break;
+    case RED_STATE:
+      --candle_on_time;
+      if(--red_time == 0)
+        candle_state = GREEN_STATE;
+      break;
+    case GREEN_STATE:
+      if(--candle_on_time == 0)
+        candle_state = OFF_STATE;
+      break;
+     case OFF_STATE:
+      delay(10000);
+      if(sensors.getDeviceCount() == 0) {
+        s_tempOk = false;  
+        s_temp = 20.0;
+        Serial.println("no temp sensor");
+      } else {
+        sensors.requestTemperatures(); // Send the command to get temperatures
+        s_tempOk = true;
+        s_temp = sensors.getTempCByIndex(0);  
+        Serial.print("temp:"); Serial.println(s_temp);
+        s_temp_error_time = 0; 
+      }
+     break;
+  }
 
-//***************************************************************************
-void requestEvent ()
-{
-  switch (command)
-     {
-      case RCB::I2C_CMD_TEMP: 
-        Wire.write((char)s_temp);
-        break;
-      case RCB::I2C_CMD_VOLT: {
-        byte volt = getAccVolts() * 10;
-        Wire.write(volt);
-        }
-        break;
-      case RCB::I2C_CMD_STATE: 
-        Wire.write((s_tempOk ? 0 : RCB::BAD_TEMP_STATE) | 
-                  (candle_state == RED_STATE ? RCB::RED_LED_CANDLE_STATE : 0) |
-                  (candle_state == GREEN_STATE ? RCB::GREEN_LED_CANDLE_STATE : 0));
-        break;      
-      default:;
-     } 
-}
-#endif
+  Serial.print("candle_state:"); Serial.print(candle_state); 
+  Serial.print(" time="); Serial.println(candle_on_time); 
+ }
