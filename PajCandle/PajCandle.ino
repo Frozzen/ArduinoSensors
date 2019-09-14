@@ -7,7 +7,21 @@
  * логика попрощще чтобы уменьшить верятность ошибки
  * мониторит температуру двигателя и зажигает лампочки, на старте проверяет чтобы аккум был не севший
  * 
+ * напряжение измерять только в нач
+ * блок управления свечами для Pajero
+ *
+ * ** TODO перенести контроль питания на A1 и сделать выход шины I2C
+ *
+ * при влючении питания если алгоритм позволяет включает реле. большие токи делаем 
+ * логика попрощще чтобы уменьшить верятность ошибки
+ * мониторит температуру двигателя и зажигает лампочки, на старте проверяет чтобы аккум был не севший
+ * 
  * напряжение измерять только в начале работы.  Если напряжение аккумулятора меньше 10.5 вольт не включать свечи
+ * фильтровать темепературу фильтром кальмана - исключать изменение быстрее 1 град за отсчет
+ * в конечном цикле измерять температуру раз в секунду
+ * 
+ * свечи включены 
+ * 120 сек на -20град, 0але работы.  Если напряжение аккумулятора меньше 10.5 вольт не включать свечи
  * фильтровать темепературу фильтром кальмана - исключать изменение быстрее 1 град за отсчет
  * в конечном цикле измерять температуру раз в секунду
  * 
@@ -43,7 +57,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Wire.h>
-#define DEBUG
+//#define DEBUG
 
 // PINS
 // Data wire is plugged into pin 2 on the Arduino
@@ -94,16 +108,19 @@ int s_temp_error_time = ERR_TMO;  // счетчик времени светит�
 float getAccVolts()
 {
   int v = analogRead(AC_VOLT);
+#ifdef DEBUG
   Serial.print(" acc adc:"); Serial.println(v);    
+#endif
   return v * 35.5 / 1024.0 + 0.59;
 }
 
 void setup(void)
 {
   // start serial port
+  #ifdef DEBUG
   Serial.begin(9600);
   Serial.println("Pajero Candle Control Block");
-
+#endif
   // конфишурим провод управления реле и выключаем его 
   pinMode(RELAY, OUTPUT); 
 
@@ -130,19 +147,25 @@ void setup(void)
     s_tempOk = false;  
     s_temp = 20.0;
     s_temp_error_time = ERR_TMO; 
+    #ifdef DEBUG
     Serial.println("no temp sensor");
+#endif
   } else {
     sensors.requestTemperatures(); // Send the command to get temperatures
     s_tempOk = true;
     s_temp = sensors.getTempCByIndex(0);  
+#ifdef DEBUG
     Serial.print("temp:"); Serial.println(s_temp);
+#endif
     s_temp_error_time = 0; 
   }
 
   delay(500);
   // низкое напряжение - не даем включать реле
   float volts = getAccVolts();
+#ifdef DEBUG
   Serial.print("acc volts:"); Serial.println(volts);
+#endif
   if(volts < ACC_LOW || s_temp > COLD_TEMP) {
     candle_state = OFF_STATE;
     candle_on_time = 0;
@@ -210,17 +233,22 @@ void loop(void)
       if(sensors.getDeviceCount() == 0) {
         s_tempOk = false;  
         s_temp = 20.0;
+#ifdef DEBUG
         Serial.println("no temp sensor");
+#endif
       } else {
         sensors.requestTemperatures(); // Send the command to get temperatures
         s_tempOk = true;
         s_temp = sensors.getTempCByIndex(0);  
+#ifdef DEBUG
         Serial.print("temp:"); Serial.println(s_temp);
+#endif
         s_temp_error_time = 0; 
       }
      break;
   }
-
+#ifdef DEBUG
   Serial.print("candle_state:"); Serial.print(candle_state); 
   Serial.print(" time="); Serial.println(candle_on_time); 
+#endif
  }
