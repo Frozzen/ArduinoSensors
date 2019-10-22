@@ -57,7 +57,7 @@
 #include <OneWire.h>
 #include <DallasTemperature.h>
 #include <Wire.h>
-//#define DEBUG
+#define DEBUG
 
 // PINS
 // Data wire is plugged into pin 2 on the Arduino
@@ -77,12 +77,12 @@ const int OVERHEAT_TEMP = 105;
 const int COLD_TEMP = 40;
 const float LOWEST_TEMP = -25.0;
 // максимальное время горения свечей
-const long MAX_CANDLE_BURN_TIME  = 600;
+const long MAX_CANDLE_BURN_TIME  = 60;
 const long START_CANDLE_BURN_TIME  = 1;
 // низкое напряжение не включать свечи 
 const float ACC_LOW = 10.5;
 // задержка цикла опроса в милисекундах 
-const int CANDLE_CHECK_TIME = 200;
+const int LOOP_DELAY = 100;
 
 // состояния FSM  
 enum eStates {
@@ -117,7 +117,7 @@ float getAccVolts()
 void setup(void)
 {
   // start serial port
-  #ifdef DEBUG
+#ifdef DEBUG
   Serial.begin(9600);
   Serial.println("Pajero Candle Control Block");
 #endif
@@ -147,7 +147,7 @@ void setup(void)
     s_tempOk = false;  
     s_temp = 20.0;
     s_temp_error_time = ERR_TMO; 
-    #ifdef DEBUG
+#ifdef DEBUG
     Serial.println("no temp sensor");
 #endif
   } else {
@@ -175,7 +175,7 @@ void setup(void)
 }
 
 /**
- * вычисляем время работы в зависимости от температуры
+ * вычисляем время работы в зависимости от температуры в секундах
  */
 float calcTime(float temp)
 {
@@ -184,7 +184,7 @@ float calcTime(float temp)
     return 0;
   if(temp > 0)
     return map(temp, 0, 40, 80, 1);
-  float res = map(temp, LOWEST_TEMP, 0, MAX_CANDLE_BURN_TIME, 80); 
+  float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, 0); 
   
   if(res < 0)
     return 0;
@@ -194,14 +194,13 @@ float calcTime(float temp)
 void loop(void)
 {
   float temp;
-  delay(CANDLE_CHECK_TIME);
+  delay(LOOP_DELAY);
    // включаем и выключаем реле каждый оборот - 
   digitalWrite(RELAY, (candle_state == RED_STATE || candle_state == GREEN_STATE) ? HIGH : LOW); 
   if(s_temp_error_time > 0) {
     s_temp_error_time--;
     digitalWrite(OVERHEAT, HIGH); 
     digitalWrite(COLD, HIGH ); 
-
   } else {
     digitalWrite(OVERHEAT, (s_temp > OVERHEAT_TEMP) ? HIGH : LOW); 
     digitalWrite(COLD, (s_temp < COLD_TEMP) ? HIGH : LOW); 
@@ -213,7 +212,7 @@ void loop(void)
   // сразу после запуска определяем надо включать свечи и время 
   switch(candle_state) {
     case START_STATE: {
-      candle_on_time = calcTime(s_temp);
+      candle_on_time = calcTime(s_temp) * LOOP_DELAY / 1000;
       red_time = candle_on_time / 3;
       if(candle_on_time > 0.0) {
         candle_state = RED_STATE; 
@@ -229,7 +228,7 @@ void loop(void)
         candle_state = OFF_STATE;
       break;
      case OFF_STATE:
-      delay(10000);
+      delay(1000);
       if(sensors.getDeviceCount() == 0) {
         s_tempOk = false;  
         s_temp = 20.0;
