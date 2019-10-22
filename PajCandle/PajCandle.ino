@@ -77,7 +77,7 @@ const int OVERHEAT_TEMP = 105;
 const int COLD_TEMP = 40;
 const float LOWEST_TEMP = -25.0;
 // максимальное время горения свечей
-const long MAX_CANDLE_BURN_TIME  = 60;
+const long MAX_CANDLE_BURN_TIME  = 40;
 const long START_CANDLE_BURN_TIME  = 1;
 // низкое напряжение не включать свечи 
 const float ACC_LOW = 10.5;
@@ -172,6 +172,9 @@ void setup(void)
     red_time = 0;
   } else 
     candle_state = START_STATE;
+#ifdef DEBUG
+  Serial.print("candle_state:"); Serial.println(candle_state);
+#endif
 }
 
 /**
@@ -182,10 +185,10 @@ float calcTime(float temp)
   // TODO сделать более быстро растущую функцию
   if(temp > COLD_TEMP)
     return 0;
-  if(temp > 0)
-    return map(temp, 0, 40, 80, 1);
   float res = map(temp, LOWEST_TEMP, COLD_TEMP, MAX_CANDLE_BURN_TIME, 0); 
-  
+#ifdef DEBUG
+  Serial.print("candle secs:"); Serial.println(res);
+#endif
   if(res < 0)
     return 0;
   return res;
@@ -212,23 +215,23 @@ void loop(void)
   // сразу после запуска определяем надо включать свечи и время 
   switch(candle_state) {
     case START_STATE: {
-      candle_on_time = calcTime(s_temp) * LOOP_DELAY / 1000;
-      red_time = candle_on_time / 3;
+      candle_on_time = calcTime(s_temp) * 1000 / LOOP_DELAY;
+      red_time = candle_on_time * 2 / 3;
       if(candle_on_time > 0.0) {
         candle_state = RED_STATE; 
       } 
     } break;
     case RED_STATE:
       --candle_on_time;
-      if(--red_time == 0)
+      if(--red_time <= 0)
         candle_state = GREEN_STATE;
       break;
     case GREEN_STATE:
-      if(--candle_on_time == 0)
+      if(--candle_on_time <= 0)
         candle_state = OFF_STATE;
       break;
      case OFF_STATE:
-      delay(1000);
+      delay(20000);
       if(sensors.getDeviceCount() == 0) {
         s_tempOk = false;  
         s_temp = 20.0;
